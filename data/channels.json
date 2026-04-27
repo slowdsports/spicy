@@ -1,119 +1,38 @@
 [
-  {
-    "id": 1,
-    "name": "ESPN",
-    "category": "Deportes",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "El canal líder en cobertura deportiva mundial.",
-    "views": "12.4K"
-  },
-  {
-    "id": 2,
-    "name": "Fox Sports",
-    "category": "Deportes",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/7/74/Fox_Sports_2019.svg",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Cobertura en vivo de los mejores eventos deportivos.",
-    "views": "8.7K"
-  },
-  {
-    "id": 3,
-    "name": "CNN en Español",
-    "category": "Noticias",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/b/b1/CNN.svg",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Noticias internacionales 24 horas.",
-    "views": "5.2K"
-  },
-  {
-    "id": 4,
-    "name": "Discovery",
-    "category": "Entretenimiento",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Discovery_Channel_logo.svg",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Ciencia, naturaleza y aventura.",
-    "views": "3.1K"
-  },
-  {
-    "id": 5,
-    "name": "National Geographic",
-    "category": "Entretenimiento",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/National-geographic-logo.svg/1280px-National-geographic-logo.svg.png",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Exploración y conocimiento del mundo.",
-    "views": "2.8K"
-  },
-  {
-    "id": 6,
-    "name": "TUDN",
-    "category": "Deportes",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/TUDN_logo.svg/2560px-TUDN_logo.svg.png",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Tu canal de deportes en español.",
-    "views": "9.3K"
-  },
-  {
-    "id": 7,
-    "name": "BBC World News",
-    "category": "Noticias",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/4/41/BBC_Logo_2021.svg",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Noticias mundiales en tiempo real.",
-    "views": "4.5K"
-  },
-  {
-    "id": 8,
-    "name": "MTV",
-    "category": "Música",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/6/6a/MTV_2021_logo.svg",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Música, cultura pop y entretenimiento.",
-    "views": "1.9K"
-  },
-  {
-    "id": 9,
-    "name": "Cartoon Network",
-    "category": "Infantil",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/8/80/Cartoon_Network_2010_logo.svg",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Los mejores dibujos animados.",
-    "views": "6.7K"
-  },
-  {
-    "id": 10,
-    "name": "HBO",
-    "category": "Entretenimiento",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/d/de/HBO_logo.svg",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Series y películas premium.",
-    "views": "11.2K"
-  },
-  {
-    "id": 11,
-    "name": "Sky Sports",
-    "category": "Deportes",
-    "logo": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/Sky_Sports_logo_2020.svg/1200px-Sky_Sports_logo_2020.svg.png",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Deportes premium de Europa.",
-    "views": "7.8K"
-  },
-  {
-    "id": 12,
-    "name": "Nickelodeon",
-    "category": "Infantil",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Nickelodeon_logo_2023.svg/2560px-Nickelodeon_logo_2023.svg.png",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Entretenimiento para los más pequeños.",
-    "views": "5.4K"
-  },
-  {
-    "id": 13,
-    "name": "Testing",
-    "category": "Adultos",
-    "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Nickelodeon_logo_2023.svg/2560px-Nickelodeon_logo_2023.svg.png",
-    "streamUrl": "https://www.youtube.com/embed/live_stream?channel=UCiWLfSweyRNmLpgEHekhoAg",
-    "description": "Entretenimiento para los más pequeños.",
-    "views": "5.4K"
-  }
+    {
+        "id": 914,
+        "name": "ESPN",
+        "category": "Deportes",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg",
+        "description": "",
+        "views": "12.4K",
+        "active": 1
+    },
+    {
+        "id": 915,
+        "name": "Fox Sports",
+        "category": "Deportes",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/7/74/Fox_Sports_2019.svg",
+        "description": "",
+        "views": "8.7K",
+        "active": 1
+    },
+    {
+        "id": 916,
+        "name": "Sky Sports",
+        "category": "Deportes",
+        "logo": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/Sky_Sports_logo_2020.svg/1200px-Sky_Sports_logo_2020.svg.png",
+        "description": "",
+        "views": "7.8K",
+        "active": 1
+    },
+    {
+        "id": 920,
+        "name": "TUDN",
+        "category": "Deportes",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/TUDN_logo.svg/2560px-TUDN_logo.svg.png",
+        "description": "",
+        "views": "9.3K",
+        "active": 1
+    }
 ]
