@@ -1,0 +1,237 @@
+[
+  {
+    "id": 12436535,
+    "local": 60,
+    "visitante": 35,
+    "liga": 17,
+    "fecha_hora": "2025-04-27 15:00:00",
+    "tipo": "soccer",
+    "starp": null,
+    "vix": null,
+    "canal1": null,
+    "canal2": 914,
+    "canal3": null,
+    "canal4": 915,
+    "canal5": null,
+    "canal6": null,
+    "canal7": null,
+    "canal8": null,
+    "canal9": null,
+    "canal10": null,
+    "liga_info": {
+      "id": 17,
+      "nombre": "UEFA Champions League",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/b/bf/UEFA_Champions_League_logo_2.svg",
+      "pais": "Europa"
+    },
+    "local_info": {
+      "id": 60,
+      "nombre": "Real Madrid",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg"
+    },
+    "visitante_info": {
+      "id": 35,
+      "nombre": "Bayern München",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg"
+    },
+    "canales_info": {
+      "914": {
+        "id": 914,
+        "nombre": "ESPN",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg"
+      },
+      "915": {
+        "id": 915,
+        "nombre": "Fox Sports",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/7/74/Fox_Sports_2019.svg"
+      }
+    }
+  },
+  {
+    "id": 12436540,
+    "local": 70,
+    "visitante": 71,
+    "liga": 17,
+    "fecha_hora": "2025-04-28 20:45:00",
+    "tipo": "soccer",
+    "starp": null,
+    "vix": null,
+    "canal1": 920,
+    "canal2": null,
+    "canal3": null,
+    "canal4": null,
+    "canal5": null,
+    "canal6": null,
+    "canal7": null,
+    "canal8": null,
+    "canal9": null,
+    "canal10": null,
+    "liga_info": {
+      "id": 17,
+      "nombre": "UEFA Champions League",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/b/bf/UEFA_Champions_League_logo_2.svg",
+      "pais": "Europa"
+    },
+    "local_info": {
+      "id": 70,
+      "nombre": "Arsenal",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg"
+    },
+    "visitante_info": {
+      "id": 71,
+      "nombre": "Paris Saint-Germain",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg"
+    },
+    "canales_info": {
+      "920": {
+        "id": 920,
+        "nombre": "TUDN",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/TUDN_logo.svg/2560px-TUDN_logo.svg.png"
+      }
+    }
+  },
+  {
+    "id": 12436550,
+    "local": 80,
+    "visitante": 81,
+    "liga": 8,
+    "fecha_hora": "2025-04-26 18:00:00",
+    "tipo": "soccer",
+    "starp": null,
+    "vix": null,
+    "canal1": 914,
+    "canal2": 916,
+    "canal3": null,
+    "canal4": null,
+    "canal5": null,
+    "canal6": null,
+    "canal7": null,
+    "canal8": null,
+    "canal9": null,
+    "canal10": null,
+    "liga_info": {
+      "id": 8,
+      "nombre": "Premier League",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/f/f2/Premier_League_Logo.svg",
+      "pais": "Inglaterra"
+    },
+    "local_info": {
+      "id": 80,
+      "nombre": "Manchester City",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg"
+    },
+    "visitante_info": {
+      "id": 81,
+      "nombre": "Liverpool",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg"
+    },
+    "canales_info": {
+      "914": {
+        "id": 914,
+        "nombre": "ESPN",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg"
+      },
+      "916": {
+        "id": 916,
+        "nombre": "Sky Sports",
+        "logo": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/Sky_Sports_logo_2020.svg/1200px-Sky_Sports_logo_2020.svg.png"
+      }
+    }
+  },
+  {
+    "id": 12436560,
+    "local": 90,
+    "visitante": 91,
+    "liga": 8,
+    "fecha_hora": "2025-04-29 20:00:00",
+    "tipo": "soccer",
+    "starp": null,
+    "vix": null,
+    "canal1": 914,
+    "canal2": null,
+    "canal3": null,
+    "canal4": null,
+    "canal5": null,
+    "canal6": null,
+    "canal7": null,
+    "canal8": null,
+    "canal9": null,
+    "canal10": null,
+    "liga_info": {
+      "id": 8,
+      "nombre": "Premier League",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/f/f2/Premier_League_Logo.svg",
+      "pais": "Inglaterra"
+    },
+    "local_info": {
+      "id": 90,
+      "nombre": "Chelsea",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg"
+    },
+    "visitante_info": {
+      "id": 91,
+      "nombre": "Tottenham",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg"
+    },
+    "canales_info": {
+      "914": {
+        "id": 914,
+        "nombre": "ESPN",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg"
+      }
+    }
+  },
+  {
+    "id": 12436570,
+    "local": 100,
+    "visitante": 101,
+    "liga": 5,
+    "fecha_hora": "2025-04-27 21:00:00",
+    "tipo": "soccer",
+    "starp": null,
+    "vix": null,
+    "canal1": 915,
+    "canal2": 920,
+    "canal3": 914,
+    "canal4": null,
+    "canal5": null,
+    "canal6": null,
+    "canal7": null,
+    "canal8": null,
+    "canal9": null,
+    "canal10": null,
+    "liga_info": {
+      "id": 5,
+      "nombre": "La Liga",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/5/54/LaLiga_EA_Sports_Logo_2023.svg",
+      "pais": "España"
+    },
+    "local_info": {
+      "id": 100,
+      "nombre": "FC Barcelona",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg"
+    },
+    "visitante_info": {
+      "id": 101,
+      "nombre": "Atlético Madrid",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg"
+    },
+    "canales_info": {
+      "915": {
+        "id": 915,
+        "nombre": "Fox Sports",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/7/74/Fox_Sports_2019.svg"
+      },
+      "920": {
+        "id": 920,
+        "nombre": "TUDN",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/TUDN_logo.svg/2560px-TUDN_logo.svg.png"
+      },
+      "914": {
+        "id": 914,
+        "nombre": "ESPN",
+        "logo": "https://upload.wikimedia.org/wikipedia/commons/2/2f/ESPN_wordmark.svg"
+      }
+    }
+  }
+]

@@ -1,0 +1,104 @@
+[
+  {
+    "id": 1,
+    "league": "UEFA Champions League",
+    "leagueLogo": "https://upload.wikimedia.org/wikipedia/en/b/bf/UEFA_Champions_League_logo_2.svg",
+    "status": "live",
+    "time": "",
+    "homeTeam": {
+      "name": "Real Madrid",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg",
+      "score": 2
+    },
+    "awayTeam": {
+      "name": "Bayern München",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg",
+      "score": 1
+    }
+  },
+  {
+    "id": 2,
+    "league": "Premier League",
+    "leagueLogo": "https://upload.wikimedia.org/wikipedia/en/f/f2/Premier_League_Logo.svg",
+    "status": "upcoming",
+    "time": "18:00",
+    "homeTeam": {
+      "name": "Arsenal",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg",
+      "score": null
+    },
+    "awayTeam": {
+      "name": "Manchester City",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg",
+      "score": null
+    }
+  },
+  {
+    "id": 3,
+    "league": "La Liga",
+    "leagueLogo": "https://upload.wikimedia.org/wikipedia/commons/5/54/LaLiga_EA_Sports_Logo_2023.svg",
+    "status": "live",
+    "time": "EN VIVO - 34'",
+    "homeTeam": {
+      "name": "Barcelona",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg",
+      "score": 1
+    },
+    "awayTeam": {
+      "name": "Atlético Madrid",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg",
+      "score": 1
+    }
+  },
+  {
+    "id": 4,
+    "league": "Serie A",
+    "leagueLogo": "https://upload.wikimedia.org/wikipedia/en/e/e1/Serie_A_logo_%282019%29.svg",
+    "status": "upcoming",
+    "time": "20:45",
+    "homeTeam": {
+      "name": "Inter Milan",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg",
+      "score": null
+    },
+    "awayTeam": {
+      "name": "AC Milan",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Logo_of_AC_Milan.svg",
+      "score": null
+    }
+  },
+  {
+    "id": 5,
+    "league": "Bundesliga",
+    "leagueLogo": "https://upload.wikimedia.org/wikipedia/en/d/df/Bundesliga_logo_%282017%29.svg",
+    "status": "live",
+    "time": "EN VIVO - 82'",
+    "homeTeam": {
+      "name": "Dortmund",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg",
+      "score": 3
+    },
+    "awayTeam": {
+      "name": "RB Leipzig",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2014_logo.svg",
+      "score": 2
+    }
+  },
+  {
+    "id": 6,
+    "league": "NBA",
+    "leagueLogo": "https://upload.wikimedia.org/wikipedia/en/0/03/National_Basketball_Association_logo.svg",
+    "status": "upcoming",
+    "time": "21:30",
+    "homeTeam": {
+      "name": "Lakers",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/3/3c/Los_Angeles_Lakers_logo.svg",
+      "score": null
+    },
+    "awayTeam": {
+      "name": "Warriors",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/0/01/Golden_State_Warriors_logo.svg",
+      "score": null
+    }
+  }
+]
