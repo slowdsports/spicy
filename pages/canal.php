@@ -5,6 +5,7 @@
 $channelId = (int) get('id', '0');
 $iframeUrl = '';
 $fuenteData = null;
+$fuentes = [];
 
 if ($channelId > 0) {
     try {
@@ -15,19 +16,61 @@ if ($channelId > 0) {
         $result = $stmt->get_result();
         $fuenteData = $result->fetch_assoc();
         $stmt->close();
-        
+
         if ($fuenteData) {
             $iframeUrl = 'pages/reproductor.php?' . http_build_query([
                 'id' => $fuenteData['id'],
                 'canal' => $fuenteData['canal'],
                 'tipo' => $fuenteData['tipo']
             ]);
+
+            $stmt2 = $conn->prepare("SELECT id, nombre, tipo FROM fuentes WHERE canal = ? ORDER BY id");
+            $stmt2->bind_param('s', $fuenteData['canal']);
+            $stmt2->execute();
+            $fuentes = $stmt2->get_result()->fetch_all(MYSQLI_ASSOC);
+            $stmt2->close();
         }
     } catch (Throwable $e) {
         // Error de BD, el iframe quedará vacío
     }
 }
+$jsCanal = json_encode($fuenteData['canal'] ?? '');
 ?>
+
+<style>
+.source-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-basis: 100%;
+  width: 100%;
+  padding-top: 4px;
+}
+
+.source-pill {
+  padding: 4px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.source-pill:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.source-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+</style>
 
 <div class="container" style="padding-top:1.5rem;">
   <!-- Breadcrumb -->
@@ -82,6 +125,18 @@ if ($channelId > 0) {
             <i class="fas fa-flag"></i><span>Reportar</span>
           </button>
         </div>
+        <?php if (count($fuentes) > 1): ?>
+        <div class="source-pills-row">
+          <?php foreach ($fuentes as $i => $f): ?>
+          <button
+            class="source-pill<?= $f['id'] == $channelId ? ' active' : '' ?>"
+            data-id="<?= (int) $f['id'] ?>"
+            data-tipo="<?= (int) $f['tipo'] ?>">
+            <?= htmlspecialchars($f['nombre'] ?: 'Fuente ' . ($i + 1)) ?>
+          </button>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
       </div>
     </div>
 
@@ -124,8 +179,34 @@ if ($channelId > 0) {
 </section>
 
 <script>
-// Pasar el ID al JS
 const CHANNEL_ID = <?= $channelId ?>;
+const CANAL      = <?= $jsCanal ?>;
+</script>
+
+<script>
+document.querySelectorAll('.source-pill').forEach(function(pill) {
+  pill.addEventListener('click', function() {
+    var id   = this.dataset.id;
+    var tipo = this.dataset.tipo;
+
+    // Activar pill seleccionado
+    document.querySelectorAll('.source-pill').forEach(function(p) {
+      p.classList.remove('active');
+    });
+    this.classList.add('active');
+
+    // Actualizar iframe sin recargar la página
+    var iframe = document.getElementById('player-iframe');
+    iframe.src = 'pages/reproductor.php?id=' + id +
+                 '&canal=' + encodeURIComponent(CANAL) +
+                 '&tipo=' + tipo;
+
+    // Actualizar ?id= en la URL sin navegación
+    var url = new URL(window.location.href);
+    url.searchParams.set('id', id);
+    history.replaceState(null, '', url.toString());
+  });
+});
 </script>
 
 <script>
