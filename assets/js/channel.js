@@ -4,62 +4,59 @@
 
 async function loadChannelPage() {
   const id = typeof CHANNEL_ID !== 'undefined' ? CHANNEL_ID : 0;
-  if (!id) { window.location.href = 'index.php?p=home'; return; }
+  if (!id) { window.location.href = '?p=home'; return; }
 
   try {
-    const res = await fetch('data/channels.json');
-    const channels = await res.json();
-    const channel = channels.find(c => c.id === id);
-    if (!channel) { window.location.href = 'index.php?p=home'; return; }
+    const res = await fetch('data/fuentes.json');
+    const sources = await res.json();
+    const source = sources.find(c => c.id === id);
+    if (!source) { window.location.href = '?p=home'; return; }
 
-    renderPlayerPage(channel);
-    const recommended = channels.filter(c => c.id !== id).slice(0, 8);
+    renderPlayerPage(source);
+    const recommended = sources.filter(c => c.id !== id && c.activo === 1).slice(0, 8);
     renderRecommendedChannels(recommended);
     startDemoChat();
   } catch (e) {
-    console.error('Error cargando canal:', e);
+    console.error('Error cargando fuente:', e);
   }
 }
 
-function renderPlayerPage(channel) {
-  document.title = `${channel.name} - StreamHub`;
+function renderPlayerPage(source) {
+  document.title = `${source.nombre} - StreamHub`;
   const nameEl = document.getElementById('player-channel-name');
-  if (nameEl) nameEl.textContent = channel.name;
+  if (nameEl) nameEl.textContent = source.nombre;
 
   const iframe = document.getElementById('player-iframe');
-  if (iframe) {
-    iframe.src = channel.streamUrl;
+  if (iframe && iframe.src) {
+    // El src ya está cargado desde PHP, solo mostrar
     const placeholder = document.getElementById('player-placeholder');
     if (placeholder) placeholder.style.display = 'none';
     iframe.style.display = 'block';
   }
 
-  const avatarImg = document.getElementById('channel-avatar-img');
-  if (avatarImg) { avatarImg.src = channel.logo; avatarImg.alt = channel.name; }
-
   const titleEl = document.getElementById('channel-title');
-  if (titleEl) titleEl.textContent = channel.name;
+  if (titleEl) titleEl.textContent = source.nombre;
 
   const viewsEl = document.getElementById('channel-views');
-  if (viewsEl) viewsEl.textContent = `${channel.views} espectadores`;
+  if (viewsEl) viewsEl.textContent = `${source.id} transmisión`;
 }
 
-function renderRecommendedChannels(channels) {
+function renderRecommendedChannels(sources) {
   const slider = document.getElementById('recommended-slider');
   if (!slider) return;
   slider.innerHTML = '';
-  channels.forEach(ch => {
+  sources.forEach(ch => {
     const card = document.createElement('a');
-    card.href = `index.php?p=canal&id=${ch.id}`;
+    card.href = `?p=canal&id=${ch.id}`;
     card.className = 'match-card';
     card.style.cssText = 'min-width:180px;max-width:180px;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.75rem;';
     card.innerHTML = `
       <div style="width:60px;height:60px;background:var(--bg-input);border-radius:12px;display:flex;align-items:center;justify-content:center;padding:8px;border:1px solid var(--border);">
-        <img src="${ch.logo}" alt="${ch.name}" style="width:100%;height:100%;object-fit:contain;filter:brightness(0) invert(1);" onerror="this.style.filter='none'">
+        <i class="fas fa-broadcast-tower" style="font-size:1.5rem;color:var(--accent);"></i>
       </div>
       <div style="text-align:center;">
-        <div style="font-size:.82rem;font-weight:700;color:var(--text-primary);">${ch.name}</div>
-        <div style="font-size:.7rem;color:var(--accent);margin-top:2px;">${ch.category}</div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--text-primary);">${ch.nombre}</div>
+        <div style="font-size:.7rem;color:var(--accent);margin-top:2px;">Fuente</div>
       </div>
       <span style="font-size:.65rem;background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);padding:2px 8px;border-radius:4px;font-family:'Space Mono',monospace;font-weight:700;">● EN VIVO</span>
     `;

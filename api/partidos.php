@@ -31,9 +31,9 @@ try {
             e_local.logo      AS local_logo,
             e_visit.nombre    AS visitante_nombre,
             e_visit.logo      AS visitante_logo,
-            l.nombre          AS liga_nombre,
-            l.logo            AS liga_logo,
-            l.pais            AS liga_pais
+            l.ligaNombre      AS liga_nombre,
+            l.ligaImg         AS liga_logo,
+            l.ligaPais        AS liga_pais
         FROM partidos p
         LEFT JOIN equipos  e_local ON p.local     = e_local.id
         LEFT JOIN equipos  e_visit ON p.visitante  = e_visit.id

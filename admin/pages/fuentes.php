@@ -25,6 +25,39 @@ try {
     $paises  = $conn->query("SELECT id, paisNombre FROM paises ORDER BY paisNombre ASC")->fetch_all(MYSQLI_ASSOC);
     $tipos   = $conn->query("SELECT id, nombre FROM tipos_fuente ORDER BY nombre ASC")->fetch_all(MYSQLI_ASSOC);
 
+    /* =====================================================
+       GENERAR JSON DE FUENTES
+       Ruta: /data/fuentes.json
+    ===================================================== */
+    $jsonFuentes = [];
+
+    foreach ($fuentes as $f) {
+        $jsonFuentes[] = [
+            'id'     => (int)$f['id'],
+            'nombre' => $f['nombre'] ?? '',
+            'canal'  => (int)$f['canal_id'] ?: null,
+            'tipo'   => (int)$f['tipo_id'] ?: null,
+            'epg'    => $f['epg'] ?? '',
+            'activo' => (int)$f['activo']
+        ];
+    }
+
+    $dir = __DIR__ . '/../../data';
+
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+
+    file_put_contents(
+        $dir . '/fuentes.json',
+        json_encode(
+            $jsonFuentes,
+            JSON_PRETTY_PRINT |
+            JSON_UNESCAPED_UNICODE |
+            JSON_UNESCAPED_SLASHES
+        )
+    );
+
 } catch (Exception $e) {
     $fuentes = $canales = $paises = $tipos = [];
 }

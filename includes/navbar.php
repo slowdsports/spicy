@@ -65,14 +65,6 @@ $uName    = userName();
           </a>
         </li>
 
-        <li class="nav-item">
-          <a href="#" class="nav-link"><i class="fas fa-film me-1"></i> Películas</a>
-        </li>
-
-        <li class="nav-item">
-          <a href="#" class="nav-link"><i class="fas fa-newspaper me-1"></i> Noticias</a>
-        </li>
-
       </ul>
 
       <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">

@@ -42,7 +42,7 @@ $menu = [
 
   <!-- Pie del sidebar: volver al sitio -->
   <div class="admin-sidebar-footer">
-    <a href="<?= BASE_URL ?>index.php?p=home" class="admin-nav-item" style="opacity:0.6;">
+    <a href="<?= BASE_URL ?>?p=home" class="admin-nav-item" style="opacity:0.6;">
       <i class="fas fa-arrow-left"></i>
       <span>Ver sitio</span>
     </a>

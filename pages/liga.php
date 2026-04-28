@@ -150,11 +150,12 @@ $canalesPartido = [];
 
 for($x=1;$x<=10;$x++){
     $key = 'cnl'.$x;
+    $keyName = 'cnl'.$x.'Name';
     if(!empty($p[$key])){
         $cid = trim($p[$key]);
         $canalesPartido[] = [
             'id'    => $cid,
-            'nombre'=> canalNombre($cid),
+            'nombre'=> $p[$keyName] ?? "Canal {$cid}",
             'logo'  => canalLogo($cid)
         ];
     }

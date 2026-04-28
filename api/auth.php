@@ -19,7 +19,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 if (isset($_GET['action']) && $_GET['action'] === 'logout_redirect') {
     $_SESSION = [];
     session_destroy();
-    header('Location: ' . BASE_URL . 'index.php?p=home');
+    header('Location: ' . BASE_URL . '?p=home');
     exit();
 }
 

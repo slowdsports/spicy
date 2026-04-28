@@ -2,6 +2,23 @@
 /**
  * StreamHub - Página de inicio (home.php)
  */
+
+$maintenance = 0;
+$maintenanceLabel = 'Sistema operativo';
+$maintenanceStyle = 'background: var(--accent-soft); border: 1px solid var(--border-accent); color: var(--text-secondary);';
+
+if (function_exists('getDBConnection')) {
+    $conn = getDBConnection();
+    $result = $conn->query("SELECT valor FROM config_sitio WHERE clave = 'mantenimiento' LIMIT 1");
+    if ($result && ($row = $result->fetch_assoc())) {
+        $maintenance = (int) $row['valor'];
+    }
+}
+
+if ($maintenance === 1) {
+    $maintenanceLabel = 'Sistema en mantenimiento';
+    $maintenanceStyle = 'background: #fef3c7; border: 1px solid #fde68a; color: #92400e;';
+}
 ?>
 
 <!-- HERO BANNER -->
@@ -16,9 +33,9 @@
           Transmisión en alta calidad · Eventos en vivo · Sin interrupciones
         </p>
       </div>
-      <div style="display:flex; align-items:center; gap:8px; background: var(--accent-soft); border: 1px solid var(--border-accent); padding: 0.5rem 1rem; border-radius: 100px;">
-        <span style="width:8px; height:8px; background:#22c55e; border-radius:50%; animation: pulse-badge 2s infinite; flex-shrink:0;"></span>
-        <span style="font-size:0.8rem; font-weight:600; color: var(--text-secondary);">Sistema operativo</span>
+      <div style="display:flex; align-items:center; gap:8px; padding: 0.5rem 1rem; border-radius: 100px; <?= $maintenanceStyle ?>">
+        <span style="width:8px; height:8px; background:<?= $maintenance === 1 ? '#d97706' : '#22c55e' ?>; border-radius:50%; animation: pulse-badge 2s infinite; flex-shrink:0;"></span>
+        <span style="font-size:0.8rem; font-weight:600;"><?= htmlspecialchars($maintenanceLabel) ?></span>
       </div>
     </div>
   </div>
@@ -59,13 +76,13 @@
   <div class="container">
     <div class="section-title">
       <span>Canales</span>
-      <span class="section-subtitle">Acceso rápido</span>
+      <span class="section-subtitle"><i class="fas fa-bolt" style="color:#fbbf24; margin-right:4px;"></i>Quick Access</span>
     </div>
-    <div class="search-wrapper">
+    <div style="display: none" class="search-wrapper">
       <i class="fas fa-search search-icon"></i>
       <input type="text" id="channel-search" class="search-input" placeholder="Buscar canal..." autocomplete="off">
     </div>
-    <div class="category-pills" id="category-pills"></div>
+    <div style="display: none;" class="category-pills" id="category-pills"></div>
     <div class="channels-grid" id="channels-grid"></div>
   </div>
 </section>

@@ -19,35 +19,45 @@ async function loadMatches() {
   }
 }
 
+function getTeamLogoPath(logo) {
+  if (!logo) return '';
+  const value = String(logo).trim();
+  if (!value) return '';
+  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) {
+    return value;
+  }
+  return `assets/img/equipos/sf/${encodeURIComponent(value)}.png`;
+}
+
 function createMatchCard(match) {
   // Tarjeta cliqueable: lleva a la página de la liga
   const card = document.createElement('a');
   const tipo = match.tipo || 'soccer';
-  const ligaId = match.liga || match.leagueId || '';
-  card.href = 'index.php?p=liga&id=' + ligaId + '&type=' + tipo;
+  const ligaId = match.liga || match.league || '';
+  card.href = '?p=liga&id=' + ligaId + '&type=' + tipo;
   card.style.textDecoration = 'none';
   card.className = 'match-card fade-in';
   const isLive = match.status === 'live';
   const badgeClass = isLive ? 'badge-live' : 'badge-upcoming';
   const badgeText  = isLive ? '● EN VIVO' : match.time;
-  const scoreHTML  = isLive
-    ? `<div class="score-numbers">${match.homeTeam.score} - ${match.awayTeam.score}</div><div class="score-time">${match.time}</div>`
-    : `<div class="score-vs">vs</div><div class="score-time">${match.time}</div>`;
+  const leagueName = match.leagueName || match.league || '';
+  const homeLogo = getTeamLogoPath(match.homeTeam?.logo);
+  const awayLogo = getTeamLogoPath(match.awayTeam?.logo);
 
   card.innerHTML = `
     <div class="match-league">
-      <img src="${match.leagueLogo}" alt="${match.league}" class="match-league-logo" onerror="this.style.display='none'">
-      <span class="match-league-name">${match.league}</span>
+      <img src="${match.leagueLogo}" alt="${leagueName}" class="match-league-logo" onerror="this.style.display='none'">
+      <span class="match-league-name">${leagueName}</span>
       <span class="match-status-badge ${badgeClass}">${badgeText}</span>
     </div>
     <div class="match-teams">
       <div class="match-team">
-        <img src="${match.homeTeam.logo}" alt="${match.homeTeam.name}" class="team-logo" onerror="this.style.opacity='0'">
+        <img src="${homeLogo}" alt="${match.homeTeam.name}" class="team-logo" onerror="this.style.opacity='0'">
         <span class="team-name">${match.homeTeam.name}</span>
       </div>
-      <div class="match-score">${scoreHTML}</div>
+      <div class="score-vs">vs</div>
       <div class="match-team">
-        <img src="${match.awayTeam.logo}" alt="${match.awayTeam.name}" class="team-logo" onerror="this.style.opacity='0'">
+        <img src="${awayLogo}" alt="${match.awayTeam.name}" class="team-logo" onerror="this.style.opacity='0'">
         <span class="team-name">${match.awayTeam.name}</span>
       </div>
     </div>
@@ -81,7 +91,7 @@ let allChannels = [];
 
 async function loadChannels() {
   try {
-    const res = await fetch('data/channels.json');
+    const res = await fetch('data/fuentes.json');
     allChannels = await res.json();
     generateCategoryPills(allChannels);
     renderChannels(allChannels);
@@ -94,16 +104,15 @@ async function loadChannels() {
 function generateCategoryPills(channels) {
   const container = document.getElementById('category-pills');
   if (!container) return;
-  const cats = ['Todos', ...new Set(channels.map(c => c.category))];
+  // Para fuentes, no hay categorías, solo mostrar "Todas las fuentes"
   container.innerHTML = '';
-  cats.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.className = `pill${cat === 'Todos' ? ' active' : ''}`;
-    btn.textContent = cat;
-    btn.dataset.category = cat;
-    btn.addEventListener('click', () => filterByCategory(cat, btn));
-    container.appendChild(btn);
-  });
+  const btn = document.createElement('button');
+  btn.className = 'pill active';
+  btn.style.display = 'none'; // Ocultar el botón de categorías ya que no hay categorías para fuentes
+  btn.textContent = 'Todas las fuentes';
+  btn.dataset.category = 'all';
+  btn.addEventListener('click', () => filterByCategory('all', btn));
+  container.appendChild(btn);
 }
 
 function filterByCategory(category, pill) {
@@ -111,7 +120,7 @@ function filterByCategory(category, pill) {
   pill.classList.add('active');
   const search = document.getElementById('channel-search');
   if (search) search.value = '';
-  renderChannels(category === 'Todos' ? allChannels : allChannels.filter(c => c.category === category));
+  renderChannels(allChannels);
 }
 
 function renderChannels(channels) {
@@ -127,16 +136,16 @@ function renderChannels(channels) {
 
 function createChannelCard(ch, index) {
   const card = document.createElement('a');
-  card.href = `index.php?p=canal&id=${ch.id}`;
+  card.href = `?p=canal&id=${ch.id}`;
   card.className = 'channel-card fade-in';
   card.style.animationDelay = `${index * 0.05}s`;
   card.style.opacity = '0';
   card.innerHTML = `
     <div class="channel-logo-wrapper">
-      <img src="${ch.logo}" alt="${ch.name}" class="channel-logo" onerror="this.style.opacity='0'">
+      <i class="fas fa-broadcast-tower" style="color:var(--accent); font-size:2rem;"></i>
     </div>
-    <span class="channel-name">${ch.name}</span>
-    <span class="channel-category-label">${ch.category}</span>
+    <span class="channel-name">${ch.nombre}</span>
+    <span style="display: none" class="channel-category-label">Fuente activa</span>
   `;
   return card;
 }
@@ -146,10 +155,8 @@ function initSearch() {
   if (!input) return;
   input.addEventListener('input', e => {
     const q = e.target.value.toLowerCase().trim();
-    const activeCat = document.querySelector('.pill.active')?.dataset.category ?? 'Todos';
     renderChannels(allChannels.filter(c =>
-      c.name.toLowerCase().includes(q) &&
-      (activeCat === 'Todos' || c.category === activeCat)
+      c.nombre.toLowerCase().includes(q) && c.activo === 1
     ));
   });
 }

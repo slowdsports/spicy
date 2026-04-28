@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 
     <div style="text-align:center; margin-top:1.5rem;">
-      <a href="<?= BASE_URL ?>index.php?p=home"
+      <a href="<?= BASE_URL ?>?p=home"
          style="font-size:0.8rem; color:var(--text-muted); text-decoration:none;">
         <i class="fas fa-arrow-left me-1"></i> Volver al sitio
       </a>

@@ -39,7 +39,7 @@ async function submitLogin() {
     const result = await res.json();
     if (result.success) {
       showAlert('login', '¡Bienvenido!', 'success');
-      setTimeout(() => { window.location.href = 'index.php?p=home'; }, 1000);
+      setTimeout(() => { window.location.href = '?p=home'; }, 1000);
     } else {
       showAlert('login', result.message || 'Credenciales incorrectas.', 'error');
       btn.textContent = 'Iniciar sesión'; btn.disabled = false;
@@ -59,7 +59,7 @@ async function submitRegister() {
     const result = await res.json();
     if (result.success) {
       showAlert('register', '¡Cuenta creada!', 'success');
-      setTimeout(() => { window.location.href = 'index.php?p=home'; }, 1000);
+      setTimeout(() => { window.location.href = '?p=home'; }, 1000);
     } else {
       showAlert('register', result.message || 'Error al crear cuenta.', 'error');
       btn.textContent = 'Crear cuenta'; btn.disabled = false;

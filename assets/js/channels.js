@@ -53,7 +53,7 @@ function renderChannels(channels) {
 
 function createChannelCard(ch, index) {
   const card = document.createElement('a');
-  card.href = `index.php?p=canal&id=${ch.id}`;
+  card.href = `?p=canal&id=${ch.id}`;
   card.className = 'channel-card fade-in';
   card.style.animationDelay = `${index * 0.05}s`;
   card.style.opacity = '0';

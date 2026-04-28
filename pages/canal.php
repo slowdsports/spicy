@@ -3,6 +3,30 @@
  * StreamHub - Página de reproducción de canal (canal.php)
  */
 $channelId = (int) get('id', '0');
+$iframeUrl = '';
+$fuenteData = null;
+
+if ($channelId > 0) {
+    try {
+        $conn = getDBConnection();
+        $stmt = $conn->prepare("SELECT id, nombre, canal, tipo FROM fuentes WHERE id = ? LIMIT 1");
+        $stmt->bind_param('i', $channelId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $fuenteData = $result->fetch_assoc();
+        $stmt->close();
+        
+        if ($fuenteData) {
+            $iframeUrl = 'pages/reproductor.php?' . http_build_query([
+                'id' => $fuenteData['id'],
+                'canal' => $fuenteData['canal'],
+                'tipo' => $fuenteData['tipo']
+            ]);
+        }
+    } catch (Throwable $e) {
+        // Error de BD, el iframe quedará vacío
+    }
+}
 ?>
 
 <div class="container" style="padding-top:1.5rem;">
@@ -30,9 +54,9 @@ $channelId = (int) get('id', '0');
           <div class="player-placeholder-icon"><i class="fas fa-play-circle"></i></div>
           <p style="font-size:0.85rem; color:var(--text-muted);">Cargando stream...</p>
         </div>
-        <iframe id="player-iframe" src="" allowfullscreen
+        <iframe id="player-iframe" src="<?= htmlspecialchars($iframeUrl) ?>" allowfullscreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          style="display:none;"></iframe>
+          style="display:<?= !empty($iframeUrl) ? 'block' : 'none' ?>;"></iframe>
       </div>
 
       <div class="channel-info-bar">
