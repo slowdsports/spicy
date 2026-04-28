@@ -35,9 +35,14 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             overflow: hidden;
         }
-        #player-container {
+        #wrapper {
+            position: relative;
             width: 100%;
             height: 100vh;
+        }
+        #player-container {
+            width: 100%;
+            height: 100%;
             background: #000;
         }
         iframe {
@@ -46,11 +51,43 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
             height: 100%;
             display: block;
         }
+        #status {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 32px;
+            text-align: center;
+        }
+        .spinner {
+            width: 46px;
+            height: 46px;
+            border: 4px solid rgba(255,255,255,0.12);
+            border-top-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .s-title {
+            font-size: 1.15em;
+            font-weight: 600;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
-    <div id="player-container">
-        <!-- El iframe se inserta aquí mediante JavaScript -->
+    <div id="wrapper">
+        <div id="status">
+            <div class="spinner"></div>
+            <div class="s-title">Cargando canal...</div>
+        </div>
+        <div id="player-container"></div>
     </div>
 
     <script>
@@ -98,10 +135,12 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
         // ============================================================
         // INICIALIZAR REPRODUCTOR IFRAME
         // ============================================================
+        var statusEl = document.getElementById('status');
+        function showPlayer() { statusEl.style.display = 'none'; }
+
         function initializePlayer() {
             const container = document.getElementById('player-container');
-            
-            // Crear iframe
+
             const iframe = document.createElement('iframe');
             iframe.src = PLAYER_CONFIG.url;
             iframe.allowFullscreen = true;
@@ -109,8 +148,8 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
             iframe.sandbox.add('allow-same-origin');
             iframe.sandbox.add('allow-scripts');
             iframe.sandbox.add('allow-presentation');
-            
-            // Limpiar y agregar iframe
+            iframe.onload = showPlayer;
+
             container.innerHTML = '';
             container.appendChild(iframe);
         }

@@ -44,15 +44,45 @@ $jsTIPO = (int) $fuenteData['tipo'];
             overflow: hidden;
         }
 
-        .container {
-            width: 100% !important;
-            height: 100vh !important;
+        #wrapper {
+            position: relative;
+            width: 100%;
+            height: 100vh;
         }
 
         #player {
-            width: 100% !important;
-            height: 100% !important;
+            width: 100%;
+            height: 100%;
             background: #000;
+        }
+
+        #status {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 32px;
+            text-align: center;
+        }
+        .spinner {
+            width: 46px;
+            height: 46px;
+            border: 4px solid rgba(255,255,255,0.12);
+            border-top-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .s-title {
+            font-size: 1.15em;
+            font-weight: 600;
+            color: #fff;
         }
 
         /* Watermark personalizado */
@@ -84,7 +114,11 @@ $jsTIPO = (int) $fuenteData['tipo'];
 </head>
 
 <body>
-    <div class="container">
+    <div id="wrapper">
+        <div id="status">
+            <div class="spinner"></div>
+            <div class="s-title">Cargando canal...</div>
+        </div>
         <div id="player"></div>
     </div>
 
@@ -166,8 +200,11 @@ $jsTIPO = (int) $fuenteData['tipo'];
                 }
             };
 
+            var statusEl = document.getElementById('status');
+            function showPlayer() { statusEl.style.display = 'none'; }
+
             var player = new bitmovin.player.Player(container, config);
-            player.load(source).catch(function (err) {
+            player.load(source).then(showPlayer).catch(function (err) {
                 console.error('Bitmovin error:', err);
             });
         });

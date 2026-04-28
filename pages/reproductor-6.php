@@ -46,13 +46,15 @@ $youtubeId = extractYouTubeId($url);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             overflow: hidden;
         }
-        #player-container {
+        #wrapper {
+            position: relative;
             width: 100%;
             height: 100vh;
+        }
+        #player-container {
+            width: 100%;
+            height: 100%;
             background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         iframe {
             border: none;
@@ -65,11 +67,43 @@ $youtubeId = extractYouTubeId($url);
             text-align: center;
             padding: 2rem;
         }
+        #status {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 32px;
+            text-align: center;
+        }
+        .spinner {
+            width: 46px;
+            height: 46px;
+            border: 4px solid rgba(255,255,255,0.12);
+            border-top-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .s-title {
+            font-size: 1.15em;
+            font-weight: 600;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
-    <div id="player-container">
-        <!-- El iframe de YouTube se inserta aquí -->
+    <div id="wrapper">
+        <div id="status">
+            <div class="spinner"></div>
+            <div class="s-title">Cargando canal...</div>
+        </div>
+        <div id="player-container"></div>
     </div>
 
     <!-- YouTube API CDN (opcional, para control avanzado) -->
@@ -121,6 +155,9 @@ $youtubeId = extractYouTubeId($url);
         // ============================================================
         // INICIALIZAR REPRODUCTOR YOUTUBE
         // ============================================================
+        var statusEl = document.getElementById('status');
+        function showPlayer() { statusEl.style.display = 'none'; }
+
         function initializePlayer() {
             const container = document.getElementById('player-container');
 
@@ -140,7 +177,8 @@ $youtubeId = extractYouTubeId($url);
             iframe.src = `https://www.youtube.com/embed/${PLAYER_CONFIG.youtubeId}?autoplay=1&controls=1&modestbranding=1&rel=0`;
             iframe.allowFullscreen = true;
             iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-            
+            iframe.onload = showPlayer;
+
             container.innerHTML = '';
             container.appendChild(iframe);
         }
