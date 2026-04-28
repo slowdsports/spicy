@@ -1,15 +1,9 @@
 <?php
 /**
- * StreamHub - Reproductor Tipo 4: DASH-DRM
+ * StreamHub - Reproductor Tipo 2: HLS
  * ============================================================
- * Configuración para streams DASH con protección Widevine DRM
- * Reproductores soportados: Bitmovin Player (recomendado), JW Player
- * 
- * Características:
- * - DASH con Widevine Digital Rights Management
- * - Protección contra descarga y piratería
- * - Requiere claves CK (ck_key, ck_keyid)
- * - Compatible con navegadores modernos
+    * Configuración para streams HLS (HTTP Live Streaming)
+    * Reproductores soportados: Video.js, HLS.js, Shaka Player
  */
 
 if (!isset($fuenteData)) {
@@ -18,8 +12,7 @@ if (!isset($fuenteData)) {
 
 $url = htmlspecialchars($fuenteData['url']);
 $nombre = htmlspecialchars($fuenteData['nombre']);
-$ckKey = htmlspecialchars($fuenteData['ck_key'] ?? '');
-$ckKeyId = htmlspecialchars($fuenteData['ck_keyid'] ?? '');
+$key = $fuenteData['ck_key'];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -27,33 +20,42 @@ $ckKeyId = htmlspecialchars($fuenteData['ck_keyid'] ?? '');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $nombre ?> - StreamHub</title>
+    <link rel="stylesheet" href="../assets/css/clappr.css">
     <style>
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
         }
         body {
             background: #000;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             overflow: hidden;
         }
-        #player-container {
-            width: 100%;
-            height: 100vh;
+        .container {
+        width: 100% !important;
+        height: 100vh !important;
+        }
+        #player {
+            height: 100% !important;
+            width: 100% !important;
+            border: none;
             background: #000;
         }
     </style>
 </head>
 <body>
-    <div id="player-container"></div>
-
-    <!-- Bitmovin Player CDN (mejor para DRM) -->
-    <script src="https://cdn.bitmovin.com/player/web/8/bitmovinplayer-8.79.0.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.bitmovin.com/player/web/8/bitmovinplayer-8.79.0.min.css">
+    <div class="container">
+        <div id="player"></div>
+    </div>
     
-    <!-- JW Player CDN (alternativa) -->
-    <script src="//ssl.p.jwpcdn.com/player/v/8.24.0/jwplayer.js"></script>
+    <!-- Clappr CDN -->
+    <script src="//cdn.jsdelivr.net/npm/clappr@latest/dist/clappr.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/level-selector@latest/dist/level-selector.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/clappr-pip@latest/dist/clappr-pip.min.js"></script>
+    <script src="//cdn.jsdelivr.net/gh/clappr/dash-shaka-playback@latest/dist/dash-shaka-playback.min.js"></script>
+    <script src='//cdn.jsdelivr.net/npm/clappr-chromecast-plugin@latest/dist/clappr-chromecast-plugin.min.js'></script>
+    <script src='//cdn.jsdelivr.net/npm/clappr-pip@latest/dist/clappr-pip.min.js'></script>
+    <script src="//ewwink.github.io/clappr-youtube-plugin/clappr-youtube-plugin.js"></script>
 
     <script>
         // ============================================================
@@ -88,119 +90,59 @@ $ckKeyId = htmlspecialchars($fuenteData['ck_keyid'] ?? '');
         })();
 
         // ============================================================
-        // CONFIGURACIÓN DE REPRODUCCIÓN DASH-DRM
+        // CONFIGURACIÓN DE REPRODUCCIÓN M3U8
         // ============================================================
         const PLAYER_CONFIG = {
             id: <?= (int)$fuenteData['id'] ?>,
             nombre: '<?= $nombre ?>',
             url: '<?= $url ?>',
-            tipo: 4,
-            ckKey: '<?= $ckKey ?>',
-            ckKeyId: '<?= $ckKeyId ?>'
+            tipo: 1,
+            // OPCIONES PARA AGREGAR REPRODUCTORES:
+            // - useJWPlayer: true  -> Usa JW Player
+            // - useClappr: true    -> Usa Clappr
+            // - useHLS.js: true    -> Usa HLS.js (para navegadores sin soporte nativo)
         };
 
-        // ============================================================
-        // INICIALIZAR REPRODUCTOR Bitmovin (recomendado para DRM)
-        // ============================================================
-        function initializePlayer() {
-            initBitmovinPlayer(PLAYER_CONFIG);
-        }
-
         /**
-         * REPRODUCTOR 1: Bitmovin Player (RECOMENDADO PARA DRM)
-         * Excelente soporte para Widevine, PlayReady, FairPlay
-         * Configuración: https://developer.bitmovin.com/playback/web/setup
+         * REPRODUCTOR 2: Clappr
+         * Reproductor de código abierto basado en Flash/HTML5
+         * Configuración: https://github.com/clappr/clappr/blob/master/docs/README.md
          */
-        function initBitmovinPlayer(config) {
-            // Configurar versión del reproductor
-            bitmovin.player.VERSION_PATH = 'https://cdn.bitmovin.com/player/web/8';
-
-            // Configuración de reproducción
-            const playerConfig = {
-                key: 'YOUR_BITMOVIN_PLAYER_KEY',  // REEMPLAZAR CON CLAVE REAL
-                playback: {
-                    autoplay: true,
-                    muted: false,
-                },
-                
-                // Configuración de adaptabilidad
-                adaptation: {
-                    type: 'bola',  // o 'throughput', 'manual'
-                    desktop: {
-                        minBitrate: 500000,    // 500 kbps mínimo
-                        maxBitrate: 8000000,   // 8 mbps máximo
-                        startBitrate: 2000000  // 2 mbps inicial
-                    }
-                }
-            };
-
-            // Crear reproductor
-            const player = bitmovin.player.Player.new({
-                target: document.getElementById('player-container'),
-                key: playerConfig.key,
-                playback: playerConfig.playback,
-                adaptation: playerConfig.adaptation
-            });
-
-            // Cargar stream con configuración DRM
-            player.load({
-                dash: {
-                    url: config.url
-                },
-                
-                // CONFIGURACIÓN WIDEVINE DRM
-                drm: {
-                    widevine: {
-                        licenseUrl: config.ckKey,
-                        // AGREGAR OPCIONES AQUÍ:
-                        // customData: {...},
-                        // licenseRequestHeaders: {...},
-                        // jsonp: false,
-                    }
-                }
-            }).then(() => {
-                console.log('Stream cargado con protección DRM');
-            }).catch((error) => {
-                console.error('Error al cargar stream:', error);
-            });
-
-            // AGREGAR LISTENERS AQUÍ:
-            // player.on(bitmovin.player.Player.EventType.Error, handleError);
-            // player.on(bitmovin.player.Player.EventType.Ready, handleReady);
-        }
-
-        /**
-         * REPRODUCTOR 2: JW Player (con soporte DRM)
-         * Alternativa si se tiene licencia de JW Player Premium
-         */
-        function initJWPlayer(config) {
-            const playerContainer = document.getElementById('player-container');
-            
-            jwplayer(playerContainer).setup({
-                file: config.url,
-                type: 'dash',
-                
-                autostart: true,
-                controls: true,
+        function initClappr(config) {
+            window.player = new Clappr.Player({
+                source: config.url,
+                parentId: '#player',
                 width: '100%',
                 height: '100%',
+                autoplay: true,
+                mute: false,
+                shakaConfiguration: {
+                    preferredAudioLanguage: "es-MX",
+                    drm: {
+                        clearKeys: {<?= $key ?>},
+                    },
+                },
                 
-                // Configuración DRM para JW Player
-                drm: {
-                    widevine: {
-                        licenseUrl: config.ckKey,
-                        // customHeaders: {...},
-                    }
+                // Plugins disponibles
+                plugins: [LevelSelector, ClapprPip.PipButton, ClapprPip.PipPlugin, DashShakaPlayback, ChromecastPlugin, ClapprPip.PipButton, ClapprPip.PipPlugin],
+                events: {
+                    onReady: function () {
+                        var plugin = this.getPlugin("click_to_pause");
+                        plugin && plugin.disable();
+                    },
                 },
                 
                 // AGREGAR OPCIONES AQUÍ:
-                // drmHeaders: {...},
-                // licenseRequestHeaders: {...},
+                // watermark: 'url',
+                // watermarkLink: 'url',
+                // hideMediaControlDelay: 3000,
             });
         }
 
         // Inicializar cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', initializePlayer);
+        document.addEventListener('DOMContentLoaded', function() {
+            initClappr(PLAYER_CONFIG);
+        });
     </script>
 </body>
 </html>
