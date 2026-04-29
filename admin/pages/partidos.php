@@ -175,7 +175,7 @@ try {
     
         'league'     => $p['liga'] ?? '',
         'leagueName' => $p['nombre_liga'] ?? '',
-        'leagueLogo' => BASE_URL . '/assets/img/ligas/sf/' . ($p['liga'] ?? '') . '.png',
+        'leagueLogo' => BASE_URL . 'assets/img/ligas/sf/' . ($p['liga'] ?? '') . '.png',
     
         'status'     => $status,
         'time'       => $timeTxt,
