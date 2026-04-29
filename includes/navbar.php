@@ -25,7 +25,7 @@ $uName    = userName();
       <div class="logo-icon">
         <i class="fas fa-play" style="color:white; font-size:12px; margin-left:2px;"></i>
       </div>
-      Stream<span class="logo-dot">Hub</span>
+      Tele<span class="logo-dot">Gratuita</span>
     </a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">

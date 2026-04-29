@@ -20,14 +20,14 @@ require_once 'includes/db.php';
 
 // Construir título dinámico
 $titles = [
-    'home'    => 'StreamHub - TV en Vivo & Deportes',
-    'tv'      => 'Canales - StreamHub',
-    'eventos' => 'Eventos - StreamHub',
-    'login'   => 'Iniciar Sesión - StreamHub',
-    'canal'   => 'Canal - StreamHub',
-    'liga'    => 'Liga - StreamHub',
+    'home'    => 'Tele Gratuita - TV en Vivo & Deportes',
+    'tv'      => 'Canales - Tele Gratuita',
+    'eventos' => 'Eventos - Tele Gratuita',
+    'login'   => 'Iniciar Sesión - Tele Gratuita',
+    'canal'   => 'Canal - Tele Gratuita',
+    'liga'    => 'Liga - Tele Gratuita',
 ];
-$pageTitle = $titles[$page] ?? 'StreamHub';
+$pageTitle = $titles[$page] ?? 'Tele Gratuita';
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">

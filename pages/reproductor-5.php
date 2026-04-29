@@ -23,7 +23,7 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $nombre ?> - StreamHub</title>
+    <title><?= $nombre ?> - Tele Gratuita</title>
     <style>
         * {
             margin: 0;

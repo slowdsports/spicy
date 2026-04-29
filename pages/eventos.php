@@ -110,10 +110,10 @@ usort($ligasMap, function ($a, $b) {
 
 <p style="color:var(--text-muted); font-size:.88rem; margin:0;">
 <?= count($ligasMap) ?>
-<?= count($ligasMap) === 1 ? 'liga disponible' : 'ligas disponibles' ?>
+<?= count($ligasMap) === 1 ? ' liga disponible' : ' ligas disponibles' ?>
 ·
 <?= count($partidos) ?>
-<?= count($partidos) === 1 ? 'partido' : 'partidos' ?>
+<?= count($partidos) === 1 ? ' partido' : ' partidos' ?>
 </p>
 </div>
 

@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Login · StreamHub</title>
+  <title>Admin Login · Tele Gratuita</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Logo + badge admin -->
     <div style="text-align:center; margin-bottom:1.5rem;">
-      <div class="auth-logo">Stream<span style="color:var(--accent);">Hub</span></div>
+      <div class="auth-logo">Tele<span style="color:var(--accent);">Gratuita</span></div>
       <span style="font-size:0.72rem; font-weight:700; background:var(--accent-soft); color:var(--accent); border:1px solid var(--border-accent); padding:3px 10px; border-radius:100px; font-family:'Space Mono',monospace;">
         <i class="fas fa-shield-alt me-1"></i> Panel de Administración
       </span>
@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="POST" action="">
       <div class="form-group">
         <label class="form-label"><i class="fas fa-envelope me-1"></i> Correo electrónico</label>
-        <input type="email" name="email" class="form-control-sh" placeholder="admin@streamhub.com"
+        <input type="email" name="email" class="form-control-sh" placeholder="admin@telegratuita.com"
                value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required autocomplete="email">
       </div>
       <div class="form-group">

@@ -48,7 +48,7 @@
           <strong>Usuario de prueba:</strong>
         </p>
         <p style="font-size:0.75rem; color:var(--text-muted); margin:0; font-family:'Space Mono',monospace;">
-          admin@streamhub.com<br>admin123
+          admin@telegratuita.com<br>admin123
         </p>
       </div>
     </div>

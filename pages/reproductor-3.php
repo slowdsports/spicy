@@ -27,7 +27,7 @@ $jsTIPO = (int) $fuenteData['tipo'];
     <meta http-equiv="pragma" content="no-cache">
     <meta name="robots" content="noindex">
     <meta name="referrer" content="none">
-    <title><?= $nombre ?> - StreamHub</title>
+    <title><?= $nombre ?> - Tele Gratuita</title>
 
     <!-- Bitmovin Player -->
     <script src="//cdn.bitmovin.com/player/web/8/bitmovinplayer.js"></script>

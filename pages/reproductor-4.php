@@ -19,7 +19,7 @@ $key = $fuenteData['ck_key'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $nombre ?> - StreamHub</title>
+    <title><?= $nombre ?> - Tele Gratuita</title>
     <link rel="stylesheet" href="../assets/css/clappr.css">
     <style>
         * {
