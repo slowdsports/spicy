@@ -349,6 +349,10 @@ body {
   border: 1px solid var(--border-accent);
 }
 
+.team-box {
+  color: var(--text-primary);
+}
+
 /* Animación de pulso para el badge LIVE */
 @keyframes pulse-badge {
   0%, 100% { opacity: 1; }
