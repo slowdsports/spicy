@@ -206,6 +206,25 @@ try {
     }
 
     /* =====================================================
+       ORDENAR: próximos primero, luego pasados
+    ===================================================== */
+    usort($jsonMatches, function ($a, $b) use ($now) {
+        $ta   = strtotime($a['fecha_hora']);
+        $tb   = strtotime($b['fecha_hora']);
+        $aUp  = $ta >= $now;
+        $bUp  = $tb >= $now;
+
+        // Un futuro siempre antes que un pasado
+        if ($aUp !== $bUp) return $aUp ? -1 : 1;
+
+        // Ambos futuros: el más próximo primero
+        if ($aUp) return $ta - $tb;
+
+        // Ambos pasados/en vivo: el más reciente primero
+        return $tb - $ta;
+    });
+
+    /* =====================================================
        GUARDAR JSON
     ===================================================== */
     $dir = __DIR__ . '/../../data';
