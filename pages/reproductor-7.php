@@ -336,5 +336,6 @@ $jsNombre  = json_encode($nombre);
             });
         })();
     </script>
+<?php include __DIR__ . '/../includes/ads.php'; ?>
 </body>
 </html>

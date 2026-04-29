@@ -209,6 +209,6 @@ $jsTIPO = (int) $fuenteData['tipo'];
             });
         });
     </script>
+<?php include __DIR__ . '/../includes/ads.php'; ?>
 </body>
-
 </html>

@@ -173,5 +173,6 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
             initClappr(PLAYER_CONFIG);
         });
     </script>
+<?php include __DIR__ . '/../includes/ads.php'; ?>
 </body>
 </html>

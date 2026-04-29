@@ -222,5 +222,6 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
         // Inicializar cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', initializePlayer);
     </script>
+<?php include __DIR__ . '/../includes/ads.php'; ?>
 </body>
 </html>

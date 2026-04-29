@@ -180,5 +180,6 @@ $key = $fuenteData['ck_key'];
             initClappr(PLAYER_CONFIG);
         });
     </script>
+<?php include __DIR__ . '/../includes/ads.php'; ?>
 </body>
 </html>
