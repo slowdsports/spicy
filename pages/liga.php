@@ -33,20 +33,41 @@ $partidos = array_values(array_filter($allPartidos, function($p) use ($ligaId){
 /* ==========================================================
    ORDENAR
    1. live primero
-   2. luego upcoming por hora
+   2. upcoming (futuros) por proximidad a ahora — más próximo primero
+   3. pasados/finalizados al final
 ========================================================== */
 usort($partidos, function($a, $b){
+    $now = time();
 
-    $peso = function($item){
-        return ($item['status'] ?? '') === 'live' ? 0 : 1;
+    $getTs = function($item) {
+        $raw = $item['fecha_hora'] ?? '';
+        if ($raw !== '') {
+            $ts = strtotime($raw);
+            if ($ts !== false) return $ts;
+        }
+        // fallback: parse solo la hora si fecha_hora no existe
+        $t = $item['time'] ?? '';
+        if (preg_match('/^(\d{1,2}):(\d{2})$/', $t, $m)) {
+            return mktime((int)$m[1], (int)$m[2], 0);
+        }
+        return PHP_INT_MAX;
     };
 
-    $pa = $peso($a);
-    $pb = $peso($b);
+    $getPeso = function($item) use ($now, $getTs) {
+        if (($item['status'] ?? '') === 'live') return 0;
+        return $getTs($item) >= $now ? 1 : 2;
+    };
+
+    $pa = $getPeso($a);
+    $pb = $getPeso($b);
 
     if ($pa !== $pb) return $pa <=> $pb;
 
-    return strcmp($a['time'] ?? '', $b['time'] ?? '');
+    $ta = $getTs($a);
+    $tb = $getTs($b);
+
+    // upcoming: más próximo primero (ASC); pasados: más reciente primero (DESC)
+    return $pa === 2 ? $tb <=> $ta : $ta <=> $tb;
 });
 
 /* ==========================================================
