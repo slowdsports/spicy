@@ -11,7 +11,7 @@ define('DB_PASS', '');
 define('DB_NAME', 'streamhub');
 
 // ---- URL base (ajustar según carpeta del proyecto) ----
-define('BASE_URL', '/spicy/');
+define('BASE_URL', '/');
 
 // Iniciar sesión PHP si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
