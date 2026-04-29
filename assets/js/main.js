@@ -155,10 +155,15 @@ let allChannels = [];
 
 async function loadChannels() {
   try {
-    const res = await fetch('data/fuentes.json');
-    allChannels = await res.json();
+    const res  = await fetch('data/fuentes.json');
+    const data = await res.json();
+    allChannels = data.filter(ch => ch.activo === 1);
+
+    const page   = new URLSearchParams(window.location.search).get('p') || 'home';
+    const toShow = page === 'home' ? allChannels.slice(0, 12) : allChannels;
+
     generateCategoryPills(allChannels);
-    renderChannels(allChannels);
+    renderChannels(toShow);
     initSearch();
   } catch (e) {
     console.error('Error cargando canales:', e);
@@ -220,7 +225,7 @@ function initSearch() {
   input.addEventListener('input', e => {
     const q = e.target.value.toLowerCase().trim();
     renderChannels(allChannels.filter(c =>
-      c.nombre.toLowerCase().includes(q) && c.activo === 1
+      c.nombre.toLowerCase().includes(q)
     ));
   });
 }
