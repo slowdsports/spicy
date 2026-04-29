@@ -187,7 +187,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 </span>
 <?php else: ?>
 <span class="badge-time">
-<i class="fas fa-clock"></i> <?= htmlspecialchars($time) ?>
+<i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($p['fecha_hora'] ?? $time) ?>"><?= htmlspecialchars($time) ?></span>
 </span>
 <?php endif; ?>
 

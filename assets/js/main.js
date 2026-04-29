@@ -12,8 +12,25 @@ async function loadMatches() {
     const matches = await res.json();
     const slider = document.getElementById('matches-slider');
     if (!slider) return;
+
+    const now = Date.now();
+    const in24h = now + 86400000;    // 24 horas hacia adelante
+    const minus3h = now - 10800000;  // 3 horas atrás (partidos que pueden seguir en curso)
+
+    const filtered = matches.filter(m => {
+      if (m.status === 'live') return true;
+      if (!m.fecha_hora) return false;
+      const t = new Date(m.fecha_hora.replace(' ', 'T')).getTime();
+      return !isNaN(t) && t >= minus3h && t <= in24h;
+    });
+
     slider.innerHTML = '';
-    matches.forEach(m => slider.appendChild(createMatchCard(m)));
+    if (filtered.length === 0) {
+      slider.innerHTML = '<p style="color:var(--text-muted); padding:1rem 0.5rem; font-size:0.9rem;">No hay partidos disponibles en las próximas 24 horas.</p>';
+      return;
+    }
+    filtered.forEach(m => slider.appendChild(createMatchCard(m)));
+    initCountdowns();
   } catch (e) {
     console.error('Error cargando partidos:', e);
   }
@@ -29,6 +46,48 @@ function getTeamLogoPath(logo) {
   return `assets/img/equipos/sf/${encodeURIComponent(value)}.png`;
 }
 
+function updateCountdown(el) {
+  const timeStr = el.dataset.time;
+  if (!timeStr) return;
+  // "2026-05-04 08:00:00" → ISO local para que JS lo parsee correctamente
+  const target = new Date(timeStr.replace(' ', 'T'));
+  if (isNaN(target)) return;
+  const distance = target - Date.now();
+  const badge = el.closest('.match-status-badge');
+  if (distance < 0) {
+    if (distance > -10800000) {
+      el.textContent = '● EN VIVO';
+      if (badge) { badge.classList.remove('badge-upcoming'); badge.classList.add('badge-live'); }
+    } else {
+      el.textContent = 'Finalizó';
+    }
+    return;
+  }
+  if (badge) { badge.classList.remove('badge-live'); badge.classList.add('badge-upcoming'); }
+  const d = Math.floor(distance / 86400000);
+  const h = Math.floor((distance % 86400000) / 3600000);
+  const m = Math.floor((distance % 3600000) / 60000);
+  const s = Math.floor((distance % 60000) / 1000);
+  if (d === 1)            el.textContent = 'Mañana';
+  else if (d > 1 && d < 7)    el.textContent = `${d}d ${h}h`;
+  else if (d >= 7  && d < 14) el.textContent = 'Próx. Semana';
+  else if (d >= 14 && d < 21) el.textContent = '2 Semanas';
+  else if (d >= 21 && d < 28) el.textContent = '3 Semanas';
+  else if (d >= 28 && d < 60) el.textContent = 'Próx. Mes';
+  else if (d >= 60 && d < 90) el.textContent = '2 Meses';
+  else if (d >= 90 && d < 120) el.textContent = '3 Meses';
+  else if (d === 0 && h > 0)  el.textContent = `${h}h ${m}m ${s}s`;
+  else if (h === 0 && m > 0)  el.textContent = `${m}m ${s}s`;
+  else                         el.textContent = `${s}s`;
+}
+
+function initCountdowns() {
+  document.querySelectorAll('.match-countdown').forEach(el => {
+    updateCountdown(el);
+    setInterval(() => updateCountdown(el), 1000);
+  });
+}
+
 function createMatchCard(match) {
   // Tarjeta cliqueable: lleva a la página de la liga
   const card = document.createElement('a');
@@ -39,7 +98,12 @@ function createMatchCard(match) {
   card.className = 'match-card fade-in';
   const isLive = match.status === 'live';
   const badgeClass = isLive ? 'badge-live' : 'badge-upcoming';
-  const badgeText  = isLive ? '● EN VIVO' : match.time;
+  const hasDatetime = !isLive && match.fecha_hora;
+  const badgeText = isLive
+    ? '● EN VIVO'
+    : hasDatetime
+      ? `<span class="match-countdown" data-time="${match.fecha_hora}">${match.time}</span>`
+      : (match.time || '--:--');
   const leagueName = match.leagueName || match.league || '';
   const homeLogo = getTeamLogoPath(match.homeTeam?.logo);
   const awayLogo = getTeamLogoPath(match.awayTeam?.logo);
