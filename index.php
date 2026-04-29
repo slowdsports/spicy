@@ -20,14 +20,14 @@ require_once 'includes/db.php';
 
 // Construir título dinámico
 $titles = [
-    'home'    => 'Tele Gratuita - TV en Vivo & Deportes',
-    'tv'      => 'Canales - Tele Gratuita',
-    'eventos' => 'Eventos - Tele Gratuita',
-    'login'   => 'Iniciar Sesión - Tele Gratuita',
-    'canal'   => 'Canal - Tele Gratuita',
-    'liga'    => 'Liga - Tele Gratuita',
+    'home'    => 'Tele Deportes - TV en Vivo & Deportes',
+    'tv'      => 'Canales - Tele Deportes',
+    'eventos' => 'Eventos - Tele Deportes',
+    'login'   => 'Iniciar Sesión - Tele Deportes',
+    'canal'   => 'Canal - Tele Deportes',
+    'liga'    => 'Liga - Tele Deportes',
 ];
-$pageTitle = $titles[$page] ?? 'Tele Gratuita';
+$pageTitle = $titles[$page] ?? 'Tele Deportes';
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">

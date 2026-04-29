@@ -22,7 +22,7 @@ async function loadChannelPage() {
 }
 
 function renderPlayerPage(source) {
-  document.title = `${source.nombre} - Tele Gratuita`;
+  document.title = `${source.nombre} - Tele Deportes`;
   const nameEl = document.getElementById('player-channel-name');
   if (nameEl) nameEl.textContent = source.nombre;
 
@@ -100,7 +100,7 @@ function showToast(message) {
 
 // Chat demo
 const demoMessages = [
-  { user: 'Alex - Admin', text: '¡Bienvenido a Tele Gratuita! Este chat se encuentra en desarrollo.', color: '#ef4444' },
+  { user: 'Alex - Admin', text: '¡Bienvenido a Tele Deportes! Este chat se encuentra en desarrollo.', color: '#ef4444' },
 ];
 let msgIdx = 0;
 

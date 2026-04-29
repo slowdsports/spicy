@@ -34,7 +34,7 @@ $youtubeId = extractYouTubeId($url);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $nombre ?> - Tele Gratuita</title>
+    <title><?= $nombre ?> - Tele Deportes</title>
     <style>
         * {
             margin: 0;
