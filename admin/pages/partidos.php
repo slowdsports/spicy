@@ -308,10 +308,15 @@ try {
 
         <div class="d-flex gap-2">
 
-            <input type="number"
-                id="sofa-partidos-id"
-                class="form-control"
-                placeholder="ID Liga">
+            <select id="sofa-partidos-id" class="form-select">
+                <option value="">-- Selecciona liga --</option>
+                <?php foreach ($ligas as $lig): ?>
+                <option value="<?= $lig['id'] ?>">
+                    <?= htmlspecialchars($lig['ligaNombre']) ?>
+                    (<?= htmlspecialchars($lig['tipo']) ?>)
+                </option>
+                <?php endforeach; ?>
+            </select>
 
             <button class="btn-sofa"
                 id="btn-importar-partidos"
@@ -473,14 +478,24 @@ function aplicarFiltros() {
 }
 
 function mostrarImportarPartidos() {
-    document.getElementById('panel-sofa-partidos').style.display = 'block';
+    const panel = document.getElementById('panel-sofa-partidos');
+    panel.style.display = 'block';
+
+    // Pre-seleccionar la liga activa en el filtro
+    const ligaActiva = document.getElementById('filtro-liga').value;
+    if (ligaActiva && ligaActiva !== '0') {
+        document.getElementById('sofa-partidos-id').value = ligaActiva;
+    }
 }
 
 function importarPartidos() {
 
-    const ligaId = document.getElementById('sofa-partidos-id').value.trim();
+    const ligaId = document.getElementById('sofa-partidos-id').value;
 
-    if (!ligaId) return;
+    if (!ligaId) {
+        alert('Selecciona una liga primero.');
+        return;
+    }
 
     const btn = document.getElementById('btn-importar-partidos');
     btn.disabled = true;
