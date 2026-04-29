@@ -2,6 +2,7 @@
 deployment:
   tasks:
     #- export DEPLOYPATH=/home/u5609877/futbolhonduras24.com/web/gh/
-    - export DEPLOYPATH=/home/u6514444/web/spicy
+    #- export DEPLOYPATH=/home/u6514444/web/spicy
+    - export DEPLOYPATH=/home/u5869826/teledeportes.org
     - /bin/cp -R * $DEPLOYPATH
     #- /usr/bin/rsync -av --exclude='.git' . $DEPLOYPATH
