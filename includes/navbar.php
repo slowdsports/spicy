@@ -41,7 +41,13 @@ $uName    = userName();
           </a>
         </li>
 
-        <li class="nav-item dropdown">
+        <li class="nav-item">
+          <a href="<?= url('eventos') ?>" class="nav-link <?= $currentPage === 'eventos' ? 'active' : '' ?>">
+            <i class="fas fa-trophy me-1"></i> Eventos
+          </a>
+        </li>
+
+        <li style="display: none;" class="nav-item dropdown">
           <a class="nav-link dropdown-toggle <?= $currentPage === 'eventos' ? 'active' : '' ?>"
              href="#" role="button" data-bs-toggle="dropdown">
             <i class="fas fa-trophy me-1"></i> Deportes
