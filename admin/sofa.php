@@ -143,6 +143,12 @@ function asignarCanalesDefecto(int $ligaId, string $sport): array
 $conn = getDBConnection();
 $conn->set_charset("utf8mb4");
 
+// IDs de fuentes que realmente existen (para evitar FK violations al insertar)
+$fuentesValidas = array_flip(array_column(
+    $conn->query("SELECT id FROM fuentes")->fetch_all(MYSQLI_ASSOC),
+    'id'
+));
+
 $agregados = 0;
 $ligaNombreGlobal = '';
 
@@ -305,6 +311,12 @@ foreach ($eventsData['events'] as $event) {
         $fecha = date('Y-m-d H:i:s', $event['startTimestamp']);
 
         $canales = asignarCanalesDefecto($ligaId, $sport);
+
+        // Nullificar cualquier canal cuyo ID no exista en fuentes
+        foreach ($canales as &$v) {
+            if ($v !== null && !isset($fuentesValidas[$v])) $v = null;
+        }
+        unset($v);
 
         $stmt = $conn->prepare("
             INSERT INTO partidos (
