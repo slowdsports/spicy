@@ -42,7 +42,7 @@
       <button class="btn-auth-submit" id="btn-login-submit" onclick="submitLogin()">
         <i class="fas fa-sign-in-alt me-2"></i> Iniciar sesión
       </button>
-      <div style="margin-top:1.25rem; padding:0.75rem 1rem; background:var(--accent-soft); border:1px solid var(--border-accent); border-radius:10px;">
+      <div style="display:none;margin-top:1.25rem; padding:0.75rem 1rem; background:var(--accent-soft); border:1px solid var(--border-accent); border-radius:10px;">
         <p style="font-size:0.75rem; color:var(--text-secondary); margin:0 0 0.25rem;">
           <i class="fas fa-info-circle me-1" style="color:var(--accent);"></i>
           <strong>Usuario de prueba:</strong>

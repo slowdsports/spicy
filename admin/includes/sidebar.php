@@ -22,7 +22,7 @@ $menu = [
         <i class="fas fa-play" style="color:white; font-size:10px; margin-left:1px;"></i>
       </div>
       <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:1rem; color:var(--text-primary);">
-        Stream<span style="color:var(--accent);">Hub</span>
+        Tele<span style="color:var(--accent);"> Gratuita</span>
       </span>
     </a>
     <!-- Badge Admin -->
