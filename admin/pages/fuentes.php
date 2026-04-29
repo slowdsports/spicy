@@ -4,10 +4,19 @@
  * Lista todas las fuentes con su canal asociado. CRUD con modal.
  */
 
+// Datos para selects del modal (se cargan independientemente)
 try {
-    $conn = getDBConnection();
+    $conn    = getDBConnection();
+    $canales = $conn->query("SELECT id, nombre FROM canales WHERE activo=1 ORDER BY nombre ASC")->fetch_all(MYSQLI_ASSOC);
+    $paises  = $conn->query("SELECT id, paisNombre FROM paises ORDER BY paisNombre ASC")->fetch_all(MYSQLI_ASSOC);
+    $tipos   = $conn->query("SELECT id, nombre FROM tipos_fuente ORDER BY nombre ASC")->fetch_all(MYSQLI_ASSOC);
+} catch (Exception $e) {
+    $canales = $paises = $tipos = [];
+}
 
-    // Fuentes con nombres de canal, país y tipo
+// Lista de fuentes (puede fallar si faltan columnas en la DB)
+try {
+    $conn    = getDBConnection();
     $fuentes = $conn->query("
         SELECT f.id, f.nombre, f.url, f.ck_key, f.ck_keyid, f.epg, f.activo,
                c.nombre  AS canal_nombre,  f.canal  AS canal_id,
@@ -19,11 +28,6 @@ try {
         LEFT JOIN tipos_fuente t ON f.tipo  = t.id
         ORDER BY c.nombre ASC, f.nombre ASC
     ")->fetch_all(MYSQLI_ASSOC);
-
-    // Datos para selects del modal
-    $canales = $conn->query("SELECT id, nombre FROM canales WHERE activo=1 ORDER BY nombre ASC")->fetch_all(MYSQLI_ASSOC);
-    $paises  = $conn->query("SELECT id, paisNombre FROM paises ORDER BY paisNombre ASC")->fetch_all(MYSQLI_ASSOC);
-    $tipos   = $conn->query("SELECT id, nombre FROM tipos_fuente ORDER BY nombre ASC")->fetch_all(MYSQLI_ASSOC);
 
     /* =====================================================
        GENERAR JSON DE FUENTES
@@ -59,7 +63,7 @@ try {
     );
 
 } catch (Exception $e) {
-    $fuentes = $canales = $paises = $tipos = [];
+    $fuentes = [];
 }
 ?>
 
@@ -185,7 +189,7 @@ try {
           <!-- Tipo -->
           <div class="col-12 col-md-4">
             <label class="form-label">Tipo <span style="color:#ef4444;">*</span></label>
-            <select id="fuente-tipo" class="form-select" onchange="toggleDRM()">
+            <select id="fuente-tipo" class="form-select">
               <option value="">-- Seleccionar --</option>
               <?php foreach ($tipos as $t): ?>
                 <option value="<?= $t['id'] ?>"><?= htmlspecialchars($t['nombre']) ?></option>
@@ -210,8 +214,8 @@ try {
             <input type="text" id="fuente-epg" class="form-control" placeholder="epg.channel.id">
           </div>
 
-          <!-- Campos DRM (solo visibles si tipo = dash-drm) -->
-          <div class="col-12" id="drm-fields" style="display:none;">
+          <!-- Campos DRM -->
+          <div class="col-12" id="drm-fields">
             <div style="background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:10px; padding:1rem;">
               <p style="font-size:0.78rem; font-weight:700; color:#ef4444; margin:0 0 0.75rem;">
                 <i class="fas fa-lock me-1"></i> Configuración DRM
@@ -252,14 +256,6 @@ try {
 </div>
 
 <script>
-// Mostrar / ocultar campos DRM según el tipo seleccionado
-function toggleDRM() {
-  const select = document.getElementById('fuente-tipo');
-  const opt    = select.options[select.selectedIndex];
-  const esDRM  = opt && opt.text.toLowerCase().includes('drm');
-  document.getElementById('drm-fields').style.display = esDRM ? 'block' : 'none';
-}
-
 // Filtro búsqueda
 document.getElementById('search-fuentes').addEventListener('input', function () {
   const q = this.value.toLowerCase();

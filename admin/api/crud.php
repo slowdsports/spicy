@@ -114,10 +114,10 @@ try {
 
         if ($id) {
             $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=? WHERE id=?");
-            $stmt->bind_param('sissssiisi', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $id);
+            $stmt->bind_param('sissssissi', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $id);
         } else {
             $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, ck_key, ck_keyid, pais, tipo, epg, activo) VALUES (?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param('sissssiis', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo);
+            $stmt->bind_param('sissssiss', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo);
         }
 
         $ok = $stmt->execute();

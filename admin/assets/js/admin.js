@@ -119,9 +119,6 @@ function abrirModalFuente(data = null) {
   document.getElementById('fuente-activo').value   = data?.activo   ?? '1';
   document.getElementById('modalFuenteTitulo').textContent = data ? 'Editar fuente' : 'Nueva fuente';
 
-  // Mostrar/ocultar campos DRM
-  toggleDRM();
-
   new bootstrap.Modal(document.getElementById('modalFuente')).show();
 }
 
