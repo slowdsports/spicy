@@ -83,12 +83,10 @@ try {
         if (!$nombre || !$categoria) { resp(false, 'Nombre y categoría son obligatorios'); }
 
         if ($id) {
-            // Actualizar
-            $stmt = $conn->prepare("UPDATE canales SET nombre=?, imagen=?, categoria=?, activo=? WHERE id=?");
+            $stmt = $conn->prepare("UPDATE canales SET nombre=?, logo=?, category=?, activo=? WHERE id=?");
             $stmt->bind_param('ssiii', $nombre, $imagen, $categoria, $activo, $id);
         } else {
-            // Insertar
-            $stmt = $conn->prepare("INSERT INTO canales (nombre, imagen, categoria, activo) VALUES (?,?,?,?)");
+            $stmt = $conn->prepare("INSERT INTO canales (nombre, logo, category, activo) VALUES (?,?,?,?)");
             $stmt->bind_param('ssii', $nombre, $imagen, $categoria, $activo);
         }
 

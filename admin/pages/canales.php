@@ -18,13 +18,19 @@ try {
         SELECT
             c.id,
             c.nombre,
-            c.logo,
-            c.category,
+            c.logo     AS imagen,
+            c.category AS categoria_id,
             c.views,
             c.activo
         FROM canales c
         ORDER BY c.nombre ASC
     ")->fetch_all(MYSQLI_ASSOC);
+
+    $categorias = $conn->query("
+        SELECT id, nombre FROM categorias_canal ORDER BY nombre ASC
+    ")->fetch_all(MYSQLI_ASSOC);
+
+    $catMap = array_column($categorias, 'nombre', 'id');
 
     /* =====================================================
        GENERAR JSON
@@ -37,8 +43,8 @@ try {
         $jsonChannels[] = [
             'id'          => (int)$c['id'],
             'name'        => $c['nombre'] ?? '',
-            'category'    => $c['category'] ?? '',
-            'logo'        => $c['logo'] ?? '',
+            'category'    => $catMap[$c['categoria_id']] ?? (string)($c['categoria_id'] ?? ''),
+            'logo'        => $c['imagen'] ?? '',
             'description' => '',
             'views'       => $c['views'] ?: '0',
             'active'      => (int)$c['activo']
@@ -159,7 +165,7 @@ try {
 
 <td>
 <span style="font-size:.75rem;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:100px;">
-<?= htmlspecialchars($c['category'] ?: '—') ?>
+<?= htmlspecialchars($catMap[$c['categoria_id']] ?? ($c['categoria_id'] ?: '—')) ?>
 </span>
 </td>
 
@@ -223,14 +229,19 @@ MODAL
 
 <div class="mb-3">
 <label class="form-label">Logo URL</label>
-<input type="url" id="canal-logo" class="form-control">
-<img id="canal-logo-preview"
+<input type="url" id="canal-imagen" class="form-control">
+<img id="canal-img-preview"
      style="height:36px;margin-top:8px;display:none;border-radius:6px;background:var(--bg-secondary);padding:4px;border:1px solid var(--border);">
 </div>
 
 <div class="mb-3">
 <label class="form-label">Categoría</label>
-<input type="text" id="canal-category" class="form-control">
+<select id="canal-categoria" class="form-select">
+  <option value="">-- Selecciona --</option>
+  <?php foreach ($categorias as $cat): ?>
+  <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['nombre']) ?></option>
+  <?php endforeach; ?>
+</select>
 </div>
 
 <div class="mb-3">
@@ -268,7 +279,6 @@ document.getElementById('canal-imagen').addEventListener('input', function () {
   else { prev.style.display = 'none'; }
 });
 
-// Filtro de búsqueda en tabla
 document.getElementById('search-canales').addEventListener('input', function () {
   const q = this.value.toLowerCase();
   document.querySelectorAll('#tabla-canales tbody tr[data-nombre]').forEach(row => {
