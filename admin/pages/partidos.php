@@ -177,9 +177,10 @@ try {
         'leagueName' => $p['nombre_liga'] ?? '',
         'leagueLogo' => BASE_URL . '/assets/img/ligas/sf/' . ($p['liga'] ?? '') . '.png',
     
-        'status' => $status,
-        'time'   => $timeTxt,
-        'tipo'   => $p['tipo'] ?? '',
+        'status'     => $status,
+        'time'       => $timeTxt,
+        'fecha_hora' => $p['fecha_hora'] ?? '',
+        'tipo'       => $p['tipo'] ?? '',
     
         'homeTeam' => [
             'name'  => $p['equipo_local'] ?? '',
