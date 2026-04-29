@@ -149,14 +149,16 @@ $time   = $p['time'] ?? '--:--';
 $canalesPartido = [];
 
 for($x=1;$x<=10;$x++){
-    $key = 'cnl'.$x;
-    $keyName = 'cnl'.$x.'Name';
+    $key     = "cnl{$x}";
+    $keyName = "cnl{$x}Name";
+    $keyLogo = "cnl{$x}Logo";
     if(!empty($p[$key])){
-        $cid = trim($p[$key]);
+        $cid  = trim($p[$key]);
+        $logo = !empty($p[$keyLogo]) ? $p[$keyLogo] : canalLogo($cid);
         $canalesPartido[] = [
             'id'    => $cid,
             'nombre'=> $p[$keyName] ?? "Canal {$cid}",
-            'logo'  => canalLogo($cid)
+            'logo'  => $logo
         ];
     }
 }
