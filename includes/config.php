@@ -6,9 +6,9 @@
 
 // ---- Base de datos ----
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'streamhub');
+define('DB_USER', 'u5869826_root');
+define('DB_PASS', 'OF0wh^]#kK9C+U1W');
+define('DB_NAME', 'u5869826_streamhub');
 
 // ---- URL base (ajustar según carpeta del proyecto) ----
 define('BASE_URL', '/');
