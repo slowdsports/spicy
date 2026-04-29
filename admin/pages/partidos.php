@@ -157,29 +157,37 @@ try {
     ===================================================== */
     $jsonMatches = [];
     $now = time();
+    $tz  = new DateTimeZone('America/Tegucigalpa');
 
     foreach ($partidos as $p) {
 
-        $ts = strtotime($p['fecha_hora']);
+        $dt = !empty($p['fecha_hora'])
+            ? new DateTime($p['fecha_hora'], $tz)
+            : null;
+        $ts = $dt ? $dt->getTimestamp() : 0;
 
-        if ($ts <= $now) {
-            $status = 'live';
+        if (!$ts || $ts > $now) {
+            $status  = 'upcoming';
+            $timeTxt = $dt ? $dt->format('H:i') : '--:--';
+        } elseif ($ts > $now - 10800) {
+            $status  = 'live';
             $timeTxt = 'EN VIVO';
         } else {
-            $status = 'upcoming';
-            $timeTxt = date('H:i', $ts);
+            $status  = 'finished';
+            $timeTxt = 'Finalizó';
         }
 
         $match = [
         'id' => (int)$p['id'],
-    
+
         'league'     => $p['liga'] ?? '',
         'leagueName' => $p['nombre_liga'] ?? '',
         'leagueLogo' => BASE_URL . 'assets/img/ligas/sf/' . ($p['liga'] ?? '') . '.png',
-    
+
         'status'     => $status,
         'time'       => $timeTxt,
         'fecha_hora' => $p['fecha_hora'] ?? '',
+        'timestamp'  => $ts,
         'tipo'       => $p['tipo'] ?? '',
     
         'homeTeam' => [
@@ -209,8 +217,8 @@ try {
        ORDENAR: próximos primero, luego pasados
     ===================================================== */
     usort($jsonMatches, function ($a, $b) use ($now) {
-        $ta   = strtotime($a['fecha_hora']);
-        $tb   = strtotime($b['fecha_hora']);
+        $ta   = $a['timestamp'];
+        $tb   = $b['timestamp'];
         $aUp  = $ta >= $now;
         $bUp  = $tb >= $now;
 

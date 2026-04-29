@@ -3,11 +3,18 @@
  */
 
 function updateCountdown(el) {
-  const timeStr = el.dataset.time;
-  if (!timeStr) return;
-  const target = new Date(timeStr.replace(' ', 'T'));
-  if (isNaN(target)) return;
-  const distance = target - Date.now();
+  const ts = parseInt(el.dataset.ts, 10);
+  let distance;
+  if (ts > 0) {
+    distance = ts * 1000 - Date.now();
+  } else {
+    // fallback para entradas antiguas sin data-ts
+    const timeStr = el.dataset.time;
+    if (!timeStr) return;
+    const target = new Date(timeStr.replace(' ', 'T'));
+    if (isNaN(target)) return;
+    distance = target - Date.now();
+  }
   const badge = el.closest('.badge-time');
   if (distance < 0) {
     if (distance > -10800000) {

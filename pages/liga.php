@@ -40,22 +40,23 @@ usort($partidos, function($a, $b){
     $now = time();
 
     $getTs = function($item) {
+        if (!empty($item['timestamp'])) {
+            return (int)$item['timestamp'];
+        }
         $raw = $item['fecha_hora'] ?? '';
         if ($raw !== '') {
-            $ts = strtotime($raw);
-            if ($ts !== false) return $ts;
-        }
-        // fallback: parse solo la hora si fecha_hora no existe
-        $t = $item['time'] ?? '';
-        if (preg_match('/^(\d{1,2}):(\d{2})$/', $t, $m)) {
-            return mktime((int)$m[1], (int)$m[2], 0);
+            try {
+                $dt = new DateTime($raw, new DateTimeZone('America/Tegucigalpa'));
+                return $dt->getTimestamp();
+            } catch (Exception $e) {}
         }
         return PHP_INT_MAX;
     };
 
     $getPeso = function($item) use ($now, $getTs) {
-        if (($item['status'] ?? '') === 'live') return 0;
-        return $getTs($item) >= $now ? 1 : 2;
+        $ts = $getTs($item);
+        if ($ts <= $now && $ts > $now - 10800) return 0; // ventana en vivo (3 h)
+        return $ts >= $now ? 1 : 2;
     };
 
     $pa = $getPeso($a);
@@ -210,7 +211,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 </span>
 <?php else: ?>
 <span class="badge-time">
-<i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($p['fecha_hora'] ?? $time) ?>"><?= htmlspecialchars($time) ?></span>
+<i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($p['fecha_hora'] ?? $time) ?>" data-ts="<?= (int)($p['timestamp'] ?? 0) ?>"><?= htmlspecialchars($time) ?></span>
 </span>
 <?php endif; ?>
 
