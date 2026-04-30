@@ -280,7 +280,7 @@ No hay canales disponibles.
 
 <?php foreach($canalesPartido as $canal): ?>
 
-<a href="<?= url('canal',['id'=>$canal['id']]) ?>" class="channel-row">
+<a href="<?= url('canal',['id'=>$canal['id'],'partido'=>$p['id']]) ?>" class="channel-row">
 
 <img src="<?= $canal['logo'] ?>" class="channel-row-logo">
 

@@ -35,6 +35,38 @@ if ($channelId > 0) {
     }
 }
 $jsCanal = json_encode($fuenteData['canal'] ?? '');
+
+// Partido context
+$partidoId      = (int) get('partido', '0');
+$partidoData    = null;
+$canalesPartido = [];
+
+if ($partidoId > 0) {
+    $jsonPath = __DIR__ . '/../data/matches.json';
+    if (file_exists($jsonPath)) {
+        $allMatches = json_decode(file_get_contents($jsonPath), true) ?? [];
+        foreach ($allMatches as $m) {
+            if ((int)($m['id'] ?? 0) === $partidoId) {
+                $partidoData = $m;
+                break;
+            }
+        }
+    }
+    if ($partidoData) {
+        for ($x = 1; $x <= 10; $x++) {
+            $cid = trim((string)($partidoData["cnl{$x}"] ?? ''));
+            if ($cid === '') continue;
+            $logo = !empty($partidoData["cnl{$x}Logo"])
+                ? $partidoData["cnl{$x}Logo"]
+                : BASE_URL . "assets/img/canales/{$cid}.png";
+            $canalesPartido[] = [
+                'id'     => (int)$cid,
+                'nombre' => $partidoData["cnl{$x}Name"] ?? "Canal {$cid}",
+                'logo'   => $logo,
+            ];
+        }
+    }
+}
 ?>
 
 <style>
@@ -70,6 +102,113 @@ $jsCanal = json_encode($fuenteData['canal'] ?? '');
   border-color: var(--accent);
   color: #fff;
 }
+
+/* Partido match card header */
+.partido-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: .75rem;
+}
+.partido-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
+  flex-shrink: 0;
+}
+.partido-league-img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.partido-teams {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .8rem;
+}
+.partido-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .3rem;
+  width: 90px;
+  text-align: center;
+}
+.partido-team img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+.partido-team span {
+  font-size: .74rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.partido-vs {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: .88rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Inline status badges (shared style) */
+.badge-live {
+  font-size: .7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 30px;
+  background: rgba(239,68,68,.15);
+  color: #ef4444;
+  white-space: nowrap;
+}
+.dot-live {
+  width: 6px;
+  height: 6px;
+  background: #ef4444;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+}
+.badge-time {
+  font-size: .7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 30px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* Match source pills bar */
+.match-pills-bar {
+  padding: .5rem 0 .6rem;
+  border-bottom: 1px solid var(--border);
+  margin-top: .5rem;
+}
+.pills-section-label {
+  display: block;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: .4rem;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+@media (max-width: 576px) {
+  .partido-header { flex-wrap: wrap; justify-content: center; }
+  .partido-meta { flex-direction: row; width: 100%; justify-content: center; }
+  .partido-teams { width: 100%; }
+}
 </style>
 
 <div class="container" style="padding-top:1.5rem;">
@@ -81,17 +220,55 @@ $jsCanal = json_encode($fuenteData['canal'] ?? '');
     <span style="color:var(--text-muted); margin:0 0.5rem; font-size:0.8rem;">/</span>
     <a href="<?= url('tv') ?>" style="color:var(--text-muted); font-size:0.8rem; text-decoration:none;">Canales</a>
     <span style="color:var(--text-muted); margin:0 0.5rem; font-size:0.8rem;">/</span>
-    <span style="color:var(--text-secondary); font-size:0.8rem;" id="breadcrumb-name">Canal</span>
+    <span style="color:var(--text-secondary); font-size:0.8rem;" id="breadcrumb-name">
+      <?php if ($partidoData): ?>
+        <?= htmlspecialchars(($partidoData['homeTeam']['name'] ?? '') . ' vs ' . ($partidoData['awayTeam']['name'] ?? '')) ?>
+      <?php else: ?>Canal<?php endif; ?>
+    </span>
   </nav>
 
   <div class="channel-page-layout">
 
     <!-- REPRODUCTOR -->
     <div class="player-column">
+      <?php if ($partidoData):
+        $pLocal     = htmlspecialchars($partidoData['homeTeam']['name'] ?? '');
+        $pVisit     = htmlspecialchars($partidoData['awayTeam']['name'] ?? '');
+        $pLocalLogo = BASE_URL . 'assets/img/equipos/sf/' . ($partidoData['homeTeam']['logo'] ?? '') . '.png';
+        $pVisitLogo = BASE_URL . 'assets/img/equipos/sf/' . ($partidoData['awayTeam']['logo'] ?? '') . '.png';
+        $pStatus    = $partidoData['status'] ?? 'upcoming';
+        $pTime      = htmlspecialchars($partidoData['time'] ?? '--:--');
+        $pLeague    = (string)($partidoData['league'] ?? '');
+        $pLeagueLogo = BASE_URL . "assets/img/ligas/sf/{$pLeague}.png";
+      ?>
+      <div class="partido-header">
+        <div class="partido-meta">
+          <img src="<?= $pLeagueLogo ?>" class="partido-league-img" onerror="this.style.opacity='.2'">
+          <?php if ($pStatus === 'live'): ?>
+            <span class="badge-live"><span class="dot-live"></span> EN VIVO</span>
+          <?php else: ?>
+            <span class="badge-time"><i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($partidoData['fecha_hora'] ?? '') ?>" data-ts="<?= (int)($partidoData['timestamp'] ?? 0) ?>"><?= $pTime ?></span></span>
+          <?php endif; ?>
+        </div>
+        <div class="partido-teams">
+          <div class="partido-team">
+            <img src="<?= $pLocalLogo ?>" onerror="this.style.opacity='.2'">
+            <span><?= $pLocal ?></span>
+          </div>
+          <div class="partido-vs">vs</div>
+          <div class="partido-team">
+            <img src="<?= $pVisitLogo ?>" onerror="this.style.opacity='.2'">
+            <span><?= $pVisit ?></span>
+          </div>
+        </div>
+      </div>
+      <span id="player-channel-name" style="display:none">Cargando...</span>
+      <?php else: ?>
       <div class="player-header">
         <span class="player-channel-name" id="player-channel-name">Cargando...</span>
         <div class="live-pill">EN VIVO</div>
       </div>
+      <?php endif; ?>
       <div class="player-iframe-wrapper">
         <div class="player-placeholder" id="player-placeholder">
           <div class="player-placeholder-icon"><i class="fas fa-play-circle"></i></div>
@@ -101,6 +278,20 @@ $jsCanal = json_encode($fuenteData['canal'] ?? '');
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           style="display:<?= !empty($iframeUrl) ? 'block' : 'none' ?>;"></iframe>
       </div>
+
+      <?php if (!empty($canalesPartido)): ?>
+      <div class="match-pills-bar">
+        <span class="pills-section-label"><i class="fas fa-broadcast-tower me-1"></i>Fuentes del partido</span>
+        <div class="source-pills-row">
+          <?php foreach ($canalesPartido as $mc): ?>
+          <a href="<?= url('canal', ['id' => $mc['id'], 'partido' => $partidoId]) ?>"
+             class="source-pill<?= $mc['id'] === $channelId ? ' active' : '' ?>">
+            <?= htmlspecialchars($mc['nombre']) ?>
+          </a>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <?php endif; ?>
 
       <div class="channel-info-bar">
         <div class="channel-info-left">
@@ -127,6 +318,9 @@ $jsCanal = json_encode($fuenteData['canal'] ?? '');
         </div>
         <?php if (count($fuentes) > 1): ?>
         <div class="source-pills-row">
+        <?php if ($partidoId > 0): ?>
+          <span class="pills-section-label" style="width:100%;"><i class="fas fa-satellite-dish me-1"></i>Otras fuentes del canal</span>
+        <?php endif; ?>
           <?php foreach ($fuentes as $i => $f): ?>
           <button
             class="source-pill<?= $f['id'] == $channelId ? ' active' : '' ?>"
@@ -179,18 +373,19 @@ $jsCanal = json_encode($fuenteData['canal'] ?? '');
 </section>
 
 <script>
-const CHANNEL_ID = <?= $channelId ?>;
-const CANAL      = <?= $jsCanal ?>;
+const CHANNEL_ID  = <?= $channelId ?>;
+const CANAL       = <?= $jsCanal ?>;
+const PARTIDO_ID  = <?= $partidoId ?>;
 </script>
 
 <script>
-document.querySelectorAll('.source-pill').forEach(function(pill) {
+document.querySelectorAll('.source-pill[data-id]').forEach(function(pill) {
   pill.addEventListener('click', function() {
     var id   = this.dataset.id;
     var tipo = this.dataset.tipo;
 
-    // Activar pill seleccionado
-    document.querySelectorAll('.source-pill').forEach(function(p) {
+    // Activar pill seleccionado (solo entre canal pills)
+    document.querySelectorAll('.source-pill[data-id]').forEach(function(p) {
       p.classList.remove('active');
     });
     this.classList.add('active');
@@ -201,7 +396,7 @@ document.querySelectorAll('.source-pill').forEach(function(pill) {
                  '&canal=' + encodeURIComponent(CANAL) +
                  '&tipo=' + tipo;
 
-    // Actualizar ?id= en la URL sin navegación
+    // Actualizar ?id= en la URL sin navegación (preservar partido si existe)
     var url = new URL(window.location.href);
     url.searchParams.set('id', id);
     history.replaceState(null, '', url.toString());
@@ -210,7 +405,61 @@ document.querySelectorAll('.source-pill').forEach(function(pill) {
 </script>
 
 <script>
+// Countdown del partido (solo se ejecuta cuando hay partido activo)
+if (PARTIDO_ID) {
+  (function () {
+    function updateCountdown(el) {
+      const ts = parseInt(el.dataset.ts, 10);
+      let distance;
+      if (ts > 0) {
+        distance = ts * 1000 - Date.now();
+      } else {
+        const timeStr = el.dataset.time;
+        if (!timeStr) return;
+        const target = new Date(timeStr.replace(' ', 'T'));
+        if (isNaN(target)) return;
+        distance = target - Date.now();
+      }
+      const badge = el.closest('.badge-time');
+      if (distance < 0) {
+        if (distance > -10800000) {
+          el.textContent = '● EN VIVO';
+          if (badge) {
+            badge.classList.remove('badge-time');
+            badge.classList.add('badge-live');
+            const icon = badge.querySelector('i');
+            if (icon) icon.remove();
+          }
+        } else {
+          el.textContent = 'Finalizó';
+        }
+        return;
+      }
+      const d = Math.floor(distance / 86400000);
+      const h = Math.floor((distance % 86400000) / 3600000);
+      const m = Math.floor((distance % 3600000) / 60000);
+      const s = Math.floor((distance % 60000) / 1000);
+      if      (d === 1)             el.textContent = 'Mañana';
+      else if (d > 1  && d < 7)    el.textContent = `${d}d ${h}h`;
+      else if (d >= 7  && d < 14)  el.textContent = 'Próx. Semana';
+      else if (d >= 14 && d < 21)  el.textContent = '2 Semanas';
+      else if (d >= 21 && d < 28)  el.textContent = '3 Semanas';
+      else if (d >= 28 && d < 60)  el.textContent = 'Próx. Mes';
+      else if (d >= 60 && d < 90)  el.textContent = '2 Meses';
+      else if (d >= 90 && d < 120) el.textContent = '3 Meses';
+      else if (d === 0 && h > 0)   el.textContent = `${h}h ${m}m ${s}s`;
+      else if (h === 0 && m > 0)   el.textContent = `${m}m ${s}s`;
+      else                          el.textContent = `${s}s`;
+    }
+    document.querySelectorAll('.match-countdown').forEach(el => {
+      updateCountdown(el);
+      setInterval(() => updateCountdown(el), 1000);
+    });
+  })();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  if (PARTIDO_ID) return; // breadcrumb already set server-side
   const observer = new MutationObserver(() => {
     const name = document.getElementById('player-channel-name').textContent;
     if (name !== 'Cargando...') {
