@@ -1,26 +1,48 @@
 /**
  * StreamHub - JS de la página de canales (?p=tv)
- * Reutiliza las mismas funciones pero con paths correctos
+ * Muestra fuentes activas enriquecidas con logo y categoría del canal padre.
  */
 
-let allChannels = [];
+let allItems = []; // fuentes enriquecidas
 
 async function loadChannels() {
   try {
-    const res = await fetch('data/channels.json');
-    allChannels = await res.json();
-    generateCategoryPills(allChannels);
-    renderChannels(allChannels);
+    const [fuentesRes, channelsRes] = await Promise.all([
+      fetch('data/fuentes.json'),
+      fetch('data/channels.json')
+    ]);
+    const fuentes  = await fuentesRes.json();
+    const channels = await channelsRes.json();
+
+    // Mapa rápido canal_id → canal
+    const channelMap = {};
+    channels.forEach(c => { channelMap[c.id] = c; });
+
+    // Fuentes activas enriquecidas con datos del canal padre
+    allItems = fuentes
+      .filter(f => f.activo === 1)
+      .map(f => {
+        const parent = channelMap[f.canal] ?? null;
+        return {
+          id:       f.id,
+          nombre:   f.nombre,
+          logo:     parent?.logo    ?? '',
+          category: parent?.category ?? 'Sin categoría',
+        };
+      });
+
+    generateCategoryPills(allItems);
+    renderChannels(allItems);
     initSearch();
   } catch (e) {
     console.error('Error cargando canales:', e);
   }
 }
 
-function generateCategoryPills(channels) {
+function generateCategoryPills(items) {
   const container = document.getElementById('category-pills');
   if (!container) return;
-  const cats = ['Todos', ...new Set(channels.map(c => c.category))];
+  const cats = ['Todos', ...new Set(items.map(c => c.category))];
   container.innerHTML = '';
   cats.forEach(cat => {
     const btn = document.createElement('button');
@@ -37,18 +59,18 @@ function filterByCategory(category, pill) {
   pill.classList.add('active');
   const search = document.getElementById('channel-search');
   if (search) search.value = '';
-  renderChannels(category === 'Todos' ? allChannels : allChannels.filter(c => c.category === category));
+  renderChannels(category === 'Todos' ? allItems : allItems.filter(c => c.category === category));
 }
 
-function renderChannels(channels) {
+function renderChannels(items) {
   const grid = document.getElementById('channels-grid');
   if (!grid) return;
-  if (!channels.length) {
+  if (!items.length) {
     grid.innerHTML = '<div class="no-results"><i class="fas fa-search" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:.5rem;"></i>No se encontraron canales</div>';
     return;
   }
   grid.innerHTML = '';
-  channels.forEach((ch, i) => grid.appendChild(createChannelCard(ch, i)));
+  items.forEach((ch, i) => grid.appendChild(createChannelCard(ch, i)));
 }
 
 function createChannelCard(ch, index) {
@@ -59,9 +81,9 @@ function createChannelCard(ch, index) {
   card.style.opacity = '0';
   card.innerHTML = `
     <div class="channel-logo-wrapper">
-      <img src="${ch.logo}" alt="${ch.name}" class="channel-logo" onerror="this.style.opacity='0'">
+      <img src="${ch.logo}" alt="${ch.nombre}" class="channel-logo" onerror="this.style.opacity='0'">
     </div>
-    <span class="channel-name">${ch.name}</span>
+    <span class="channel-name">${ch.nombre}</span>
     <span class="channel-category-label">${ch.category}</span>
   `;
   return card;
@@ -73,8 +95,8 @@ function initSearch() {
   input.addEventListener('input', e => {
     const q = e.target.value.toLowerCase().trim();
     const activeCat = document.querySelector('.pill.active')?.dataset.category ?? 'Todos';
-    renderChannels(allChannels.filter(c =>
-      c.name.toLowerCase().includes(q) &&
+    renderChannels(allItems.filter(c =>
+      c.nombre.toLowerCase().includes(q) &&
       (activeCat === 'Todos' || c.category === activeCat)
     ));
   });
