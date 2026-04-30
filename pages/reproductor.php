@@ -52,7 +52,7 @@ if ($fuenteId > 0) {
     try {
         $conn = getDBConnection();
         $stmt = $conn->prepare("
-            SELECT f.id, f.nombre, f.url, f.tipo, f.ck_key, f.ck_keyid, 
+            SELECT f.id, f.nombre, f.url, f.tipo, f.ck_key, f.ck_keyid, f.sandbox,
                    t.nombre as tipo_nombre
             FROM fuentes f
             LEFT JOIN tipos_fuente t ON f.tipo = t.id

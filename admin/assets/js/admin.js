@@ -117,6 +117,7 @@ function abrirModalFuente(data = null) {
   document.getElementById('fuente-ck-key').value   = data?.ck_key   ?? '';
   document.getElementById('fuente-ck-keyid').value = data?.ck_keyid ?? '';
   document.getElementById('fuente-activo').value   = data?.activo   ?? '1';
+  document.getElementById('fuente-sandbox').checked = (data?.sandbox ?? 1) == 1;
   document.getElementById('modalFuenteTitulo').textContent = data ? 'Editar fuente' : 'Nueva fuente';
 
   new bootstrap.Modal(document.getElementById('modalFuente')).show();
@@ -134,6 +135,7 @@ function guardarFuente() {
     ck_key:    document.getElementById('fuente-ck-key').value.trim(),
     ck_keyid:  document.getElementById('fuente-ck-keyid').value.trim(),
     activo:    document.getElementById('fuente-activo').value,
+    sandbox:   document.getElementById('fuente-sandbox').checked ? 1 : 0,
   };
 
   if (!data.nombre || !data.canal || !data.url || !data.tipo) {

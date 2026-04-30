@@ -109,15 +109,16 @@ try {
         $tipo     = (int)($d['tipo']    ?? 0);
         $epg      = trim($d['epg']      ?? '') ?: null;
         $activo   = (int)($d['activo']  ?? 1);
+        $sandbox  = (int)($d['sandbox'] ?? 1);
 
         if (!$nombre || !$canal || !$url || !$tipo) { resp(false, 'Nombre, canal, URL y tipo son obligatorios'); }
 
         if ($id) {
-            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=? WHERE id=?");
-            $stmt->bind_param('sissssissi', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $id);
+            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=?, sandbox=? WHERE id=?");
+            $stmt->bind_param('sissssissii', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, ck_key, ck_keyid, pais, tipo, epg, activo) VALUES (?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param('sissssiss', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo);
+            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, ck_key, ck_keyid, pais, tipo, epg, activo, sandbox) VALUES (?,?,?,?,?,?,?,?,?,?)");
+            $stmt->bind_param('sissssissi', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox);
         }
 
         $ok = $stmt->execute();

@@ -4,6 +4,12 @@
  * Lista todas las fuentes con su canal asociado. CRUD con modal.
  */
 
+// Migración: agregar columna sandbox si no existe
+try {
+    $conn = getDBConnection();
+    $conn->query("ALTER TABLE fuentes ADD COLUMN IF NOT EXISTS sandbox TINYINT(1) NOT NULL DEFAULT 1");
+} catch (Exception $e) { /* la columna ya existe */ }
+
 // Datos para selects del modal (se cargan independientemente)
 try {
     $conn    = getDBConnection();
@@ -18,7 +24,7 @@ try {
 try {
     $conn    = getDBConnection();
     $fuentes = $conn->query("
-        SELECT f.id, f.nombre, f.url, f.ck_key, f.ck_keyid, f.epg, f.activo,
+        SELECT f.id, f.nombre, f.url, f.ck_key, f.ck_keyid, f.epg, f.activo, f.sandbox,
                c.nombre  AS canal_nombre,  f.canal  AS canal_id,
                p.paisNombre AS pais_nombre, f.pais  AS pais_id,
                t.nombre  AS tipo_nombre,   f.tipo   AS tipo_id
@@ -37,12 +43,13 @@ try {
 
     foreach ($fuentes as $f) {
         $jsonFuentes[] = [
-            'id'     => (int)$f['id'],
-            'nombre' => $f['nombre'] ?? '',
-            'canal'  => (int)$f['canal_id'] ?: null,
-            'tipo'   => (int)$f['tipo_id'] ?: null,
-            'epg'    => $f['epg'] ?? '',
-            'activo' => (int)$f['activo']
+            'id'      => (int)$f['id'],
+            'nombre'  => $f['nombre'] ?? '',
+            'canal'   => (int)$f['canal_id'] ?: null,
+            'tipo'    => (int)$f['tipo_id'] ?: null,
+            'epg'     => $f['epg'] ?? '',
+            'activo'  => (int)$f['activo'],
+            'sandbox' => (int)($f['sandbox'] ?? 1),
         ];
     }
 
@@ -90,13 +97,14 @@ try {
         <th>Tipo</th>
         <th>País</th>
         <th>DRM</th>
+        <th style="width:70px;">Sandbox</th>
         <th style="width:80px;">Estado</th>
         <th style="width:80px;">Acciones</th>
       </tr>
     </thead>
     <tbody>
       <?php if (empty($fuentes)): ?>
-        <tr><td colspan="8">
+        <tr><td colspan="9">
           <div class="admin-empty"><i class="fas fa-broadcast-tower"></i><p>No hay fuentes registradas.</p></div>
         </td></tr>
       <?php else: ?>
@@ -118,6 +126,16 @@ try {
             <?php if ($f['ck_key']): ?>
               <span style="font-size:0.68rem; background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.3); padding:1px 6px; border-radius:4px; font-weight:700;">
                 <i class="fas fa-lock me-1"></i>DRM
+              </span>
+            <?php else: ?>
+              <span style="color:var(--text-muted); font-size:0.75rem;">—</span>
+            <?php endif; ?>
+          </td>
+          <!-- Indicador Sandbox -->
+          <td>
+            <?php if (($f['sandbox'] ?? 1) == 0): ?>
+              <span style="font-size:0.68rem; background:rgba(234,179,8,0.12); color:#ca8a04; border:1px solid rgba(234,179,8,0.3); padding:1px 6px; border-radius:4px; font-weight:700;">
+                Sin SB
               </span>
             <?php else: ?>
               <span style="color:var(--text-muted); font-size:0.75rem;">—</span>
@@ -240,6 +258,17 @@ try {
               <option value="1">Activa</option>
               <option value="0">Inactiva</option>
             </select>
+          </div>
+
+          <!-- Sandbox (solo aplica en tipo iframe) -->
+          <div class="col-12 col-md-8">
+            <label class="form-label">Sandbox</label>
+            <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:rgba(234,179,8,0.06); border:1px solid rgba(234,179,8,0.2); border-radius:8px;">
+              <input type="checkbox" id="fuente-sandbox" style="width:16px; height:16px; accent-color:#ca8a04; cursor:pointer;" checked>
+              <label for="fuente-sandbox" style="margin:0; cursor:pointer; font-size:0.85rem; color:var(--text-primary);">
+                Usar atributo <code>sandbox</code> en el iframe
+              </label>
+            </div>
           </div>
         </div>
       </div>

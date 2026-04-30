@@ -15,8 +15,9 @@ if (!isset($fuenteData)) {
     die('Acceso denegado');
 }
 
-$url = htmlspecialchars($fuenteData['url']);
-$nombre = htmlspecialchars($fuenteData['nombre']);
+$url     = htmlspecialchars($fuenteData['url']);
+$nombre  = htmlspecialchars($fuenteData['nombre']);
+$sandbox = (int)($fuenteData['sandbox'] ?? 1);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -129,7 +130,8 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
             id: <?= (int)$fuenteData['id'] ?>,
             nombre: '<?= $nombre ?>',
             url: '<?= $url ?>',
-            tipo: 5
+            tipo: 5,
+            sandbox: <?= $sandbox ?>
         };
 
         // ============================================================
@@ -145,9 +147,11 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
             iframe.src = PLAYER_CONFIG.url;
             iframe.allowFullscreen = true;
             iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-            iframe.sandbox.add('allow-same-origin');
-            iframe.sandbox.add('allow-scripts');
-            iframe.sandbox.add('allow-presentation');
+            if (PLAYER_CONFIG.sandbox) {
+                iframe.sandbox.add('allow-same-origin');
+                iframe.sandbox.add('allow-scripts');
+                iframe.sandbox.add('allow-presentation');
+            }
             iframe.onload = showPlayer;
 
             container.innerHTML = '';
