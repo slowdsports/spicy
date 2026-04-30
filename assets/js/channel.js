@@ -7,21 +7,28 @@ async function loadChannelPage() {
   if (!id) { window.location.href = '?p=home'; return; }
 
   try {
-    const res = await fetch('data/fuentes.json');
-    const sources = await res.json();
+    const [sourcesRes, channelsRes] = await Promise.all([
+      fetch('data/fuentes.json'),
+      fetch('data/channels.json')
+    ]);
+    const sources  = await sourcesRes.json();
+    const channels = await channelsRes.json();
+
     const source = sources.find(c => c.id === id);
     if (!source) { window.location.href = '?p=home'; return; }
 
-    renderPlayerPage(source);
+    const channel = channels.find(c => c.id === source.canal) ?? null;
+
+    renderPlayerPage(source, channel);
     const recommended = sources.filter(c => c.id !== id && c.activo === 1).slice(0, 8);
-    renderRecommendedChannels(recommended);
+    renderRecommendedChannels(recommended, channels);
     startDemoChat();
   } catch (e) {
     console.error('Error cargando fuente:', e);
   }
 }
 
-function renderPlayerPage(source) {
+function renderPlayerPage(source, channel) {
   document.title = `${source.nombre} - Tele Deportes`;
   const nameEl = document.getElementById('player-channel-name');
   if (nameEl) nameEl.textContent = source.nombre;
@@ -39,20 +46,32 @@ function renderPlayerPage(source) {
 
   const viewsEl = document.getElementById('channel-views');
   if (viewsEl) viewsEl.textContent = `${source.id} transmisión`;
+
+  const avatarImg = document.getElementById('channel-avatar-img');
+  if (avatarImg && channel?.logo) {
+    avatarImg.src = channel.logo;
+    avatarImg.alt = channel.name ?? source.nombre;
+  }
 }
 
-function renderRecommendedChannels(sources) {
+function renderRecommendedChannels(sources, channels) {
   const slider = document.getElementById('recommended-slider');
   if (!slider) return;
   slider.innerHTML = '';
   sources.forEach(ch => {
+    const parent = (channels ?? []).find(c => c.id === ch.canal);
+    const logo   = parent?.logo ?? '';
+    const logoHtml = logo
+      ? `<img src="${logo}" alt="${ch.nombre}" style="width:44px;height:44px;object-fit:contain;" onerror="this.style.opacity='0'">`
+      : `<i class="fas fa-broadcast-tower" style="font-size:1.5rem;color:var(--accent);"></i>`;
+
     const card = document.createElement('a');
     card.href = `?p=canal&id=${ch.id}`;
     card.className = 'match-card';
     card.style.cssText = 'min-width:180px;max-width:180px;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.75rem;';
     card.innerHTML = `
       <div style="width:60px;height:60px;background:var(--bg-input);border-radius:12px;display:flex;align-items:center;justify-content:center;padding:8px;border:1px solid var(--border);">
-        <i class="fas fa-broadcast-tower" style="font-size:1.5rem;color:var(--accent);"></i>
+        ${logoHtml}
       </div>
       <div style="text-align:center;">
         <div style="font-size:.82rem;font-weight:700;color:var(--text-primary);">${ch.nombre}</div>
