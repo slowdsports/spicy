@@ -2,6 +2,12 @@
  * StreamHub - JS del reproductor de canal (?p=canal&id=X)
  */
 
+function formatViews(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000)    return (n / 1000).toFixed(1) + 'k';
+  return n.toString();
+}
+
 async function loadChannelPage() {
   const id = typeof CHANNEL_ID !== 'undefined' ? CHANNEL_ID : 0;
   if (!id) { window.location.href = '?p=home'; return; }
@@ -45,7 +51,10 @@ function renderPlayerPage(source, channel) {
   if (titleEl) titleEl.textContent = source.nombre;
 
   const viewsEl = document.getElementById('channel-views');
-  if (viewsEl) viewsEl.textContent = `${source.id} transmisión`;
+  if (viewsEl) {
+    const v = typeof CANAL_VIEWS !== 'undefined' ? CANAL_VIEWS : 0;
+    viewsEl.innerHTML = `<i class="fas fa-eye me-1" style="font-size:0.75rem;"></i>${formatViews(v)} views`;
+  }
 
   const avatarImg = document.getElementById('channel-avatar-img');
   if (avatarImg && channel?.logo) {

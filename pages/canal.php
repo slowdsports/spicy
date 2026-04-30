@@ -2,10 +2,11 @@
 /**
  * StreamHub - Página de reproducción de canal (canal.php)
  */
-$channelId = (int) get('id', '0');
-$iframeUrl = '';
+$channelId  = (int) get('id', '0');
+$iframeUrl  = '';
 $fuenteData = null;
-$fuentes = [];
+$fuentes    = [];
+$canalViews = 0;
 
 if ($channelId > 0) {
     try {
@@ -29,6 +30,17 @@ if ($channelId > 0) {
             $stmt2->execute();
             $fuentes = $stmt2->get_result()->fetch_all(MYSQLI_ASSOC);
             $stmt2->close();
+
+            // Incrementar vistas del canal padre
+            $canalId = (int)$fuenteData['canal'];
+            if ($canalId > 0) {
+                $stmtV = $conn->prepare("UPDATE canales SET views = views + 1 WHERE id = ?");
+                $stmtV->bind_param('i', $canalId);
+                $stmtV->execute();
+                $stmtV->close();
+                $rowV = $conn->query("SELECT views FROM canales WHERE id = {$canalId} LIMIT 1")->fetch_assoc();
+                $canalViews = (int)($rowV['views'] ?? 0);
+            }
         }
     } catch (Throwable $e) {
         // Error de BD, el iframe quedará vacío
@@ -376,6 +388,7 @@ if ($partidoId > 0) {
 const CHANNEL_ID  = <?= $channelId ?>;
 const CANAL       = <?= $jsCanal ?>;
 const PARTIDO_ID  = <?= $partidoId ?>;
+const CANAL_VIEWS = <?= $canalViews ?>;
 </script>
 
 <script>
