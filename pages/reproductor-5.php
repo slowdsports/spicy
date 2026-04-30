@@ -150,7 +150,6 @@ $sandbox = (int)($fuenteData['sandbox'] ?? 1);
             if (PLAYER_CONFIG.sandbox) {
                 iframe.sandbox.add('allow-same-origin');
                 iframe.sandbox.add('allow-scripts');
-                iframe.sandbox.add('allow-presentation');
             }
             iframe.onload = showPlayer;
 
