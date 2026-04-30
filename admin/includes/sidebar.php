@@ -11,6 +11,7 @@ $menu = [
     'ligas'    => ['icon' => 'fa-trophy',       'label' => 'Ligas'],
     'partidos' => ['icon' => 'fa-futbol',       'label' => 'Partidos'],
     'config'   => ['icon' => 'fa-gear',         'label' => 'Configuración'],
+    'reportes' => ['icon' => 'fa-flag',         'label' => 'Reportes'],
 ];
 ?>
 <aside class="admin-sidebar">

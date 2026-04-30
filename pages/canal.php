@@ -48,6 +48,30 @@ if ($channelId > 0) {
 }
 $jsCanal = json_encode($fuenteData['canal'] ?? '');
 
+// Estado de interacciones del usuario logueado
+$isLoggedIn = isLoggedIn();
+$initLike   = false;
+$initSave   = false;
+
+if ($isLoggedIn && $channelId > 0) {
+    try {
+        $uid    = userId();
+        $connI  = getDBConnection();
+
+        $chkL = $connI->prepare("SELECT id FROM canal_likes WHERE user_id = ? AND fuente_id = ? LIMIT 1");
+        $chkL->bind_param('ii', $uid, $channelId);
+        $chkL->execute();
+        $initLike = $chkL->get_result()->num_rows > 0;
+        $chkL->close();
+
+        $chkS = $connI->prepare("SELECT id FROM canal_guardados WHERE user_id = ? AND fuente_id = ? LIMIT 1");
+        $chkS->bind_param('ii', $uid, $channelId);
+        $chkS->execute();
+        $initSave = $chkS->get_result()->num_rows > 0;
+        $chkS->close();
+    } catch (Throwable $e) { /* ignore */ }
+}
+
 // Partido context
 $partidoId      = (int) get('partido', '0');
 $partidoData    = null;
@@ -318,10 +342,10 @@ if ($partidoId > 0) {
           </div>
         </div>
         <div class="interaction-buttons">
-          <button class="btn-interact" data-action="love">
+          <button class="btn-interact<?= $isLoggedIn && $initLike ? ' active' : '' ?>" data-action="love">
             <i class="fas fa-heart"></i><span>Me gusta</span>
           </button>
-          <button class="btn-interact" data-action="save">
+          <button class="btn-interact<?= $isLoggedIn && $initSave ? ' active' : '' ?>" data-action="save">
             <i class="fas fa-bookmark"></i><span>Guardar</span>
           </button>
           <button class="btn-interact" data-action="report">
@@ -385,10 +409,88 @@ if ($partidoId > 0) {
 </section>
 
 <script>
-const CHANNEL_ID  = <?= $channelId ?>;
-const CANAL       = <?= $jsCanal ?>;
-const PARTIDO_ID  = <?= $partidoId ?>;
-const CANAL_VIEWS = <?= $canalViews ?>;
+const CHANNEL_ID   = <?= $channelId ?>;
+const CANAL        = <?= $jsCanal ?>;
+const PARTIDO_ID   = <?= $partidoId ?>;
+const CANAL_VIEWS  = <?= $canalViews ?>;
+const IS_LOGGED_IN = <?= $isLoggedIn ? 'true' : 'false' ?>;
+const INIT_LIKE    = <?= $initLike   ? 'true' : 'false' ?>;
+const INIT_SAVE    = <?= $initSave   ? 'true' : 'false' ?>;
+</script>
+
+<!-- Modal: Reportar canal -->
+<div class="modal fade" id="modal-reportar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:var(--bg-card); border:1px solid var(--border); border-radius:16px;">
+      <div class="modal-header" style="border-bottom:1px solid var(--border); padding:1rem 1.25rem;">
+        <h5 class="modal-title" style="font-family:'Space Mono',monospace; font-size:.9rem; color:var(--text-primary);">
+          <i class="fas fa-flag me-2" style="color:#ef4444;"></i>Reportar canal
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;">
+        <p style="font-size:.82rem; color:var(--text-muted); margin-bottom:1rem;">
+          Cuéntanos qué está pasando. Tu reporte ayuda a mejorar el servicio.
+        </p>
+        <textarea id="report-comment" rows="3"
+          style="width:100%; background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); border-radius:10px; padding:.65rem .9rem; font-size:.85rem; resize:vertical; outline:none;"
+          placeholder="Describe el problema (opcional)..."></textarea>
+        <div id="report-status" style="font-size:.78rem; margin-top:.5rem; color:var(--text-muted); display:none;"></div>
+      </div>
+      <div class="modal-footer" style="border-top:1px solid var(--border); padding:.75rem 1.25rem; gap:.5rem;">
+        <button type="button" data-bs-dismiss="modal"
+          style="background:transparent; border:1px solid var(--border); color:var(--text-muted); padding:.4rem 1rem; border-radius:8px; font-size:.82rem; cursor:pointer;">
+          Cancelar
+        </button>
+        <button type="button" id="btn-submit-report"
+          style="background:rgba(239,68,68,.15); color:#ef4444; border:1px solid rgba(239,68,68,.3); padding:.4rem 1.2rem; border-radius:8px; font-size:.82rem; font-weight:600; cursor:pointer;">
+          <i class="fas fa-flag me-1"></i>Enviar reporte
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Envío del reporte
+document.addEventListener('DOMContentLoaded', function () {
+  var btn = document.getElementById('btn-submit-report');
+  if (!btn) return;
+
+  btn.addEventListener('click', async function () {
+    var comentario = (document.getElementById('report-comment').value || '').trim();
+    var statusEl   = document.getElementById('report-status');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Enviando...';
+    statusEl.style.display = 'none';
+
+    var fd = new FormData();
+    fd.append('action',    'report');
+    fd.append('fuente_id', CHANNEL_ID);
+    fd.append('comentario', comentario);
+
+    try {
+      var res  = await fetch('api/interacciones.php', { method: 'POST', body: fd });
+      var data = await res.json();
+      if (data.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('modal-reportar')).hide();
+        document.getElementById('report-comment').value = '';
+        document.querySelector('.btn-interact[data-action="report"]').classList.add('active');
+        showToast('⚠️ Reporte enviado. ¡Gracias!');
+      } else {
+        statusEl.textContent = data.msg || 'Error al enviar el reporte.';
+        statusEl.style.display = 'block';
+      }
+    } catch (e) {
+      statusEl.textContent = 'Error de conexión. Intenta de nuevo.';
+      statusEl.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-flag me-1"></i>Enviar reporte';
+  });
+});
 </script>
 
 <script>

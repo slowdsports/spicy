@@ -230,7 +230,47 @@ function initSearch() {
   });
 }
 
+// ============================================================
+// CANALES GUARDADOS
+// ============================================================
+async function loadSavedChannels() {
+  if (typeof SAVED_JSON_URL === 'undefined' || !SAVED_JSON_URL) return;
+  const section = document.getElementById('saved-section');
+  if (!section) return;
+
+  try {
+    const res  = await fetch(SAVED_JSON_URL + '?t=' + Date.now());
+    const data = await res.json();
+    if (!data.fuentes || data.fuentes.length === 0) return;
+
+    const grid = document.getElementById('saved-channels-grid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+    data.fuentes.forEach((ch, i) => grid.appendChild(createSavedCard(ch, i)));
+    section.style.display = '';
+  } catch (e) { /* silencioso */ }
+}
+
+function createSavedCard(ch, index) {
+  const card = document.createElement('a');
+  card.href  = `?p=canal&id=${ch.id}`;
+  card.className = 'channel-card fade-in';
+  card.style.animationDelay = `${index * 0.05}s`;
+  card.style.opacity = '0';
+  const logoHtml = ch.logo
+    ? `<img src="${ch.logo}" alt="${ch.nombre}" class="channel-logo" onerror="this.style.opacity='0'">`
+    : `<i class="fas fa-bookmark" style="color:var(--accent); font-size:2rem;"></i>`;
+  card.innerHTML = `
+    <div class="channel-logo-wrapper">${logoHtml}</div>
+    <span class="channel-name">${ch.nombre}</span>
+    <span class="channel-category-label" style="color:var(--accent); font-size:.65rem;">Guardado</span>
+  `;
+  return card;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadMatches().then(initSliderDrag);
   loadChannels();
+  loadSavedChannels();
 });

@@ -3,6 +3,16 @@
  * StreamHub - Página de inicio (home.php)
  */
 
+// Canales guardados del usuario (JSON por usuario para evitar query en cada carga)
+$savedJsonUrl = null;
+if (isLoggedIn()) {
+    $uid       = userId();
+    $savedFile = __DIR__ . '/../data/guardados/' . $uid . '.json';
+    if (file_exists($savedFile)) {
+        $savedJsonUrl = BASE_URL . 'data/guardados/' . $uid . '.json';
+    }
+}
+
 $maintenance = 0;
 $maintenanceLabel = 'Sistema operativo';
 $maintenanceStyle = 'background: var(--accent-soft); border: 1px solid var(--border-accent); color: var(--text-secondary);';
@@ -70,6 +80,22 @@ if ($maintenance === 1) {
     </div>
   </div>
 </section>
+
+<?php if (isLoggedIn()): ?>
+<script>const SAVED_JSON_URL = <?= $savedJsonUrl ? json_encode($savedJsonUrl) : 'null' ?>;</script>
+<!-- SECCIÓN 1.5: MIS GUARDADOS (visible solo si el usuario tiene guardados) -->
+<section id="saved-section" style="display:none; padding:1.5rem 0; border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="section-title">
+      <span>Mis Guardados</span>
+      <span class="section-subtitle">
+        <i class="fas fa-bookmark" style="color:var(--accent); margin-right:4px;"></i>Acceso rápido
+      </span>
+    </div>
+    <div class="channels-grid" id="saved-channels-grid"></div>
+  </div>
+</section>
+<?php endif; ?>
 
 <!-- SECCIÓN 2: CANALES -->
 <section class="channels-section" id="channels-section">

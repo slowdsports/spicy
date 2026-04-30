@@ -16,6 +16,7 @@ try {
         'equipos'  => 'equipos',
         'partidos' => 'partidos',
         'usuarios' => 'usuarios',
+        'reportes' => 'canal_reportes',
     ];
 
     foreach ($tables as $key => $table) {
@@ -50,6 +51,7 @@ $stats = [
     ['key' => 'partidos', 'icon' => 'fa-futbol',        'label' => 'Partidos',  'page' => 'partidos', 'color' => '#22c55e'],
     ['key' => 'equipos',  'icon' => 'fa-shield-alt',    'label' => 'Equipos',   'page' => 'ligas',    'color' => '#ec4899'],
     ['key' => 'usuarios', 'icon' => 'fa-users',         'label' => 'Usuarios',  'page' => 'config',   'color' => '#a78bfa'],
+    ['key' => 'reportes', 'icon' => 'fa-flag',         'label' => 'Reportes',  'page' => 'reportes', 'color' => '#ef4444'],
 ];
 ?>
 

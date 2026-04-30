@@ -99,14 +99,57 @@ function scrollRecommended(direction) {
 
 // Interacciones
 function initInteractionButtons() {
+  const noLoginMsgs = {
+    love:   'Debes iniciar sesión para dar Me Gusta',
+    save:   'Debes iniciar sesión para guardar canales',
+    report: 'Debes iniciar sesión para reportar un canal',
+  };
+
   document.querySelectorAll('.btn-interact').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const wasActive = btn.classList.contains('active');
-      btn.classList.toggle('active', !wasActive);
+    btn.addEventListener('click', async function () {
+      const action = btn.dataset.action;
+
+      // Usuario no autenticado
+      if (!IS_LOGGED_IN) {
+        showToast(noLoginMsgs[action] || 'Debes iniciar sesión');
+        return;
+      }
+
+      // Reporte: abre modal
+      if (action === 'report') {
+        const modalEl = document.getElementById('modal-reportar');
+        if (modalEl) new bootstrap.Modal(modalEl).show();
+        return;
+      }
+
+      // Like / Guardar: llamada a la API
+      btn.disabled = true;
       btn.style.transform = 'scale(0.9)';
       setTimeout(() => { btn.style.transform = ''; }, 150);
-      const msgs = { love: !wasActive ? '❤️ ¡Te gustó!' : 'Like eliminado', report: !wasActive ? '⚠️ Canal reportado' : 'Reporte cancelado', save: !wasActive ? '🔖 Canal guardado' : 'Canal removido' };
-      showToast(msgs[btn.dataset.action]);
+
+      try {
+        const fd = new FormData();
+        fd.append('action',    action);
+        fd.append('fuente_id', CHANNEL_ID);
+
+        const res  = await fetch('api/interacciones.php', { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.ok) {
+          btn.classList.toggle('active', data.active);
+          const msgs = {
+            love: data.active ? '❤️ ¡Te gustó!' : 'Like eliminado',
+            save: data.active ? '🔖 Canal guardado y agregado al inicio' : 'Canal removido de inicio',
+          };
+          showToast(msgs[action] || '');
+        } else {
+          showToast(data.msg || 'Error al procesar la acción');
+        }
+      } catch (e) {
+        showToast('Error de conexión');
+      }
+
+      btn.disabled = false;
     });
   });
 }
