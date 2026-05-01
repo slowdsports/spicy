@@ -137,5 +137,6 @@ if (isset($scripts[$page])) {
     echo '<script src="' . $scripts[$page] . '"></script>';
 }
 ?>
+<script id="_wauxbn">var _wau = _wau || []; _wau.push(["small", "o4zjmmmefw", "xbn"]);</script><script async src="//waust.at/s.js"></script>
 </body>
 </html>
