@@ -137,6 +137,8 @@ if (isset($scripts[$page])) {
     echo '<script src="' . $scripts[$page] . '"></script>';
 }
 ?>
+<div<?= (!isLoggedIn() || userId() !== 2) ? ' style="display:none;"' : ' style="text-align:center;"' ?>>
 <script id="_wauvoi">var _wau = _wau || []; _wau.push(["colored", "ziz3atsr91", "voi", "7c3aed000000"]);</script><script async src="//waust.at/co.js"></script>
+</div>
 </body>
 </html>
