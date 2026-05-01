@@ -22,6 +22,7 @@ $sandbox = (int)($fuenteData['sandbox'] ?? 1);
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <?php include __DIR__ . '/../includes/ads.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $nombre ?> - Tele Deportes</title>
@@ -160,6 +161,5 @@ $sandbox = (int)($fuenteData['sandbox'] ?? 1);
         // Inicializar cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', initializePlayer);
     </script>
-<?php include __DIR__ . '/../includes/ads.php'; ?>
 </body>
 </html>

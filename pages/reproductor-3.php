@@ -21,6 +21,7 @@ $jsTIPO = (int) $fuenteData['tipo'];
 <html lang="es">
 
 <head>
+    <?php include __DIR__ . '/../includes/ads.php'; ?>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="cache-control" content="no-cache">
@@ -209,6 +210,5 @@ $jsTIPO = (int) $fuenteData['tipo'];
             });
         });
     </script>
-<?php include __DIR__ . '/../includes/ads.php'; ?>
 </body>
 </html>
