@@ -133,7 +133,7 @@ $scripts = [
     'liga'    => 'assets/js/liga.js',
     'login'   => 'assets/js/auth.js',
 ];
-if ($page === 'home' || $page === 'liga') {
+if ($page === 'home') {
     echo '<script src="assets/js/huso.js"></script>';
 }
 if (isset($scripts[$page])) {

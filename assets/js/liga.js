@@ -47,8 +47,22 @@ function updateCountdown(el) {
   else                         el.textContent = `${s}s`;
 }
 
+function convertMatchTimes() {
+  document.querySelectorAll('.match-time-local[data-hn]').forEach(function(el) {
+    var parts = el.dataset.hn.split(':');
+    if (parts.length !== 2) return;
+    var h = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    if (isNaN(h) || isNaN(m)) return;
+    // Honduras es UTC-6: sumar 6h para obtener UTC, luego JS convierte a zona local
+    var d = new Date();
+    d.setUTCHours(h + 6, m, 0, 0);
+    el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  if (typeof guardaHorario === 'function') guardaHorario();
+  convertMatchTimes();
 
   document.querySelectorAll('.match-countdown').forEach(el => {
     updateCountdown(el);

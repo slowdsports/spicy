@@ -227,7 +227,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 
 <div class="vs-box">
 <strong>vs</strong>
-<small><span class="t"><?= htmlspecialchars($time) ?></span></small>
+<small><span class="match-time-local" data-hn="<?= htmlspecialchars($time) ?>"><?= htmlspecialchars($time) ?></span></small>
 </div>
 
 <div class="team-box">
