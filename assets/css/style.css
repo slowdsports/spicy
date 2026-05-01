@@ -643,6 +643,36 @@ body {
   font-size: 0.9rem;
 }
 
+/* ══════════════════════════════════════
+   PROGRAMAS EN VIVO
+══════════════════════════════════════ */
+.section-programs { border-top: 1px solid var(--border); background: var(--bg-secondary); }
+.program-row {
+  display: grid; grid-template-columns: 200px 1fr auto;
+  align-items: center; gap: 16px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 16px;
+  cursor: pointer; transition: border-color .2s; text-decoration: none; margin-bottom: 10px;
+  color: var(--text-primary);
+}
+.program-row:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+.program-ch { display: flex; align-items: center; gap: 12px; }
+.program-ch-thumb {
+  width: 56px; height: 56px; background: var(--bg-input);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  flex: 0 0 56px; overflow: hidden;
+}
+.program-ch-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.program-ch-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.program-ch-cat  { font-size: 11px; color: var(--text-muted); text-transform: capitalize; }
+.program-info h4 { font-size: 14px; font-weight: 500; color: var(--text-primary); margin: 0 0 4px; }
+.program-info p  { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.program-progress-wrap { min-width: 110px; text-align: right; }
+.program-time { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; display: block; font-family: 'Space Mono', monospace; }
+.program-bar  { height: 3px; background: var(--border); border-radius: 2px; }
+.program-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .5s; }
+
 /* ============================================================
    FOOTER
    ============================================================ */

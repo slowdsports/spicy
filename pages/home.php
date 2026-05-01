@@ -112,3 +112,17 @@ if ($maintenance === 1) {
     <div class="channels-grid" id="channels-grid"></div>
   </div>
 </section>
+
+<!-- SECCIÓN 3: PROGRAMAS EN VIVO -->
+<section class="section-programs" id="programs-section" style="padding:2rem 0;">
+  <div class="container">
+    <div class="section-title">
+      <span>Programas en vivo ahora</span>
+      <span class="section-subtitle">
+        <i class="fas fa-circle" style="color:#ef4444; font-size:0.5rem; margin-right:4px;"></i>
+        Guía de TV
+      </span>
+    </div>
+    <div id="programs-list"></div>
+  </div>
+</section>

@@ -270,8 +270,110 @@ function createSavedCard(ch, index) {
   return card;
 }
 
+// ============================================================
+// PROGRAMAS EN VIVO
+// ============================================================
+function convertProgramTimes() {
+  document.querySelectorAll('.prog-time-local[data-hn]').forEach(el => {
+    const [h, m] = el.dataset.hn.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return;
+    const d = new Date();
+    d.setUTCHours(h + 6, m, 0, 0); // hora es UTC-6 (Honduras) → convertir a UTC y luego a local
+    el.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  });
+}
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function canalNombreFromSlug(slug) {
+  return slug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function calcProgress(horaInicio, horaFin, tsInicio, tsFin) {
+  // Usar Unix timestamps cuando estén disponibles (TDT): precisión exacta e independiente de timezone
+  if (tsInicio && tsFin) {
+    const now = Math.floor(Date.now() / 1000);
+    return Math.min(100, Math.max(0, Math.round((now - tsInicio) / (tsFin - tsInicio) * 100)));
+  }
+  // Fallback: comparar strings HH:MM con hora local del cliente
+  const now   = new Date();
+  const toMin = str => { const [h, m] = str.split(':').map(Number); return h * 60 + m; };
+  const cur   = now.getHours() * 60 + now.getMinutes();
+  const start = toMin(horaInicio);
+  let   end   = toMin(horaFin);
+  if (end <= start) end += 1440;
+  return Math.min(100, Math.max(0, Math.round((cur - start) / (end - start) * 100)));
+}
+
+async function loadPrograms() {
+  const container = document.getElementById('programs-list');
+  if (!container) return;
+  try {
+    const res = await fetch('data/programas/all.json');
+    if (!res.ok) return;
+    const canales = await res.json();
+
+    // Solo mostrar programas de canales disponibles en fuentes.json (con epg configurado)
+    const liveRows = [];
+    canales.forEach(canal => {
+      const fuente = allChannels.find(ch => ch.epg && ch.epg === canal.canal);
+      if (!fuente) return; // canal no disponible, omitir
+      (canal.programas || []).forEach(prog => {
+        if (prog.en_vivo) liveRows.push({ canal, prog, fuente });
+      });
+    });
+
+    if (liveRows.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted);padding:1rem 0;font-size:.9rem;">No hay programas en vivo en este momento.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    liveRows.forEach(({ canal, prog, fuente }) => {
+      const nombre  = fuente.nombre || canalNombreFromSlug(canal.canal || '');
+      const link    = `?p=canal&id=${fuente.id}`;
+      const pct     = calcProgress(prog.hora_inicio, prog.hora_fin, prog.ts_inicio, prog.ts_fin);
+      const thumbHtml = prog.imagen
+        ? `<img src="${escHtml(prog.imagen)}" alt="${escHtml(nombre)}" onerror="this.style.display='none'" loading="lazy">`
+        : `<i class="fas fa-tv" style="color:var(--accent);font-size:1.2rem;"></i>`;
+
+      const row = document.createElement('a');
+      row.className = 'program-row';
+      row.href = link;
+      row.innerHTML = `
+        <div class="program-ch">
+          <div class="program-ch-thumb">${thumbHtml}</div>
+          <div>
+            <div class="program-ch-name">${escHtml(nombre)}</div>
+            <div class="program-ch-cat">${escHtml(prog.tipo || '')}</div>
+          </div>
+        </div>
+        <div class="program-info">
+          <h4>${escHtml(prog.titulo)}</h4>
+          <p>${escHtml(prog.descripcion)}</p>
+        </div>
+        <div class="program-progress-wrap">
+          <span class="program-time">
+            <span class="prog-time-local" data-hn="${escHtml(prog.hora_inicio)}">${escHtml(prog.hora_inicio)}</span>
+            –
+            <span class="prog-time-local" data-hn="${escHtml(prog.hora_fin)}">${escHtml(prog.hora_fin)}</span>
+          </span>
+          <div class="program-bar"><div class="program-bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      container.appendChild(row);
+    });
+    convertProgramTimes();
+  } catch (e) { /* silencioso */ }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   loadMatches().then(initSliderDrag);
-  loadChannels();
+  loadChannels().then(loadPrograms); // loadPrograms necesita allChannels listo
   loadSavedChannels();
 });
