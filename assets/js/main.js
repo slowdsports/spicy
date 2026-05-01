@@ -24,6 +24,23 @@ async function loadMatches() {
       return !isNaN(t) && t >= minus3h && t <= in24h;
     });
 
+    const getTs = m => {
+      if (m.timestamp) return m.timestamp * 1000;
+      if (m.fecha_hora) return new Date(m.fecha_hora.replace(' ', 'T') + '-06:00').getTime();
+      return Infinity;
+    };
+
+    filtered.sort((a, b) => {
+      const peso = m => {
+        if (m.status === 'live') return 0;           // en vivo primero
+        return getTs(m) >= now ? 1 : 2;              // próximos, luego pasados
+      };
+      const pa = peso(a), pb = peso(b);
+      if (pa !== pb) return pa - pb;
+      const ta = getTs(a), tb = getTs(b);
+      return pa === 2 ? tb - ta : ta - tb;           // pasados: más reciente; próximos: más cercano
+    });
+
     slider.innerHTML = '';
     if (filtered.length === 0) {
       slider.innerHTML = '<p style="color:var(--text-muted); padding:1rem 0.5rem; font-size:0.9rem;">No hay partidos disponibles en las próximas 24 horas.</p>';
