@@ -9,7 +9,7 @@ $page = isset($_GET['p']) ? trim($_GET['p']) : 'home';
 // Sanitizar: solo letras, números y guiones
 $page = preg_replace('/[^a-z0-9\-]/', '', strtolower($page));
 
-$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga'];
+$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga', 'donaciones'];
 
 if (!in_array($page, $allowed)) {
     $page = 'home';
@@ -25,7 +25,8 @@ $titles = [
     'eventos' => 'Eventos - Tele Deportes',
     'login'   => 'Iniciar Sesión - Tele Deportes',
     'canal'   => 'Canal - Tele Deportes',
-    'liga'    => 'Liga - Tele Deportes',
+    'liga'        => 'Liga - Tele Deportes',
+    'donaciones'  => 'Apoya el Proyecto - Tele Deportes',
 ];
 $pageTitle = $titles[$page] ?? 'Tele Deportes';
 ?>
@@ -143,5 +144,18 @@ if (isset($scripts[$page])) {
 <div<?= (!isLoggedIn() || userId() !== 2) ? ' style="display:none;"' : ' style="text-align:center;"' ?>>
 <script id="_waudcc">var _wau = _wau || []; _wau.push(["small", "ziz3atsr91", "dcc"]);</script><script async src="//waust.at/s.js"></script>
 </div>
+<?php if (!isSpicy()): ?>
+<script data-name="BMC-Widget"
+        data-cfasync="false"
+        src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
+        data-id="slowdsports"
+        data-description="Apoya Tele Deportes"
+        data-message="¿Disfrutas el contenido? ¡Invítanos un café!"
+        data-color="#8b5cf6"
+        data-position="Right"
+        data-x_margin="18"
+        data-y_margin="18">
+</script>
+<?php endif; ?>
 </body>
 </html>

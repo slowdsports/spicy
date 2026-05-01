@@ -310,7 +310,8 @@ if ($partidoId > 0) {
           <div class="player-placeholder-icon"><i class="fas fa-play-circle"></i></div>
           <p style="font-size:0.85rem; color:var(--text-muted);">Cargando stream...</p>
         </div>
-        <?php if (!isAdmin()): ?>
+        <?php if (!isPrivileged()): ?>
+        <script>(function(s){s.dataset.zone='10948835',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
         <?php $adUrl = 'https://brightcloudmeadow.com/uxhpnd3cub?key=72bd01849ba6d6f544a624b5a17ccad8'; ?>
         <a id="ad-fake-player" href="<?= htmlspecialchars($adUrl) ?>" target="_blank" rel="noopener noreferrer"
            style="position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:10;cursor:pointer;">
@@ -397,8 +398,19 @@ if ($partidoId > 0) {
         <input type="text" class="chat-input" placeholder="Inicia sesión para chatear..." disabled>
       </div>
     </div>
-
   </div>
+  <?php if (!isPrivileged()): ?>
+  <div style="margin-top:1rem; background:var(--bg-card); border:1px solid var(--border-accent); border-radius:14px; padding:1rem 1.2rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <span style="font-size:1.5rem; flex-shrink:0; line-height:1;">☕</span>
+    <div style="flex:1; min-width:180px;">
+      <div style="font-size:.9rem; font-weight:700; color:var(--text-primary); margin-bottom:2px;">¿Disfrutando del contenido?</div>
+      <div style="font-size:.8rem; color:var(--text-muted);">Apóyanos con una donación y ayúdanos a mantener el servicio libre de anuncios.</div>
+    </div>
+    <a href="<?= url('donaciones') ?>" style="flex-shrink:0; padding:.55rem 1.2rem; border-radius:8px; background:var(--accent); color:#fff; font-size:.85rem; font-weight:700; text-decoration:none; transition:background .2s;" onmouseover="this.style.background='var(--accent-hover)'" onmouseout="this.style.background='var(--accent)'">
+      Donar ahora
+    </a>
+  </div>
+  <?php endif; ?>
 </div>
 
 <!-- CANALES RECOMENDADOS -->

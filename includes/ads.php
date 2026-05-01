@@ -3,7 +3,7 @@
  * Monetización — solo para usuarios no-admin.
  * Incluir justo antes de </body> en cada reproductor.
  */
-if (function_exists('isAdmin') && isAdmin()) return;
+if (function_exists('isPrivileged') && isPrivileged()) return;
 ?>
 <!-- BLOCK -->
 <script type='text/javascript'>
