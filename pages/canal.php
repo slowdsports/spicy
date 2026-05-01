@@ -311,7 +311,7 @@ if ($partidoId > 0) {
           <p style="font-size:0.85rem; color:var(--text-muted);">Cargando stream...</p>
         </div>
         <?php if (!isAdmin()): ?>
-        <?php $adUrl = 'https://omg10.com/4/9310324'; ?>
+        <?php $adUrl = 'https://brightcloudmeadow.com/uxhpnd3cub?key=72bd01849ba6d6f544a624b5a17ccad8'; ?>
         <a id="ad-fake-player" href="<?= htmlspecialchars($adUrl) ?>" target="_blank" rel="noopener noreferrer"
            style="position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:10;cursor:pointer;">
           <i class="fas fa-play-circle" style="font-size:6rem;color:rgba(255,255,255,.9);pointer-events:none;"></i>
