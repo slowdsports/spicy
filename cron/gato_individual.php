@@ -4,6 +4,7 @@ require __DIR__ . '/scraper.php';
 $canales = [
     'hbo_argentina',
     'hbo_2_latinoamerica',
+    'univision_latinoamerica',
     //'hbo_plus',
     //'hbo_family_latinoamerica',
     //'hbo_mundi',
