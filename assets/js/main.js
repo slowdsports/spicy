@@ -20,7 +20,7 @@ async function loadMatches() {
     const filtered = matches.filter(m => {
       if (m.status === 'live') return true;
       if (!m.fecha_hora) return false;
-      const t = new Date(m.fecha_hora.replace(' ', 'T')).getTime();
+      const t = new Date(m.fecha_hora.replace(' ', 'T') + '-06:00').getTime();
       return !isNaN(t) && t >= minus3h && t <= in24h;
     });
 
@@ -30,6 +30,7 @@ async function loadMatches() {
       return;
     }
     filtered.forEach(m => slider.appendChild(createMatchCard(m)));
+    if (typeof guardaHorario === 'function') guardaHorario();
     initCountdowns();
   } catch (e) {
     console.error('Error cargando partidos:', e);
@@ -49,8 +50,8 @@ function getTeamLogoPath(logo) {
 function updateCountdown(el) {
   const timeStr = el.dataset.time;
   if (!timeStr) return;
-  // "2026-05-04 08:00:00" → ISO local para que JS lo parsee correctamente
-  const target = new Date(timeStr.replace(' ', 'T'));
+  // "2026-05-04 08:00:00" en hora de Honduras (UTC-6) → convertir a UTC
+  const target = new Date(timeStr.replace(' ', 'T') + '-06:00');
   if (isNaN(target)) return;
   const distance = target - Date.now();
   const badge = el.closest('.match-status-badge');
@@ -102,8 +103,8 @@ function createMatchCard(match) {
   const badgeText = isLive
     ? '● EN VIVO'
     : hasDatetime
-      ? `<span class="match-countdown" data-time="${match.fecha_hora}">${match.time}</span>`
-      : (match.time || '--:--');
+      ? `<span class="match-countdown" data-time="${match.fecha_hora}"><span class="t">${match.time || '--:--'}</span></span>`
+      : `<span class="t">${match.time || '--:--'}</span>`;
   const leagueName = match.leagueName || match.league || '';
   const homeLogo = getTeamLogoPath(match.homeTeam?.logo);
   const awayLogo = getTeamLogoPath(match.awayTeam?.logo);
