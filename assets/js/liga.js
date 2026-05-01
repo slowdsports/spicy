@@ -8,10 +8,10 @@ function updateCountdown(el) {
   if (ts > 0) {
     distance = ts * 1000 - Date.now();
   } else {
-    // fallback para entradas antiguas sin data-ts
+    // fallback para entradas antiguas sin data-ts (fecha_hora en hora Honduras UTC-6)
     const timeStr = el.dataset.time;
     if (!timeStr) return;
-    const target = new Date(timeStr.replace(' ', 'T'));
+    const target = new Date(timeStr.replace(' ', 'T') + '-06:00');
     if (isNaN(target)) return;
     distance = target - Date.now();
   }
@@ -48,6 +48,8 @@ function updateCountdown(el) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (typeof guardaHorario === 'function') guardaHorario();
+
   document.querySelectorAll('.match-countdown').forEach(el => {
     updateCountdown(el);
     setInterval(() => updateCountdown(el), 1000);
