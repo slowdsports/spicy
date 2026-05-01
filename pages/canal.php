@@ -311,7 +311,6 @@ if ($partidoId > 0) {
           <p style="font-size:0.85rem; color:var(--text-muted);">Cargando stream...</p>
         </div>
         <?php if (!isAdmin()): ?>
-        <script>(function(s){s.dataset.zone='10948835',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
         <?php $adUrl = 'https://brightcloudmeadow.com/uxhpnd3cub?key=72bd01849ba6d6f544a624b5a17ccad8'; ?>
         <a id="ad-fake-player" href="<?= htmlspecialchars($adUrl) ?>" target="_blank" rel="noopener noreferrer"
            style="position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:10;cursor:pointer;">
