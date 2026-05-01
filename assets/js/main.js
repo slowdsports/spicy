@@ -15,10 +15,17 @@ async function loadMatches() {
 
     const now = Date.now();
     const in24h = now + 86400000;    // 24 horas hacia adelante
-    const minus3h = now - 10800000;  // 3 horas atrás (partidos que pueden seguir en curso)
+    const minus3h = now - 10800000;  // mostrar hasta 3h después del inicio (incl. badge Finalizado)
 
     const filtered = matches.filter(m => {
-      if (m.status === 'live') return true;
+      if (m.status === 'live') {
+        // Excluir live con fecha conocida de hace más de 2h
+        if (m.fecha_hora) {
+          const t = new Date(m.fecha_hora.replace(' ', 'T') + '-06:00').getTime();
+          return isNaN(t) || t >= now - 7200000;
+        }
+        return true;
+      }
       if (!m.fecha_hora) return false;
       const t = new Date(m.fecha_hora.replace(' ', 'T') + '-06:00').getTime();
       return !isNaN(t) && t >= minus3h && t <= in24h;
@@ -73,11 +80,12 @@ function updateCountdown(el) {
   const distance = target - Date.now();
   const badge = el.closest('.match-status-badge');
   if (distance < 0) {
-    if (distance > -10800000) {
+    if (distance > -7200000) {
       el.textContent = '● EN VIVO';
-      if (badge) { badge.classList.remove('badge-upcoming'); badge.classList.add('badge-live'); }
+      if (badge) { badge.classList.remove('badge-upcoming', 'badge-finished'); badge.classList.add('badge-live'); }
     } else {
-      el.textContent = 'Finalizó';
+      el.textContent = 'Finalizado';
+      if (badge) { badge.classList.remove('badge-live', 'badge-upcoming'); badge.classList.add('badge-finished'); }
     }
     return;
   }
@@ -115,12 +123,13 @@ function createMatchCard(match) {
   card.style.textDecoration = 'none';
   card.className = 'match-card fade-in';
   const isLive = match.status === 'live';
+  const hasDatetime = !!match.fecha_hora;
   const badgeClass = isLive ? 'badge-live' : 'badge-upcoming';
-  const hasDatetime = !isLive && match.fecha_hora;
-  const badgeText = isLive
-    ? '● EN VIVO'
-    : hasDatetime
-      ? `<span class="match-countdown" data-time="${match.fecha_hora}"><span class="t">${match.time || '--:--'}</span></span>`
+  // Si hay fecha_hora, el countdown gestiona el estado (EN VIVO → Finalizado)
+  const badgeText = hasDatetime
+    ? `<span class="match-countdown" data-time="${match.fecha_hora}"><span class="t">${match.time || '--:--'}</span></span>`
+    : isLive
+      ? '● EN VIVO'
       : `<span class="t">${match.time || '--:--'}</span>`;
   const leagueName = match.leagueName || match.league || '';
   const homeLogo = getTeamLogoPath(match.homeTeam?.logo);

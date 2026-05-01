@@ -349,6 +349,12 @@ body {
   border: 1px solid var(--border-accent);
 }
 
+.badge-finished {
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
 .team-box {
   color: var(--text-primary);
 }

@@ -223,6 +223,16 @@ if ($partidoId > 0) {
   color: var(--accent);
   white-space: nowrap;
 }
+.badge-finished {
+  font-size: .7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 30px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
 
 /* Match source pills bar */
 .match-pills-bar {
@@ -280,10 +290,12 @@ if ($partidoId > 0) {
       <div class="partido-header">
         <div class="partido-meta">
           <img src="<?= $pLeagueLogo ?>" class="partido-league-img" onerror="this.style.opacity='.2'">
-          <?php if ($pStatus === 'live'): ?>
+          <?php if (!empty($partidoData['fecha_hora'])): ?>
+            <span class="badge-time"><i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($partidoData['fecha_hora']) ?>" data-ts="<?= (int)($partidoData['timestamp'] ?? 0) ?>"><?= $pTime ?></span></span>
+          <?php elseif ($pStatus === 'live'): ?>
             <span class="badge-live"><span class="dot-live"></span> EN VIVO</span>
           <?php else: ?>
-            <span class="badge-time"><i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($partidoData['fecha_hora'] ?? '') ?>" data-ts="<?= (int)($partidoData['timestamp'] ?? 0) ?>"><?= $pTime ?></span></span>
+            <span class="badge-time"><i class="fas fa-clock"></i> <span class="t"><?= $pTime ?></span></span>
           <?php endif; ?>
         </div>
         <div class="partido-teams">
@@ -559,18 +571,22 @@ if (PARTIDO_ID) {
         if (isNaN(target)) return;
         distance = target - Date.now();
       }
-      const badge = el.closest('.badge-time');
+      const badge = el.closest('.badge-time, .badge-live, .badge-finished');
       if (distance < 0) {
-        if (distance > -10800000) {
+        if (distance > -7200000) {
           el.textContent = '● EN VIVO';
           if (badge) {
-            badge.classList.remove('badge-time');
+            badge.classList.remove('badge-time', 'badge-finished');
             badge.classList.add('badge-live');
             const icon = badge.querySelector('i');
             if (icon) icon.remove();
           }
         } else {
-          el.textContent = 'Finalizó';
+          el.textContent = 'Finalizado';
+          if (badge) {
+            badge.classList.remove('badge-live', 'badge-time');
+            badge.classList.add('badge-finished');
+          }
         }
         return;
       }
