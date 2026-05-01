@@ -11,7 +11,7 @@ define('DB_PASS', 'OF0wh^]#kK9C+U1W');
 define('DB_NAME', 'u5869826_streamhub');
 
 // ---- URL base (ajustar según carpeta del proyecto) ----
-define('BASE_URL', '/');
+define('BASE_URL', '/spicy/');
 
 // Iniciar sesión PHP si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
@@ -50,6 +50,56 @@ function isLoggedIn(): bool {
 /** Devuelve true si el usuario es administrador */
 function isAdmin(): bool {
     return isset($_SESSION['user_rol']) && $_SESSION['user_rol'] === 'admin';
+}
+
+/** Devuelve true si el usuario es spicy (premium) y su acceso no ha expirado */
+function isSpicy(): bool {
+    static $checked = false, $result = false;
+    if ($checked) return $result;
+    $checked = true;
+
+    if (!isset($_SESSION['user_rol']) || $_SESSION['user_rol'] !== 'spicy') {
+        return $result = false;
+    }
+
+    // Verificar expiración en BD (solo si db.php ya fue incluido)
+    if (!function_exists('getDBConnection')) return $result = true;
+
+    try {
+        $conn = getDBConnection();
+        $id   = (int)($_SESSION['user_id'] ?? 0);
+        if (!$id) return $result = false;
+
+        $stmt = $conn->prepare("SELECT spicy_hasta FROM usuarios WHERE id = ? AND rol = 'spicy'");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$row) {
+            $_SESSION['user_rol'] = 'usuario';
+            return $result = false;
+        }
+
+        if ($row['spicy_hasta'] && strtotime($row['spicy_hasta']) < time()) {
+            // Acceso expirado: bajar a usuario
+            $u = $conn->prepare("UPDATE usuarios SET rol = 'usuario', spicy_hasta = NULL WHERE id = ?");
+            $u->bind_param('i', $id);
+            $u->execute();
+            $u->close();
+            $_SESSION['user_rol'] = 'usuario';
+            return $result = false;
+        }
+
+        return $result = true;
+    } catch (Throwable $e) {
+        return $result = true; // no penalizar al usuario si la BD falla
+    }
+}
+
+/** Devuelve true si el usuario es admin o spicy (ambos roles privilegiados) */
+function isPrivileged(): bool {
+    return isAdmin() || isSpicy();
 }
 
 /** Devuelve el nombre del usuario o cadena vacía */
