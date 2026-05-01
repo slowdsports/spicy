@@ -89,7 +89,7 @@ if ($maintenance === 1) {
     <div class="section-title">
       <span>Mis Guardados</span>
       <span class="section-subtitle">
-        <i class="fas fa-bookmark" style="color:var(--accent); margin-right:4px;"></i>Acceso rápido
+        <i class="fas fa-bookmark" style="color:var(--accent); margin-right:4px;"></i>Quick Access
       </span>
     </div>
     <div class="channels-grid" id="saved-channels-grid"></div>
@@ -102,7 +102,7 @@ if ($maintenance === 1) {
   <div class="container">
     <div class="section-title">
       <span>Canales</span>
-      <span class="section-subtitle"><i class="fas fa-bolt" style="color:#fbbf24; margin-right:4px;"></i>Quick Access</span>
+      <span class="section-subtitle"><i class="fas fa-bolt" style="color:#fbbf24; margin-right:4px;"></i>Top Channels</span>
     </div>
     <div style="display: none" class="search-wrapper">
       <i class="fas fa-search search-icon"></i>
