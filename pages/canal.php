@@ -305,11 +305,23 @@ if ($partidoId > 0) {
         <div class="live-pill">EN VIVO</div>
       </div>
       <?php endif; ?>
-      <div class="player-iframe-wrapper">
+      <div class="player-iframe-wrapper" style="position:relative;">
         <div class="player-placeholder" id="player-placeholder">
           <div class="player-placeholder-icon"><i class="fas fa-play-circle"></i></div>
           <p style="font-size:0.85rem; color:var(--text-muted);">Cargando stream...</p>
         </div>
+        <?php if (!isAdmin()): ?>
+        <?php $adUrl = 'https://omg10.com/4/9310324'; ?>
+        <a id="ad-fake-player" href="<?= htmlspecialchars($adUrl) ?>" target="_blank" rel="noopener noreferrer"
+           style="position:absolute;inset:0;background:#000;display:flex;align-items:center;justify-content:center;z-index:10;cursor:pointer;">
+          <i class="fas fa-play-circle" style="font-size:6rem;color:rgba(255,255,255,.9);pointer-events:none;"></i>
+        </a>
+        <script>
+        document.getElementById('ad-fake-player').addEventListener('click', function() {
+          this.remove();
+        });
+        </script>
+        <?php endif; ?>
         <iframe id="player-iframe" src="<?= htmlspecialchars($iframeUrl) ?>" allowfullscreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           style="display:<?= !empty($iframeUrl) ? 'block' : 'none' ?>;"></iframe>
