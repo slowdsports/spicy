@@ -3,8 +3,16 @@
  * StreamHub - API de Autenticación
  * Endpoint: /api/auth.php
  */
+
+// Asegurar que errores PHP nunca contaminen la respuesta JSON
+ini_set('display_errors', 0);
+error_reporting(0);
+ob_start(); // buffer: si algo escapa antes de los headers, lo descartamos
+
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
+
+ob_clean(); // descartar cualquier output generado durante los includes
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
@@ -23,15 +31,19 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout_redirect') {
     exit();
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
-if (!$input || !isset($input['action'])) { send(false, 'Petición inválida', null, 400); }
+try {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input || !isset($input['action'])) { send(false, 'Petición inválida', null, 400); }
 
-switch ($input['action']) {
-    case 'login':    handleLogin($input);    break;
-    case 'register': handleRegister($input); break;
-    case 'logout':   handleLogout();         break;
-    case 'check':    handleCheck();          break;
-    default:         send(false, 'Acción no reconocida', null, 400);
+    switch ($input['action']) {
+        case 'login':    handleLogin($input);    break;
+        case 'register': handleRegister($input); break;
+        case 'logout':   handleLogout();         break;
+        case 'check':    handleCheck();          break;
+        default:         send(false, 'Acción no reconocida', null, 400);
+    }
+} catch (Throwable $e) {
+    send(false, 'Error interno del servidor', null, 500);
 }
 
 function handleLogin(array $d): void {
