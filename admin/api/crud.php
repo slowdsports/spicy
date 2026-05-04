@@ -99,26 +99,27 @@ try {
     if ($action === 'save' && $entity === 'fuente') {
         $d = $input['data'] ?? [];
 
-        $id       = (int)($d['id']      ?? 0);
-        $nombre   = trim($d['nombre']   ?? '');
-        $canal    = (int)($d['canal']   ?? 0);
-        $url      = trim($d['url']      ?? '');
-        $ckKey    = trim($d['ck_key']   ?? '') ?: null;
-        $ckKeyId  = trim($d['ck_keyid'] ?? '') ?: null;
-        $pais     = $d['pais']   ? (int)$d['pais']   : null;
-        $tipo     = (int)($d['tipo']    ?? 0);
-        $epg      = trim($d['epg']      ?? '') ?: null;
-        $activo   = (int)($d['activo']  ?? 1);
-        $sandbox  = (int)($d['sandbox'] ?? 1);
+        $id         = (int)($d['id']         ?? 0);
+        $nombre     = trim($d['nombre']      ?? '');
+        $canal      = (int)($d['canal']      ?? 0);
+        $url        = trim($d['url']         ?? '');
+        $ckKey      = trim($d['ck_key']      ?? '') ?: null;
+        $ckKeyId    = trim($d['ck_keyid']    ?? '') ?: null;
+        $pais       = $d['pais'] ? (int)$d['pais'] : null;
+        $tipo       = (int)($d['tipo']       ?? 0);
+        $epg        = trim($d['epg']         ?? '') ?: null;
+        $activo     = (int)($d['activo']     ?? 1);
+        $sandbox    = (int)($d['sandbox']    ?? 1);
+        $mostrar_tv = (int)($d['mostrar_tv'] ?? 1);
 
         if (!$nombre || !$canal || !$url || !$tipo) { resp(false, 'Nombre, canal, URL y tipo son obligatorios'); }
 
         if ($id) {
-            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=?, sandbox=? WHERE id=?");
-            $stmt->bind_param('sissssissii', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $id);
+            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=?, sandbox=?, mostrar_tv=? WHERE id=?");
+            $stmt->bind_param('sissssissiii', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, ck_key, ck_keyid, pais, tipo, epg, activo, sandbox) VALUES (?,?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param('sissssissi', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox);
+            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, ck_key, ck_keyid, pais, tipo, epg, activo, sandbox, mostrar_tv) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->bind_param('sissssissii', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv);
         }
 
         $ok = $stmt->execute();

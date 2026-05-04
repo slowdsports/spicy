@@ -105,6 +105,7 @@ if ($partidoId > 0) {
 }
 ?>
 
+<link rel="stylesheet" href="<?= BASE_URL ?>assets/css/chat.css">
 <style>
 .source-pills-row {
   display: flex;
@@ -401,12 +402,30 @@ if ($partidoId > 0) {
           <i class="fas fa-comments" style="color:var(--accent);"></i> Chat en vivo
         </div>
         <span class="chat-users-count" id="chat-users">
-          <i class="fas fa-users" style="font-size:0.65rem; margin-right:3px;"></i> %users% viendo
+          <i class="fas fa-circle" style="font-size:0.45rem;color:#22c55e;margin-right:4px;"></i> 0 viendo
         </span>
       </div>
-      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-messages-wrap">
+        <div class="chat-messages" id="chat-messages"></div>
+        <button class="chat-scroll-btn" id="chat-scroll-btn" aria-label="Ir a los últimos mensajes">
+          <i class="fas fa-arrow-down"></i> Mensajes nuevos
+        </button>
+      </div>
       <div class="chat-input-area">
-        <input type="text" class="chat-input" placeholder="Inicia sesión para chatear..." disabled>
+        <?php if ($isLoggedIn): ?>
+        <div class="chat-input-wrapper">
+          <input type="text" class="chat-input" id="chat-input-field"
+                 placeholder="Escribe un mensaje..." maxlength="500" autocomplete="off">
+          <button class="chat-send-btn" id="chat-send-btn" title="Enviar (Enter)">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+        <div class="chat-char-count" id="chat-char-count">0/500</div>
+        <?php else: ?>
+        <div class="chat-login-prompt">
+          <a href="<?= url('login') ?>">Inicia sesión</a> para chatear
+        </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
@@ -451,7 +470,11 @@ const CANAL_VIEWS  = <?= $canalViews ?>;
 const IS_LOGGED_IN = <?= $isLoggedIn ? 'true' : 'false' ?>;
 const INIT_LIKE    = <?= $initLike   ? 'true' : 'false' ?>;
 const INIT_SAVE    = <?= $initSave   ? 'true' : 'false' ?>;
+const CHAT_USER_ROL  = <?= json_encode($_SESSION['user_rol'] ?? '') ?>;
+const CHAT_USER_NAME = <?= json_encode(userName()) ?>;
 </script>
+
+<script src="<?= BASE_URL ?>assets/js/chat.js"></script>
 
 <!-- Modal: Reportar canal -->
 <div class="modal fade" id="modal-reportar" tabindex="-1" aria-hidden="true">

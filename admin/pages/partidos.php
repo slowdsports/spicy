@@ -362,7 +362,7 @@ try {
 <!-- tabla -->
 <div class="admin-table-wrapper">
 
-<table class="admin-table">
+<table id="tabla-partidos" class="admin-table">
 
 <thead>
 <tr>
@@ -511,7 +511,7 @@ function mostrarImportarPartidos() {
     // Pre-seleccionar la liga activa en el filtro
     const ligaActiva = document.getElementById('filtro-liga').value;
     if (ligaActiva && ligaActiva !== '0') {
-        document.getElementById('sofa-partidos-id').value = ligaActiva;
+        tsSet('sofa-partidos-id', ligaActiva);
     }
 }
 
@@ -554,8 +554,7 @@ function abrirModalPartido(id) {
         if (!data.success) return;
 
         for (let i=1;i<=10;i++) {
-            const el = document.getElementById('partido-canal'+i);
-            if (el) el.value = data.data['canal'+i] ?? '';
+            tsSet('partido-canal'+i, data.data['canal'+i] ?? '');
         }
 
         new bootstrap.Modal(
@@ -563,5 +562,11 @@ function abrirModalPartido(id) {
         ).show();
 
     });
+}
+
+// Auto-abrir modal si la URL contiene ?edit=ID (ej: llegando desde el dashboard)
+const _editId = parseInt(new URLSearchParams(window.location.search).get('edit'), 10);
+if (_editId) {
+    document.addEventListener('DOMContentLoaded', () => abrirModalPartido(_editId));
 }
 </script>

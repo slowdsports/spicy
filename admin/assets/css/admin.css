@@ -464,3 +464,195 @@
   .admin-sidebar { display: none; }
   .admin-content { padding: 1rem; }
 }
+
+/* ── Tom Select — integración con el tema admin ───────────── */
+.ts-wrapper {
+  --ts-color-accent:    var(--accent);
+  --ts-color-border:    var(--border);
+  --ts-color-bg:        var(--bg-input);
+  --ts-color-bg-card:   var(--bg-card);
+  --ts-color-text:      var(--text-primary);
+  --ts-color-muted:     var(--text-muted);
+  --ts-color-soft:      var(--accent-soft);
+  /* Tom Select copia las clases del <select> original (ej. form-select),
+     lo que haría que Bootstrap aplique background:#fff al wrapper.
+     Neutralizamos cualquier fondo heredado. */
+  background: transparent !important;
+  background-image: none !important;
+  padding: 0 !important;
+}
+
+/* Control (caja visible) */
+.ts-wrapper .ts-control {
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  min-height: 38px !important;
+  padding: 4px 10px !important;
+  gap: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ts-wrapper.focus .ts-control {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+/* Item seleccionado */
+.ts-wrapper .ts-control .item {
+  color: var(--text-primary) !important;
+  font-size: 0.875rem;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+/* Input de búsqueda dentro del control */
+.ts-wrapper .ts-control input {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+  font-size: 0.875rem;
+  caret-color: var(--accent);
+}
+
+.ts-wrapper .ts-control input::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Flecha del dropdown */
+.ts-wrapper.single .ts-control::after {
+  border-color: var(--text-muted) transparent transparent !important;
+}
+.ts-wrapper.single.dropdown-active .ts-control::after {
+  border-color: transparent transparent var(--text-muted) !important;
+}
+
+/* Panel desplegable */
+.ts-dropdown {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  z-index: 9999 !important;
+  overflow: hidden;
+  margin-top: 4px !important;
+}
+
+/* Opciones */
+.ts-dropdown .option {
+  color: var(--text-secondary) !important;
+  padding: 8px 12px !important;
+  font-size: 0.85rem !important;
+  background: transparent !important;
+  transition: background 0.1s, color 0.1s;
+}
+
+.ts-dropdown .option:hover,
+.ts-dropdown .option.active {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+
+.ts-dropdown .option.selected,
+.ts-dropdown .option.selected.active {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  font-weight: 600;
+}
+
+/* "Sin resultados" */
+.ts-dropdown .no-results {
+  color: var(--text-muted) !important;
+  padding: 10px 14px !important;
+  font-size: 0.83rem !important;
+}
+
+/* Scrollbar del dropdown */
+.ts-dropdown-content {
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.ts-dropdown-content::-webkit-scrollbar { width: 5px; }
+.ts-dropdown-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── DataTables 2.x — integración con el tema admin ──────── */
+.dt-container {
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+}
+
+.dt-layout-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.dt-layout-cell { display: flex; align-items: center; }
+
+/* Info ("Mostrando 1–25 de 80") */
+.dt-info {
+  color: var(--text-muted) !important;
+  font-size: 0.78rem;
+}
+
+/* Paginación */
+.dt-paging {
+  display: flex;
+  gap: 3px;
+}
+
+.dt-paging .dt-paging-button {
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-secondary) !important;
+  border-radius: 6px !important;
+  padding: 3px 10px !important;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.dt-paging .dt-paging-button:hover:not(.disabled) {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+.dt-paging .dt-paging-button.current,
+.dt-paging .dt-paging-button.current:hover {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+}
+
+.dt-paging .dt-paging-button.disabled,
+.dt-paging .dt-paging-button.disabled:hover {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+}
+
+/* Cabeceras ordenables */
+table.dataTable thead th.dt-orderable-asc,
+table.dataTable thead th.dt-orderable-desc {
+  cursor: pointer;
+}
+
+table.dataTable thead th .dt-column-order {
+  opacity: 0.25;
+  margin-left: 4px;
+  font-size: 0.7rem;
+}
+
+table.dataTable thead th.dt-ordering-asc .dt-column-order,
+table.dataTable thead th.dt-ordering-desc .dt-column-order {
+  opacity: 1;
+  color: var(--accent);
+}

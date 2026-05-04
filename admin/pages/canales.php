@@ -279,10 +279,4 @@ document.getElementById('canal-imagen').addEventListener('input', function () {
   else { prev.style.display = 'none'; }
 });
 
-document.getElementById('search-canales').addEventListener('input', function () {
-  const q = this.value.toLowerCase();
-  document.querySelectorAll('#tabla-canales tbody tr[data-nombre]').forEach(row => {
-    row.style.display = row.dataset.nombre.includes(q) ? '' : 'none';
-  });
-});
 </script>

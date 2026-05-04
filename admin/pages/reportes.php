@@ -224,11 +224,3 @@ $idsAutoDesactivados = array_column($autodesactivados, 'fuente_id');
   <?php endif; ?>
 </div>
 
-<script>
-document.getElementById('search-reportes').addEventListener('input', function () {
-  var q = this.value.toLowerCase();
-  document.querySelectorAll('#tabla-reportes tbody tr[data-search]').forEach(function (row) {
-    row.style.display = row.dataset.search.includes(q) ? '' : 'none';
-  });
-});
-</script>

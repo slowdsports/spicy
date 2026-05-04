@@ -33,6 +33,7 @@ $pageTitle = $titles[$page] ?? 'Tele Deportes';
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
+  <?php include __DIR__ . '/includes/ads.php'; ?>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars($pageTitle) ?></title>
@@ -142,7 +143,7 @@ if (isset($scripts[$page])) {
 }
 ?>
 <div<?= (!isLoggedIn() || userId() !== 2) ? ' style="display:none;"' : ' style="text-align:center;"' ?>>
-<script id="_waudcc">var _wau = _wau || []; _wau.push(["small", "ziz3atsr91", "dcc"]);</script><script async src="//waust.at/s.js"></script>
+<script id="_wauh8l">var _wau = _wau || []; _wau.push(["small", "j9isfwldlg", "h8l"]);</script><script async src="//waust.at/s.js"></script>
 </div>
 <?php if (!isSpicy()): ?>
 <script data-name="BMC-Widget"

@@ -216,11 +216,4 @@ function importarLiga() {
     });
 }
 
-// Filtro búsqueda
-document.getElementById('search-ligas').addEventListener('input', function () {
-  const q = this.value.toLowerCase();
-  document.querySelectorAll('#tabla-ligas tbody tr[data-nombre]').forEach(r => {
-    r.style.display = r.dataset.nombre.includes(q) ? '' : 'none';
-  });
-});
 </script>

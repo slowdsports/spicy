@@ -62,8 +62,8 @@ function abrirModalCanal(data = null) {
   document.getElementById('canal-id').value        = data?.id       ?? '';
   document.getElementById('canal-nombre').value    = data?.nombre   ?? '';
   document.getElementById('canal-imagen').value    = data?.imagen   ?? '';
-  document.getElementById('canal-categoria').value = data?.categoria_id ?? '';
-  document.getElementById('canal-activo').value    = data?.activo   ?? '1';
+  tsSet('canal-categoria', data?.categoria_id ?? '');
+  tsSet('canal-activo',    data?.activo      ?? '1');
   document.getElementById('modalCanalTitulo').textContent = data ? 'Editar canal' : 'Nuevo canal';
 
   // Actualizar preview de imagen
@@ -109,15 +109,16 @@ function guardarCanal() {
 function abrirModalFuente(data = null) {
   document.getElementById('fuente-id').value       = data?.id       ?? '';
   document.getElementById('fuente-nombre').value   = data?.nombre   ?? '';
-  document.getElementById('fuente-canal').value    = data?.canal_id ?? '';
+  tsSet('fuente-canal',      data?.canal_id  ?? '');
   document.getElementById('fuente-url').value      = data?.url      ?? '';
-  document.getElementById('fuente-tipo').value     = data?.tipo_id  ?? '';
-  document.getElementById('fuente-pais').value     = data?.pais_id  ?? '';
+  tsSet('fuente-tipo',       data?.tipo_id   ?? '');
+  tsSet('fuente-pais',       data?.pais_id   ?? '');
   document.getElementById('fuente-epg').value      = data?.epg      ?? '';
   document.getElementById('fuente-ck-key').value   = data?.ck_key   ?? '';
   document.getElementById('fuente-ck-keyid').value = data?.ck_keyid ?? '';
-  document.getElementById('fuente-activo').value   = data?.activo   ?? '1';
-  document.getElementById('fuente-sandbox').checked = (data?.sandbox ?? 1) == 1;
+  tsSet('fuente-activo',     data?.activo     ?? '1');
+  tsSet('fuente-mostrar-tv', data?.mostrar_tv ?? '1');
+  document.getElementById('fuente-sandbox').checked   = (data?.sandbox ?? 1) == 1;
   document.getElementById('modalFuenteTitulo').textContent = data ? 'Editar fuente' : 'Nueva fuente';
 
   new bootstrap.Modal(document.getElementById('modalFuente')).show();
@@ -134,8 +135,9 @@ function guardarFuente() {
     epg:       document.getElementById('fuente-epg').value.trim(),
     ck_key:    document.getElementById('fuente-ck-key').value.trim(),
     ck_keyid:  document.getElementById('fuente-ck-keyid').value.trim(),
-    activo:    document.getElementById('fuente-activo').value,
-    sandbox:   document.getElementById('fuente-sandbox').checked ? 1 : 0,
+    activo:     document.getElementById('fuente-activo').value,
+    mostrar_tv: document.getElementById('fuente-mostrar-tv').value,
+    sandbox:    document.getElementById('fuente-sandbox').checked ? 1 : 0,
   };
 
   if (!data.nombre || !data.canal || !data.url || !data.tipo) {
@@ -165,7 +167,7 @@ function abrirModalLiga(data = null) {
   document.getElementById('liga-sf-id').value  = data?.id          ?? '';
   document.getElementById('liga-nombre').value = data?.ligaNombre  ?? '';
   document.getElementById('liga-pais').value   = data?.ligaPais    ?? '';
-  document.getElementById('liga-tipo').value   = data?.tipo        ?? 'soccer';
+  tsSet('liga-tipo', data?.tipo ?? 'soccer');
   document.getElementById('modalLigaTitulo').textContent = data ? 'Editar liga' : 'Nueva liga';
 
   new bootstrap.Modal(document.getElementById('modalLiga')).show();
@@ -224,3 +226,104 @@ function guardarPartido() {
   })
   .catch(() => adminToast('Error de conexión', 'error'));
 }
+
+// ============================================================
+// ── TOM SELECT — select con búsqueda ─────────────────────────
+// ============================================================
+
+const _ts = {};
+
+/**
+ * Establece el valor de un select gestionado por Tom Select.
+ * Si el instancia no existe aún, usa .value como fallback.
+ */
+function tsSet(id, val) {
+  const v = val != null ? String(val) : '';
+  if (_ts[id]) {
+    _ts[id].setValue(v, true); // silent=true: no dispara change
+  } else {
+    const el = document.getElementById(id);
+    if (el) el.value = v;
+  }
+}
+
+/** Inicializa Tom Select en todos los <select> del DOM que tengan id. */
+function initAdminSelects() {
+  document.querySelectorAll('select[id]').forEach(el => {
+    if (_ts[el.id]) return;
+    _ts[el.id] = new TomSelect(el, {
+      allowEmptyOption: true,
+      maxOptions: 500,
+      dropdownParent: 'body', // evita recortes por overflow en modales Bootstrap
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initAdminSelects);
+
+// ============================================================
+// ── DATATABLES — tablas con búsqueda, orden y paginación ─────
+// ============================================================
+
+function initAdminTables() {
+  const cfg = {
+    'tabla-canales':   { searchId: 'search-canales' },
+    'tabla-fuentes':   { searchId: 'search-fuentes' },
+    'tabla-ligas':     { searchId: 'search-ligas' },
+    'tabla-reportes':  { searchId: 'search-reportes' },
+    'tabla-partidos':  { searchId: null },             // usa filtros por URL, sin input de búsqueda
+    'tabla-usuarios':  {
+      searchId: 'search-usuarios',
+      colFilters: [{ col: 2, inputId: 'filter-rol' }],
+    },
+  };
+
+  Object.entries(cfg).forEach(([tableId, opts]) => {
+    const el = document.getElementById(tableId);
+    if (!el || !window.DataTable) return;
+
+    const dt = new DataTable(el, {
+      paging:     true,
+      pageLength: 25,
+      ordering:   true,
+      searching:  true,
+      info:       true,
+      layout: {
+        topStart:    null,
+        topEnd:      null,
+        bottomStart: 'info',
+        bottomEnd:   'paging',
+      },
+      columnDefs: [
+        { orderable: false, targets: -1 }, // columna Acciones no es ordenable
+      ],
+      language: {
+        info:         'Mostrando _START_–_END_ de _TOTAL_',
+        infoEmpty:    'Sin resultados',
+        infoFiltered: '(filtrado de _MAX_)',
+        emptyTable:   'No hay datos disponibles',
+        zeroRecords:  'Sin coincidencias',
+        paginate:     { previous: '‹', next: '›' },
+      },
+    });
+
+    // Conectar el input de búsqueda existente al DataTable
+    const searchEl = opts.searchId ? document.getElementById(opts.searchId) : null;
+    if (searchEl) {
+      searchEl.addEventListener('input', () => dt.search(searchEl.value).draw());
+    }
+
+    // Conectar filtros de columna (ej. filter-rol en usuarios)
+    (opts.colFilters ?? []).forEach(({ col, inputId }) => {
+      const sel = document.getElementById(inputId);
+      if (!sel) return;
+      sel.addEventListener('change', () => {
+        const v = sel.value;
+        // Búsqueda exacta con regex para no hacer match parcial
+        dt.column(col).search(v ? '^' + v + '$' : '', { regex: true }).draw();
+      });
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initAdminTables);

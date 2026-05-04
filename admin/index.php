@@ -49,6 +49,10 @@ $pageTitle = $titles[$page] ?? 'Admin';
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Tom Select -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
+  <!-- Data Tables -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.3.8/css/dataTables.dataTables.min.css">
   <!-- Estilos del sitio principal (variables de color, etc.) -->
   <link rel="stylesheet" href="../assets/css/style.css">
   <!-- Estilos específicos del admin -->
@@ -80,6 +84,10 @@ $pageTitle = $titles[$page] ?? 'Admin';
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Tom Select -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<!-- Data Tables -->
+<script src="https://cdn.datatables.net/2.3.8/js/dataTables.min.js"></script>
 <!-- Tema -->
 <script src="../assets/js/theme.js"></script>
 <!-- JS del admin (funciones CRUD compartidas) -->

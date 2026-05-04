@@ -373,18 +373,6 @@ async function eliminarDonacion(id) {
   else showToast(data.message, false);
 }
 
-// Filtros de tabla
-document.getElementById('search-usuarios').addEventListener('input', filterTable);
-document.getElementById('filter-rol').addEventListener('change', filterTable);
-
-function filterTable() {
-  var q   = document.getElementById('search-usuarios').value.toLowerCase();
-  var rol = document.getElementById('filter-rol').value;
-  document.querySelectorAll('#tabla-usuarios tbody tr[data-search]').forEach(function(row) {
-    var ok = (!q || row.dataset.search.includes(q)) && (!rol || row.dataset.rol === rol);
-    row.style.display = ok ? '' : 'none';
-  });
-}
 
 function showToast(msg, ok) {
   var t = document.getElementById('admin-toast');

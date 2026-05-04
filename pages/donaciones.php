@@ -166,6 +166,7 @@ $bmcUser = 'slowdsports'; // ← Reemplaza con tu usuario de buymeacoffee.com
         <img src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg" alt="Buy Me a Coffee">
         Donar con Buy Me a Coffee
       </a>
+      <hr>
       <p class="donate-note">Serás redirigido a buymeacoffee.com · Pago seguro</p>
     </div>
 

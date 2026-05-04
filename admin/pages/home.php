@@ -4,11 +4,10 @@
  * Muestra contadores de cada entidad disponible en el sistema.
  */
 
+// Contadores — bloque independiente para que un error en upcoming no los borre
+$counts = array_fill_keys(['canales','fuentes','ligas','equipos','partidos','usuarios','reportes'], '—');
 try {
-    $conn = getDBConnection();
-
-    // Contar cada entidad con una sola consulta por tabla
-    $counts = [];
+    $conn   = getDBConnection();
     $tables = [
         'canales'  => 'canales',
         'fuentes'  => 'fuentes',
@@ -18,15 +17,20 @@ try {
         'usuarios' => 'usuarios',
         'reportes' => 'canal_reportes',
     ];
-
     foreach ($tables as $key => $table) {
         $res = $conn->query("SELECT COUNT(*) AS total FROM `{$table}`");
         $counts[$key] = $res ? (int)$res->fetch_assoc()['total'] : 0;
     }
+} catch (Exception $e) { /* mantiene los '—' del array inicial */ }
 
-    // Próximos partidos (los 5 más cercanos a hoy)
+// Próximos partidos — bloque separado para no afectar los contadores
+$upcomingRows = [];
+try {
+    $conn     = getDBConnection();
     $upcoming = $conn->query("
-        SELECT p.fecha_hora, l.equipoNombre AS local, v.equipoNombre AS visitante,
+        SELECT p.id, p.fecha_hora,
+               l.nombre  AS local,
+               v.nombre  AS visitante,
                li.ligaNombre AS liga
         FROM partidos p
         LEFT JOIN equipos l  ON p.local     = l.id
@@ -37,11 +41,7 @@ try {
         LIMIT 5
     ");
     $upcomingRows = $upcoming ? $upcoming->fetch_all(MYSQLI_ASSOC) : [];
-
-} catch (Exception $e) {
-    $counts      = array_fill_keys(['canales','fuentes','ligas','equipos','partidos','usuarios'], '—');
-    $upcomingRows = [];
-}
+} catch (Exception $e) { /* $upcomingRows queda vacío */ }
 
 // Configuración de las stat cards
 $stats = [
@@ -50,7 +50,7 @@ $stats = [
     ['key' => 'ligas',    'icon' => 'fa-trophy',        'label' => 'Ligas',     'page' => 'ligas',    'color' => '#f59e0b'],
     ['key' => 'partidos', 'icon' => 'fa-futbol',        'label' => 'Partidos',  'page' => 'partidos', 'color' => '#22c55e'],
     ['key' => 'equipos',  'icon' => 'fa-shield-alt',    'label' => 'Equipos',   'page' => 'ligas',    'color' => '#ec4899'],
-    ['key' => 'usuarios', 'icon' => 'fa-users',         'label' => 'Usuarios',  'page' => 'config',   'color' => '#a78bfa'],
+    ['key' => 'usuarios', 'icon' => 'fa-users',         'label' => 'Usuarios',  'page' => 'usuarios',   'color' => '#a78bfa'],
     ['key' => 'reportes', 'icon' => 'fa-flag',         'label' => 'Reportes',  'page' => 'reportes', 'color' => '#ef4444'],
 ];
 ?>
@@ -94,6 +94,7 @@ $stats = [
           <th>Local</th>
           <th>Visitante</th>
           <th>Liga</th>
+          <th style="width:70px;"></th>
         </tr>
       </thead>
       <tbody>
@@ -105,6 +106,11 @@ $stats = [
           <td><?= htmlspecialchars($row['local'] ?? '—') ?></td>
           <td><?= htmlspecialchars($row['visitante'] ?? '—') ?></td>
           <td><span style="font-size:0.78rem; color:var(--text-muted);"><?= htmlspecialchars($row['liga'] ?? '—') ?></span></td>
+          <td>
+            <a href="<?= BASE_URL ?>admin/?p=partidos&edit=<?= $row['id'] ?>" class="btn-admin-edit" title="Editar partido">
+              <i class="fas fa-pen"></i>
+            </a>
+          </td>
         </tr>
         <?php endforeach; ?>
       </tbody>

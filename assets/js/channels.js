@@ -18,9 +18,9 @@ async function loadChannels() {
     const channelMap = {};
     channels.forEach(c => { channelMap[c.id] = c; });
 
-    // Fuentes activas enriquecidas con datos del canal padre
+    // Fuentes activas y visibles en TV, enriquecidas con datos del canal padre
     allItems = fuentes
-      .filter(f => f.activo === 1)
+      .filter(f => f.activo === 1 && f.mostrar_tv !== 0)
       .map(f => {
         const parent = channelMap[f.canal] ?? null;
         return {

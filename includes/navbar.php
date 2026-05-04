@@ -71,6 +71,12 @@ $uName    = userName();
           </a>
         </li>
 
+        <li class="nav-item">
+          <a href="<?= url('donaciones') ?>" class="nav-link <?= $currentPage === 'donaciones' ? 'active' : '' ?>">
+            <i class="fas fa-coffee me-1"></i> Donaciones
+          </a>
+        </li>
+
       </ul>
 
       <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">

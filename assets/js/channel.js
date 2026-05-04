@@ -26,7 +26,7 @@ async function loadChannelPage() {
     const channel = channels.find(c => c.id === source.canal) ?? null;
 
     renderPlayerPage(source, channel);
-    const recommended = sources.filter(c => c.id !== id && c.activo === 1).slice(0, 8);
+    const recommended = sources.filter(c => c.id !== id && c.activo === 1 && c.mostrar_tv !== 0).slice(0, 8);
     renderRecommendedChannels(recommended, channels);
     startDemoChat();
   } catch (e) {
