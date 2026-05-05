@@ -3,5 +3,5 @@ deployment:
   tasks:
     - export DEPLOYPATH=/home/u6514444/web/spicy
     #- export DEPLOYPATH=/home/u5869826/teledeportes.top
-    - /bin/cp -R * $DEPLOYPATH
-    #- /usr/bin/rsync -av --exclude='.git' . $DEPLOYPATH
+    # rsync copia también dotfiles (.htaccess, etc.) y no sobreescribe includes/.env.php del servidor
+    - /usr/bin/rsync -av --exclude='.git' --exclude='includes/.env.php' . $DEPLOYPATH
