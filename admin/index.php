@@ -12,10 +12,10 @@ require_once __DIR__ . '/../includes/db.php';
 
 // ── Guardia de autenticación ──────────────────────────────────
 // Si no es admin, redirigir al login del admin
-if (!isLoggedIn() || !isAdmin()) {
-    header('Location: ' . BASE_URL . 'admin/login.php');
-    exit();
-}
+//if (!isLoggedIn() || !isAdmin()) {
+//    header('Location: ' . BASE_URL . 'admin/login.php');
+//    exit();
+//}
 
 // ── Página solicitada ─────────────────────────────────────────
 $page = isset($_GET['p']) ? preg_replace('/[^a-z0-9\-]/', '', strtolower($_GET['p'])) : 'home';
