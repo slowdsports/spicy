@@ -4,6 +4,8 @@ require __DIR__ . '/scraper.php';
 $canales = [
     'hbo-2',
     'hbo-oeste',
+    'fox-sports-hd',
+    'fox-sports-2',
     // Agrega más IDs aquí...
 ];
 
