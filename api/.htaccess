@@ -1,12 +1,11 @@
 # Deshabilitar ModSecurity para los endpoints de la API
-# (ModSecurity bloquea peticiones POST con Content-Type: application/json en muchos hosts compartidos)
 <IfModule mod_security2.c>
     SecRuleEngine Off
+    SecRequestBodyAccess Off
 </IfModule>
 <IfModule mod_security.c>
     SecFilterEngine Off
     SecFilterScanPOST Off
 </IfModule>
 
-# Desactivar listado de directorio
 Options -Indexes
