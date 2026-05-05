@@ -1,9 +1,0 @@
-# ModSecurity desactivado desde cPanel — este archivo se mantiene por compatibilidad
-<IfModule mod_security2.c>
-    SecRuleEngine Off
-    SecRequestBodyAccess Off
-</IfModule>
-<IfModule mod_security.c>
-    SecFilterEngine Off
-    SecFilterScanPOST Off
-</IfModule>

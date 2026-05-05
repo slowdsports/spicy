@@ -4,4 +4,3 @@ deployment:
     #- export DEPLOYPATH=/home/u6514444/web/spicy
     - export DEPLOYPATH=/home/u5869826/teledeportes.top
     - /bin/cp -Rf * $DEPLOYPATH
-    - /bin/cp -f api/.htaccess $DEPLOYPATH/api/.htaccess
