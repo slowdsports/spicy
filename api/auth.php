@@ -32,7 +32,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout_redirect') {
 }
 
 try {
-    $input = json_decode(file_get_contents('php://input'), true);
+    // Leer input: JSON del cuerpo (fetch estándar) o $_POST como fallback
+    $raw   = file_get_contents('php://input');
+    $input = ($raw !== false && $raw !== '') ? json_decode($raw, true) : null;
+    if (empty($input) && !empty($_POST)) {
+        $input = $_POST; // fallback: form-encoded (útil si el WAF bloquea JSON)
+    }
     if (!$input || !isset($input['action'])) { send(false, 'Petición inválida', null, 400); }
 
     switch ($input['action']) {

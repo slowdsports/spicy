@@ -31,16 +31,28 @@ function validateRegister() {
 }
 
 async function apiPost(payload) {
-  const res = await fetch('api/auth.php', {
+  // Intento 1: JSON (estándar)
+  let res = await fetch('api/auth.php', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(payload),
   });
+
+  // Si el WAF del hosting bloquea JSON (403), reintentar con form-encoded
+  if (res.status === 403) {
+    const form = new URLSearchParams();
+    Object.entries(payload).forEach(([k, v]) => form.append(k, v));
+    res = await fetch('api/auth.php', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    form.toString(),
+    });
+  }
+
   const text = await res.text();
   try {
     return JSON.parse(text);
   } catch {
-    // La respuesta no es JSON — el servidor devolvió un error inesperado
     console.error('Respuesta no-JSON de auth.php:', text.slice(0, 300));
     return { success: false, message: 'Error del servidor (' + res.status + ')' };
   }
