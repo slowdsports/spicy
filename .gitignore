@@ -1,0 +1,7 @@
+# Configuración de entorno — contiene credenciales, NUNCA al repo
+includes/.env.php
+
+# Datos generados en runtime
+data/matches.json
+data/channels.json
+data/fuentes.json
