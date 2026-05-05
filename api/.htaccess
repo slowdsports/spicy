@@ -1,4 +1,4 @@
-# Deshabilitar ModSecurity para los endpoints de la API
+# ModSecurity desactivado desde cPanel — este archivo se mantiene por compatibilidad
 <IfModule mod_security2.c>
     SecRuleEngine Off
     SecRequestBodyAccess Off
@@ -7,5 +7,3 @@
     SecFilterEngine Off
     SecFilterScanPOST Off
 </IfModule>
-
-Options -Indexes
