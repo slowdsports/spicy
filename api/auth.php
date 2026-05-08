@@ -5,14 +5,33 @@
  */
 
 // Asegurar que errores PHP nunca contaminen la respuesta JSON
-ini_set('display_errors', 0);
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
 error_reporting(0);
-ob_start(); // buffer: si algo escapa antes de los headers, lo descartamos
+
+// Capturar CUALQUIER output (warnings, notices, HTML de error del hosting)
+// antes de que contamine el JSON
+while (ob_get_level() > 0) ob_end_clean();
+ob_start();
+
+// Capturar errores fatales que no puede atrapar try/catch
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        while (ob_get_level() > 0) ob_end_clean();
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo json_encode(['success' => false, 'message' => 'Error crítico del servidor']);
+    }
+});
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 
-ob_clean(); // descartar cualquier output generado durante los includes
+// Descartar todo lo que los includes pudieran haber emitido
+while (ob_get_level() > 0) ob_end_clean();
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
@@ -98,7 +117,12 @@ function handleCheck(): void {
 }
 
 function send(bool $ok, string $msg, $data = null, int $code = 200): void {
-    http_response_code($code);
+    // Vaciar cualquier output acumulado (warnings, notices, HTML del hosting)
+    while (ob_get_level() > 0) ob_end_clean();
+    if (!headers_sent()) {
+        http_response_code($code);
+        header('Content-Type: application/json; charset=utf-8');
+    }
     $r = ['success' => $ok, 'message' => $msg];
     if ($data !== null) $r['data'] = $data;
     echo json_encode($r, JSON_UNESCAPED_UNICODE);
