@@ -37,10 +37,18 @@ async function loadMatches() {
       return Infinity;
     };
 
+    const LIVE_WINDOW = 7200000; // 2h en ms — duración estimada de un partido
+    const FINISHED    = ['finished', 'ended', 'canceled', 'cancelled', 'postponed'];
+
     filtered.sort((a, b) => {
       const peso = m => {
-        if (m.status === 'live') return 0;           // en vivo primero
-        return getTs(m) >= now ? 1 : 2;              // próximos, luego pasados
+        const t = getTs(m);
+        // Explícitamente marcado como vivo en el JSON
+        if (m.status === 'live') return 0;
+        // Iniciado hace menos de 2h y no finalizado → tratar como vivo
+        // (cubre status 'inprogress' u otros valores que la fuente devuelva durante el partido)
+        if (t > now - LIVE_WINDOW && t <= now && !FINISHED.includes(m.status)) return 0;
+        return t >= now ? 1 : 2;                     // próximos → 1, pasados/finalizados → 2
       };
       const pa = peso(a), pb = peso(b);
       if (pa !== pb) return pa - pb;

@@ -118,26 +118,34 @@ function abrirModalFuente(data = null) {
   document.getElementById('fuente-ck-keyid').value = data?.ck_keyid ?? '';
   tsSet('fuente-activo',     data?.activo     ?? '1');
   tsSet('fuente-mostrar-tv', data?.mostrar_tv ?? '1');
-  document.getElementById('fuente-sandbox').checked   = (data?.sandbox ?? 1) == 1;
+  document.getElementById('fuente-sandbox').checked = (data?.sandbox ?? 1) == 1;
+
+  const repEl = document.getElementById('fuente-reproductor');
+  if (repEl) repEl.value = data?.reproductor ?? 'bitmovin';
+
   document.getElementById('modalFuenteTitulo').textContent = data ? 'Editar fuente' : 'Nueva fuente';
+
+  // Mostrar/ocultar campo reproductor según el tipo seleccionado
+  actualizarCampoReproductor();
 
   new bootstrap.Modal(document.getElementById('modalFuente')).show();
 }
 
 function guardarFuente() {
   const data = {
-    id:        document.getElementById('fuente-id').value,
-    nombre:    document.getElementById('fuente-nombre').value.trim(),
-    canal:     document.getElementById('fuente-canal').value,
-    url:       document.getElementById('fuente-url').value.trim(),
-    tipo:      document.getElementById('fuente-tipo').value,
-    pais:      document.getElementById('fuente-pais').value,
-    epg:       document.getElementById('fuente-epg').value.trim(),
-    ck_key:    document.getElementById('fuente-ck-key').value.trim(),
-    ck_keyid:  document.getElementById('fuente-ck-keyid').value.trim(),
-    activo:     document.getElementById('fuente-activo').value,
-    mostrar_tv: document.getElementById('fuente-mostrar-tv').value,
-    sandbox:    document.getElementById('fuente-sandbox').checked ? 1 : 0,
+    id:          document.getElementById('fuente-id').value,
+    nombre:      document.getElementById('fuente-nombre').value.trim(),
+    canal:       document.getElementById('fuente-canal').value,
+    url:         document.getElementById('fuente-url').value.trim(),
+    tipo:        document.getElementById('fuente-tipo').value,
+    pais:        document.getElementById('fuente-pais').value,
+    epg:         document.getElementById('fuente-epg').value.trim(),
+    ck_key:      document.getElementById('fuente-ck-key').value.trim(),
+    ck_keyid:    document.getElementById('fuente-ck-keyid').value.trim(),
+    activo:      document.getElementById('fuente-activo').value,
+    mostrar_tv:  document.getElementById('fuente-mostrar-tv').value,
+    sandbox:     document.getElementById('fuente-sandbox').checked ? 1 : 0,
+    reproductor: document.getElementById('fuente-reproductor')?.value || 'bitmovin',
   };
 
   if (!data.nombre || !data.canal || !data.url || !data.tipo) {
@@ -226,6 +234,21 @@ function guardarPartido() {
   })
   .catch(() => adminToast('Error de conexión', 'error'));
 }
+
+// ── Mostrar/ocultar el campo Reproductor según tipo de fuente ─
+// Solo tiene sentido para tipos DASH (nombre contiene "dash").
+function actualizarCampoReproductor() {
+  const tipoEl = document.getElementById('fuente-tipo');
+  const tipoText = (tipoEl?.options[tipoEl.selectedIndex]?.text ?? '').toLowerCase();
+  const isDash = tipoText.includes('dash');
+  const campo = document.getElementById('reproductor-field');
+  if (campo) campo.style.display = isDash ? '' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const tipoEl = document.getElementById('fuente-tipo');
+  if (tipoEl) tipoEl.addEventListener('change', actualizarCampoReproductor);
+});
 
 // ============================================================
 // ── TOM SELECT — select con búsqueda ─────────────────────────

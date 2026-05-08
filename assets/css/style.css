@@ -1330,6 +1330,33 @@ body {
   .match-card {
     min-width: 220px;
   }
+
+  /* Canal: ocultar botón teatro en móvil */
+  #btn-theater { display: none !important; }
+
+  /* Canal: mostrar siempre el botón de chat en móvil */
+  #btn-chat-float { display: inline-flex !important; }
+
+  /* Canal: ocultar el chat por defecto en móvil (panel flotante al abrir) */
+  .channel-page-layout .chat-column {
+    display: none;
+  }
+  .channel-page-layout.chat-open .chat-column {
+    display: flex;
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: min(340px, 100vw);
+    z-index: 1040;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    box-shadow: -8px 0 32px rgba(0,0,0,.5);
+    animation: chat-slide-in .2s ease;
+  }
+  .channel-page-layout.chat-open .chat-messages-wrap {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
 }
 
 @media (max-width: 576px) {
@@ -1340,6 +1367,17 @@ body {
   .section {
     padding: 2rem 0;
   }
+
+  /* Home: barra de programas en dos filas para evitar desbordamiento horizontal */
+  .program-row {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 8px 12px;
+    padding: 10px 12px;
+  }
+  .program-ch          { grid-row: 1; grid-column: 1; }
+  .program-info        { grid-row: 2; grid-column: 1 / 3; }
+  .program-progress-wrap { grid-row: 1; grid-column: 2; min-width: 80px; text-align: right; }
 }
 
 /* ============================================================

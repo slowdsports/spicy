@@ -7,8 +7,9 @@
 // Migraciones: agregar columnas si no existen
 try {
     $conn = getDBConnection();
-    $conn->query("ALTER TABLE fuentes ADD COLUMN IF NOT EXISTS sandbox    TINYINT(1) NOT NULL DEFAULT 1");
-    $conn->query("ALTER TABLE fuentes ADD COLUMN IF NOT EXISTS mostrar_tv TINYINT(1) NOT NULL DEFAULT 1");
+    $conn->query("ALTER TABLE fuentes ADD COLUMN IF NOT EXISTS sandbox      TINYINT(1)   NOT NULL DEFAULT 1");
+    $conn->query("ALTER TABLE fuentes ADD COLUMN IF NOT EXISTS mostrar_tv   TINYINT(1)   NOT NULL DEFAULT 1");
+    $conn->query("ALTER TABLE fuentes ADD COLUMN IF NOT EXISTS reproductor  VARCHAR(20)  NOT NULL DEFAULT 'bitmovin'");
 } catch (Exception $e) { /* columnas ya existen */ }
 
 // Datos para selects del modal (se cargan independientemente)
@@ -25,7 +26,7 @@ try {
 try {
     $conn    = getDBConnection();
     $fuentes = $conn->query("
-        SELECT f.id, f.nombre, f.url, f.ck_key, f.ck_keyid, f.epg, f.activo, f.sandbox, f.mostrar_tv,
+        SELECT f.id, f.nombre, f.url, f.ck_key, f.ck_keyid, f.epg, f.activo, f.sandbox, f.mostrar_tv, f.reproductor,
                c.nombre  AS canal_nombre,  f.canal  AS canal_id,
                p.paisNombre AS pais_nombre, f.pais  AS pais_id,
                t.nombre  AS tipo_nombre,   f.tipo   AS tipo_id
@@ -122,7 +123,14 @@ try {
               <?= htmlspecialchars($f['canal_nombre'] ?? '—') ?>
             </span>
           </td>
-          <td style="font-size:0.78rem;"><?= htmlspecialchars($f['tipo_nombre'] ?? '—') ?></td>
+          <td style="font-size:0.78rem;">
+            <?= htmlspecialchars($f['tipo_nombre'] ?? '—') ?>
+            <?php if (($f['reproductor'] ?? 'bitmovin') !== 'bitmovin'): ?>
+              <span style="margin-left:4px; font-size:0.65rem; background:rgba(99,102,241,0.12); color:#818cf8; border:1px solid rgba(99,102,241,0.3); padding:1px 5px; border-radius:4px; font-weight:700; vertical-align:middle;">
+                <?= strtoupper(htmlspecialchars($f['reproductor'])) ?>
+              </span>
+            <?php endif; ?>
+          </td>
           <td style="font-size:0.78rem; color:var(--text-muted);"><?= htmlspecialchars($f['pais_nombre'] ?? '—') ?></td>
           <!-- Indicador DRM -->
           <td>
@@ -261,6 +269,23 @@ try {
                   <input type="text" id="fuente-ck-keyid" class="form-control" placeholder="ID de la clave">
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Reproductor (visible solo para tipos DASH) -->
+          <div class="col-12" id="reproductor-field" style="display:none;">
+            <div style="background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:10px; padding:1rem;">
+              <p style="font-size:0.78rem; font-weight:700; color:#818cf8; margin:0 0 0.75rem;">
+                <i class="fas fa-play-circle me-1"></i> Reproductor de video
+              </p>
+              <select id="fuente-reproductor" class="form-select">
+                <option value="bitmovin">Bitmovin (por defecto)</option>
+                <option value="clappr">Clappr</option>
+                <option value="jwplayer">JW Player</option>
+              </select>
+              <p style="font-size:0.72rem; color:var(--text-muted); margin:0.5rem 0 0;">
+                Elige el reproductor según la compatibilidad del stream. Bitmovin es el predeterminado para DASH.
+              </p>
             </div>
           </div>
 

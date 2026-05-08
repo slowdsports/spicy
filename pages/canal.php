@@ -760,9 +760,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const chatMessages = document.getElementById('chat-messages');
   if (chatMessages) {
     new MutationObserver(function () {
+      const isMobile  = window.innerWidth <= 768;
       const isTheater = layout.classList.contains('theater-mode');
       const isOpen    = layout.classList.contains('chat-open');
-      if (isTheater && !isOpen) {
+      if ((isTheater || isMobile) && !isOpen) {
         unread++;
         if (badge) {
           badge.textContent = unread > 99 ? '99+' : unread;
