@@ -92,10 +92,12 @@ function renderRecommendedChannels(sources, channels) {
   });
 }
 
-function scrollRecommended(direction) {
-  const slider = document.getElementById('recommended-slider');
+function scrollSlider(id, direction) {
+  const slider = document.getElementById(id);
   if (slider) slider.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
 }
+
+function scrollRecommended(direction) { scrollSlider('recommended-slider', direction); }
 
 // Interacciones
 function initInteractionButtons() {

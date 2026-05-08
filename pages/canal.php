@@ -48,6 +48,17 @@ if ($channelId > 0) {
 }
 $jsCanal = json_encode($fuenteData['canal'] ?? '');
 
+// Favoritos del usuario logueado
+$favoritosData = [];
+if (isLoggedIn()) {
+    $uid       = userId();
+    $savedFile = __DIR__ . '/../data/guardados/' . $uid . '.json';
+    if (file_exists($savedFile)) {
+        $decoded       = json_decode(file_get_contents($savedFile), true);
+        $favoritosData = $decoded['fuentes'] ?? [];
+    }
+}
+
 // Estado de interacciones del usuario logueado
 $isLoggedIn = isLoggedIn();
 $initLike   = false;
@@ -469,6 +480,47 @@ if ($partidoId > 0) {
   <?php endif; ?>
 </div>
 
+<?php if (!empty($favoritosData)): ?>
+<!-- FAVORITOS -->
+<section class="recommended-section" style="border-top:1px solid var(--border); margin-top:1rem; background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-title">
+      <span>Mis Favoritos</span>
+      <span class="section-subtitle"><i class="fas fa-bookmark" style="color:var(--accent); margin-right:4px;"></i>Acceso rápido</span>
+    </div>
+    <div style="position:relative; padding:0 10px;">
+      <button class="slider-arrow slider-arrow-left" onclick="scrollSlider('favoritos-slider','left')">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div class="matches-slider" id="favoritos-slider">
+        <?php foreach ($favoritosData as $fav):
+          $favId   = (int)($fav['id'] ?? 0);
+          $favName = htmlspecialchars($fav['nombre'] ?? '');
+          $favLogo = !empty($fav['logo']) ? htmlspecialchars($fav['logo']) : '';
+          $logoHtml = $favLogo
+            ? "<img src=\"{$favLogo}\" alt=\"{$favName}\" style=\"width:44px;height:44px;object-fit:contain;\" onerror=\"this.style.opacity='0'\">"
+            : '<i class="fas fa-broadcast-tower" style="font-size:1.5rem;color:var(--accent);"></i>';
+        ?>
+        <a href="<?= url('canal', ['id' => $favId]) ?>" class="match-card"
+           style="min-width:180px;max-width:180px;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:.75rem;">
+          <div style="width:60px;height:60px;background:var(--bg-input);border-radius:12px;display:flex;align-items:center;justify-content:center;padding:8px;border:1px solid var(--border);">
+            <?= $logoHtml ?>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:.82rem;font-weight:700;color:var(--text-primary);"><?= $favName ?></div>
+            <div style="font-size:.7rem;color:var(--accent);margin-top:2px;"><i class="fas fa-bookmark" style="margin-right:2px;"></i>Guardado</div>
+          </div>
+        </a>
+        <?php endforeach; ?>
+      </div>
+      <button class="slider-arrow slider-arrow-right" onclick="scrollSlider('favoritos-slider','right')">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</section>
+<?php endif; ?>
+
 <!-- CANALES RECOMENDADOS -->
 <section class="recommended-section" style="border-top:1px solid var(--border); margin-top:1rem; background:var(--bg-secondary);">
   <div class="container">
@@ -477,11 +529,11 @@ if ($partidoId > 0) {
       <span class="section-subtitle">También en vivo</span>
     </div>
     <div style="position:relative; padding:0 10px;">
-      <button class="slider-arrow slider-arrow-left" onclick="scrollRecommended('left')">
+      <button class="slider-arrow slider-arrow-left" onclick="scrollSlider('recommended-slider','left')">
         <i class="fas fa-chevron-left"></i>
       </button>
       <div class="matches-slider" id="recommended-slider"></div>
-      <button class="slider-arrow slider-arrow-right" onclick="scrollRecommended('right')">
+      <button class="slider-arrow slider-arrow-right" onclick="scrollSlider('recommended-slider','right')">
         <i class="fas fa-chevron-right"></i>
       </button>
     </div>
