@@ -489,6 +489,7 @@ if ($partidoId > 0) {
 </section>
 
 <script>
+const BASE_URL     = <?= json_encode(BASE_URL) ?>;
 const CHANNEL_ID   = <?= $channelId ?>;
 const CANAL        = <?= $jsCanal ?>;
 const PARTIDO_ID   = <?= $partidoId ?>;
