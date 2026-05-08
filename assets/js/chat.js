@@ -1,6 +1,6 @@
 /**
  * Chat en vivo — StreamHub
- * Twitch-style real-time chat via SSE + AJAX POST
+ * Polling cada 2 s (compatible con hosting compartido que no soporta SSE).
  * Completamente independiente del resto del JS del sitio.
  */
 (function () {
@@ -9,24 +9,25 @@
   /* ═══════════════════════════════════════════════════════════
      CONFIG — lee variables inyectadas por PHP en canal.php
   ═══════════════════════════════════════════════════════════ */
-  var BASE       = (typeof BASE_URL        !== 'undefined') ? BASE_URL        : '/spicy/';
-  var CANAL_ID   = parseInt((typeof CANAL  !== 'undefined') ? CANAL           : 0, 10) || 0;
-  var LOGGED_IN  = (typeof IS_LOGGED_IN    !== 'undefined') ? IS_LOGGED_IN    : false;
-  var USER_ROL   = (typeof CHAT_USER_ROL   !== 'undefined') ? CHAT_USER_ROL   : 'usuario';
-  var MAX_MSGS   = 150;   // mensajes máximos en el DOM
-  var RATE_MS    = 800;   // ms mínimo entre envíos (lado cliente)
+  var BASE      = (typeof BASE_URL      !== 'undefined') ? BASE_URL      : '/spicy/';
+  var CANAL_ID  = parseInt((typeof CANAL !== 'undefined') ? CANAL        : 0, 10) || 0;
+  var LOGGED_IN = (typeof IS_LOGGED_IN  !== 'undefined') ? IS_LOGGED_IN  : false;
+  var USER_ROL  = (typeof CHAT_USER_ROL !== 'undefined') ? CHAT_USER_ROL : 'usuario';
+  var MAX_MSGS  = 150;   // mensajes máximos en el DOM
+  var RATE_MS   = 800;   // ms mínimo entre envíos (lado cliente)
+  var POLL_MS   = 2000;  // intervalo de polling
 
   /* ═══════════════════════════════════════════════════════════
      ESTADO
   ═══════════════════════════════════════════════════════════ */
-  var evtSource     = null;
-  var lastId        = 0;
-  var lastSentAt    = 0;
-  var reconnectTmr  = null;
-  var pendingCount  = 0;  // mensajes nuevos mientras el usuario scrolleó arriba
+  var lastId       = -1;   // -1 = primera llamada (cargar historial)
+  var lastSentAt   = 0;
+  var pollTimer    = null;
+  var polling      = false;
+  var pendingCount = 0;
 
   /* ═══════════════════════════════════════════════════════════
-     DOM REFS — se resuelven en init()
+     DOM REFS
   ═══════════════════════════════════════════════════════════ */
   var $msgs, $input, $sendBtn, $usersEl, $scrollBtn, $charCount;
 
@@ -45,52 +46,66 @@
 
     if (!$msgs) return;
 
-    // Neutralizar el chat demo de channel.js (sobrescribir sus funciones globales)
-    // para que el setInterval que ya esté corriendo no añada mensajes falsos.
+    // Neutralizar chat demo de channel.js
     window.startDemoChat  = function () {};
     window.addChatMessage = function () {};
-
-    // Limpiar cualquier mensaje demo que ya se haya insertado
     $msgs.innerHTML = '';
 
     setupScroll();
     setupInput();
-    connectSSE();
+    startPolling();
+
+    // Pausar polling cuando la pestaña está en segundo plano
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    });
   }
 
   /* ═══════════════════════════════════════════════════════════
-     SSE — Server-Sent Events
+     POLLING
   ═══════════════════════════════════════════════════════════ */
-  function connectSSE() {
-    if (evtSource) { evtSource.close(); evtSource = null; }
-    clearTimeout(reconnectTmr);
+  function startPolling() {
+    if (polling) return;
+    polling = true;
+    doPoll(); // primera llamada inmediata
+  }
 
-    var url = BASE + 'chat/stream.php?canal=' + CANAL_ID + '&last_id=' + lastId;
-    evtSource = new EventSource(url);
+  function stopPolling() {
+    polling = false;
+    clearTimeout(pollTimer);
+  }
 
-    evtSource.addEventListener('message', function (e) {
-      try { appendMessage(JSON.parse(e.data)); } catch (ex) {}
-    });
+  function doPoll() {
+    if (!polling) return;
 
-    evtSource.addEventListener('heartbeat', function (e) {
-      try {
-        var d = JSON.parse(e.data);
-        setUserCount(d.users || 0);
-      } catch (ex) {}
-    });
+    var url = BASE + 'chat/poll.php?canal=' + CANAL_ID + '&last_id=' + lastId;
 
-    // El servidor envía "timeout" cada ~25 s para forzar reconexión limpia
-    evtSource.addEventListener('timeout', function () {
-      evtSource.close();
-      evtSource = null;
-      reconnectTmr = setTimeout(connectSSE, 50);
-    });
+    fetch(url, { method: 'GET', cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        if (!data.ok) return;
 
-    evtSource.onerror = function () {
-      evtSource.close();
-      evtSource = null;
-      reconnectTmr = setTimeout(connectSSE, 3000);
-    };
+        // Actualizar contador de usuarios
+        if (typeof data.users === 'number') setUserCount(data.users);
+
+        // Renderizar mensajes nuevos
+        if (Array.isArray(data.messages) && data.messages.length > 0) {
+          data.messages.forEach(function (msg) { appendMessage(msg); });
+        }
+      })
+      .catch(function () { /* error de red — simplemente reintentar */ })
+      .finally(function () {
+        if (polling) {
+          pollTimer = setTimeout(doPoll, POLL_MS);
+        }
+      });
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -137,7 +152,14 @@
 
     fetch(BASE + 'chat/send.php', { method: 'POST', body: fd })
       .then(function (r) { return r.json(); })
-      .catch(function () { return { ok: false }; })
+      .then(function (data) {
+        // Adelantar el próximo poll para que el mensaje propio aparezca al instante
+        if (data.ok) {
+          clearTimeout(pollTimer);
+          pollTimer = setTimeout(doPoll, 150);
+        }
+      })
+      .catch(function () {})
       .finally(function () {
         setTimeout(function () { if ($sendBtn) $sendBtn.disabled = false; }, 500);
       });
@@ -150,19 +172,23 @@
     if (!$msgs) return;
 
     var id = parseInt(msg.id, 10) || 0;
-    if (id > 0) lastId = Math.max(lastId, id);
+
+    // Evitar duplicados
+    if (id > 0) {
+      if (id <= lastId && lastId >= 0) return;
+      lastId = Math.max(lastId, id);
+    }
 
     var atBottom = isAtBottom();
 
-    var el   = document.createElement('div');
-    el.className  = 'chat-message';
+    var el = document.createElement('div');
+    el.className = 'chat-message';
     if (id) el.dataset.id = id;
 
     var rol  = msg.user_rol  || 'usuario';
     var name = esc(msg.user_name || 'Anon');
     var text = esc(msg.message   || '');
 
-    // Badge según rol
     var badge = '';
     if (rol === 'admin') {
       badge = '<span class="chat-badge chat-badge-admin">Admin</span>';
@@ -170,13 +196,11 @@
       badge = '<span class="chat-badge chat-badge-spicy">✦ Spicy</span>';
     }
 
-    // Color de nombre
     var userCls = 'chat-user';
     if      (rol === 'admin')  userCls += ' chat-user-admin';
     else if (rol === 'spicy')  userCls += ' chat-user-spicy';
     else                       userCls += ' chat-user-normal';
 
-    // Para usuarios normales, color determinista por nombre
     var nameStyle = '';
     if (rol === 'usuario') {
       nameStyle = ' style="color:' + nameToColor(msg.user_name || 'x') + '"';
@@ -190,7 +214,6 @@
 
     $msgs.appendChild(el);
 
-    // Limitar mensajes en DOM
     while ($msgs.children.length > MAX_MSGS) {
       $msgs.removeChild($msgs.firstChild);
     }
@@ -203,15 +226,6 @@
       pendingCount++;
       showScrollBtn(pendingCount);
     }
-  }
-
-  function systemMessage(text) {
-    if (!$msgs) return;
-    var el = document.createElement('div');
-    el.className = 'chat-msg-system';
-    el.textContent = text;
-    $msgs.appendChild(el);
-    if (isAtBottom()) scrollToBottom();
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -266,7 +280,6 @@
   /* ═══════════════════════════════════════════════════════════
      UTILIDADES
   ═══════════════════════════════════════════════════════════ */
-  // Escapar HTML para inserción segura en innerHTML
   function esc(str) {
     return String(str)
       .replace(/&/g, '&amp;')
@@ -276,7 +289,6 @@
       .replace(/'/g, '&#039;');
   }
 
-  // Color determinista por nombre de usuario (paleta de colores "segura" para chat)
   var PALETTE = [
     '#ff6b6b','#ffa94d','#ffd43b','#69db7c','#38d9a9',
     '#4dabf7','#748ffc','#da77f2','#f783ac','#63e6be',
