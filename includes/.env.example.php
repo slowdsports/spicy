@@ -12,9 +12,9 @@
  */
 return [
     'DB_HOST' => 'localhost',
-    'DB_USER' => 'u6514444_USUARIO',   // usuario MySQL de cPanel
-    'DB_PASS' => 'TU_PASSWORD_AQUI',
-    'DB_NAME' => 'u6514444_NOMBRE_BD', // nombre de la base de datos
+    'DB_USER' => 'u5869826_root',   // usuario MySQL de cPanel
+    'DB_PASS' => 'OF0wh^]#kK9C+U1W',
+    'DB_NAME' => 'u5869826_streamhub', // nombre de la base de datos
 
     // URL base: '/' si la web está en la raíz del dominio,
     // '/spicy/' si está en un subdirectorio.
