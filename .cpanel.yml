@@ -2,5 +2,5 @@
 deployment:
   tasks:
     #- export DEPLOYPATH=/home/u6514444/web/spicy
-    - export DEPLOYPATH=/home/u5869826/teledeportes.top
+    - export DEPLOYPATH=/home/u5869826/TD
     - /bin/cp -Rf * $DEPLOYPATH
