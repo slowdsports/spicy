@@ -456,7 +456,8 @@ if ($partidoId > 0) {
         <div class="chat-char-count" id="chat-char-count">0/500</div>
         <?php else: ?>
         <div class="chat-login-prompt">
-          <a href="<?= url('login') ?>">Inicia sesión</a> para chatear
+          <?php $chatLoginHref = url('login') . (!empty($_SERVER['QUERY_STRING']) ? '&redirect=' . urlencode('?' . $_SERVER['QUERY_STRING']) : ''); ?>
+          <a href="<?= $chatLoginHref ?>">Inicia sesión</a> para chatear
         </div>
         <?php endif; ?>
       </div>

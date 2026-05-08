@@ -112,7 +112,14 @@ $uName    = userName();
             </ul>
           </div>
         <?php else: ?>
-          <a href="<?= url('login') ?>" class="nav-link btn-login px-3">
+          <?php
+            $currentPage = $_GET['p'] ?? 'home';
+            $navLoginHref = url('login');
+            if ($currentPage !== 'login' && !empty($_SERVER['QUERY_STRING'])) {
+                $navLoginHref .= '&redirect=' . urlencode('?' . $_SERVER['QUERY_STRING']);
+            }
+          ?>
+          <a href="<?= $navLoginHref ?>" class="nav-link btn-login px-3">
             <i class="fas fa-user me-1"></i> Iniciar sesión
           </a>
         <?php endif; ?>
