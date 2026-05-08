@@ -31,28 +31,15 @@ if ($canal_id <= 0) {
 try {
     $db = getDBConnection();
 
-    // Crear tablas solo en la primera llamada
-    if ($last_id < 0) {
-        $db->query("CREATE TABLE IF NOT EXISTS `chat_messages` (
-            `id`         int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-            `canal_id`   int(11) NOT NULL,
-            `user_id`    int(10) UNSIGNED NOT NULL DEFAULT 0,
-            `user_name`  varchar(100) NOT NULL,
-            `user_rol`   enum('admin','spicy','usuario') NOT NULL DEFAULT 'usuario',
-            `message`    varchar(500) NOT NULL,
-            `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-            PRIMARY KEY (`id`),
-            KEY `idx_canal_id` (`canal_id`, `id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    // Verificar que las tablas existen (sin intentar crearlas — el servidor
+    // de producción puede no tener privilegio CREATE; créalas via phpMyAdmin)
+    $tables = [];
+    $tr = $db->query("SHOW TABLES LIKE 'chat_%'");
+    while ($row = $tr->fetch_row()) $tables[] = $row[0];
 
-        $db->query("CREATE TABLE IF NOT EXISTS `chat_online` (
-            `session_id` varchar(128) NOT NULL,
-            `user_id`    int(10) UNSIGNED NOT NULL DEFAULT 0,
-            `canal_id`   int(11) NOT NULL,
-            `last_seen`  timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-            PRIMARY KEY (`session_id`, `canal_id`),
-            KEY `idx_canal_lastseen` (`canal_id`, `last_seen`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    if (!in_array('chat_messages', $tables) || !in_array('chat_online', $tables)) {
+        echo json_encode(['ok' => false, 'error' => 'tables_missing']);
+        exit;
     }
 
     // Actualizar presencia del usuario en este canal

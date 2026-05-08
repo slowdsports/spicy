@@ -90,7 +90,16 @@
         return r.json();
       })
       .then(function (data) {
-        if (!data.ok) return;
+        if (!data.ok) {
+          if (data.error === 'tables_missing') {
+            stopPolling();
+            console.error('[Chat] Las tablas del chat no existen en la BD. Ejecuta test/chat-setup.php en el servidor.');
+          }
+          return;
+        }
+
+        // Marcar primera llamada como completada aunque no haya mensajes
+        if (lastId < 0) lastId = 0;
 
         // Actualizar contador de usuarios
         if (typeof data.users === 'number') setUserCount(data.users);
