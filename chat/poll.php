@@ -20,13 +20,8 @@ $session_id = session_id();
 $user_id    = userId();
 session_write_close();
 
-$canal_id = intval($_GET['canal']   ?? 0);
+$canal_id = 0;   // chat global — ignorar parámetro canal
 $last_id  = intval($_GET['last_id'] ?? -1);  // -1 = primera llamada (cargar historial)
-
-if ($canal_id <= 0) {
-    echo json_encode(['ok' => false]);
-    exit;
-}
 
 try {
     $db = getDBConnection();

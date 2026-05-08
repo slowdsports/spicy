@@ -21,10 +21,8 @@ if (!isLoggedIn()) {
     jsonOut(false, 'Debes iniciar sesión para chatear');
 }
 
-$canal_id = intval($_POST['canal'] ?? 0);
+$canal_id = 0;   // chat global
 $message  = trim($_POST['msg'] ?? '');
-
-if ($canal_id <= 0) jsonOut(false, 'Canal inválido');
 if ($message === '') jsonOut(false, 'El mensaje no puede estar vacío');
 
 // Eliminar etiquetas HTML y limitar longitud
@@ -33,8 +31,8 @@ $message = mb_substr($message, 0, 500, 'UTF-8');
 
 if ($message === '') jsonOut(false, 'Mensaje inválido');
 
-// Rate limit: mínimo 800 ms entre mensajes por canal (vía sesión)
-$rate_key = 'chat_rl_' . $canal_id;
+// Rate limit: mínimo 800 ms entre mensajes (vía sesión)
+$rate_key = 'chat_rl_global';
 $now_ms   = microtime(true);
 
 if (isset($_SESSION[$rate_key]) && ($now_ms - $_SESSION[$rate_key]) < 0.8) {

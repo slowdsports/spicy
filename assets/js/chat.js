@@ -10,7 +10,7 @@
      CONFIG — lee variables inyectadas por PHP en canal.php
   ═══════════════════════════════════════════════════════════ */
   var BASE      = (typeof BASE_URL      !== 'undefined') ? BASE_URL      : '/spicy/';
-  var CANAL_ID  = parseInt((typeof CANAL !== 'undefined') ? CANAL        : 0, 10) || 0;
+  var CANAL_ID  = 0;   // chat global — mismo para todos los canales
   var LOGGED_IN = (typeof IS_LOGGED_IN  !== 'undefined') ? IS_LOGGED_IN  : false;
   var USER_ROL  = (typeof CHAT_USER_ROL !== 'undefined') ? CHAT_USER_ROL : 'usuario';
   var MAX_MSGS  = 150;   // mensajes máximos en el DOM
