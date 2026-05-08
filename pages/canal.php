@@ -302,7 +302,7 @@ if ($partidoId > 0) {
       ?>
       <div class="partido-header">
         <div class="partido-meta">
-          <img src="<?= $pLeagueLogo ?>" class="partido-league-img" onerror="this.style.opacity='.2'">
+          <img src="<?= $pLeagueLogo ?>" data-logo-base="<?= $pLeagueLogo ?>" class="partido-league-img" onerror="this.style.opacity='.2'">
           <?php if (!empty($partidoData['fecha_hora'])): ?>
             <span class="badge-time"><i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($partidoData['fecha_hora']) ?>" data-ts="<?= (int)($partidoData['timestamp'] ?? 0) ?>"><?= $pTime ?></span></span>
           <?php elseif ($pStatus === 'live'): ?>
@@ -313,12 +313,12 @@ if ($partidoId > 0) {
         </div>
         <div class="partido-teams">
           <div class="partido-team">
-            <img src="<?= $pLocalLogo ?>" onerror="this.style.opacity='.2'">
+            <img src="<?= $pLocalLogo ?>" data-logo-base="<?= $pLocalLogo ?>" onerror="this.style.opacity='.2'">
             <span><?= $pLocal ?></span>
           </div>
           <div class="partido-vs">vs</div>
           <div class="partido-team">
-            <img src="<?= $pVisitLogo ?>" onerror="this.style.opacity='.2'">
+            <img src="<?= $pVisitLogo ?>" data-logo-base="<?= $pVisitLogo ?>" onerror="this.style.opacity='.2'">
             <span><?= $pVisit ?></span>
           </div>
         </div>

@@ -170,6 +170,7 @@ $logo   = $liga['logo'];
 
 <?php if (!empty($logo)): ?>
 <img src="<?= htmlspecialchars($logo) ?>"
+     data-logo-base="<?= htmlspecialchars($logo) ?>"
      alt="<?= htmlspecialchars($nombre) ?>"
      class="channel-logo">
 <?php else: ?>

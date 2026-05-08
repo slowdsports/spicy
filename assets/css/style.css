@@ -315,7 +315,6 @@ body {
   width: 20px;
   height: 20px;
   object-fit: contain;
-  filter: brightness(0.9);
 }
 
 .match-league-name {
@@ -614,6 +613,12 @@ body {
 [data-theme="light"] .channel-logo {
   filter: none;
   opacity: 1;
+}
+
+/* Logos sofascore (ligas/equipos): usan versión dark real, sin filtro de inversión */
+img[data-logo-base] {
+  filter: none !important;
+  opacity: 1 !important;
 }
 
 .channel-card:hover .channel-logo {

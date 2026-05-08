@@ -140,23 +140,29 @@ function createMatchCard(match) {
       ? '● EN VIVO'
       : `<span class="t">${match.time || '--:--'}</span>`;
   const leagueName = match.leagueName || match.league || '';
-  const homeLogo = getTeamLogoPath(match.homeTeam?.logo);
-  const awayLogo = getTeamLogoPath(match.awayTeam?.logo);
+
+  const theme        = document.documentElement.getAttribute('data-theme') || 'dark';
+  const homeBase     = getTeamLogoPath(match.homeTeam?.logo);
+  const awayBase     = getTeamLogoPath(match.awayTeam?.logo);
+  const leagueBase   = match.leagueLogo || '';
+  const homeLogo     = sfLogoSrc(homeBase, theme);
+  const awayLogo     = sfLogoSrc(awayBase, theme);
+  const leagueLogo   = sfLogoSrc(leagueBase, theme);
 
   card.innerHTML = `
     <div class="match-league">
-      <img src="${match.leagueLogo}" alt="${leagueName}" class="match-league-logo" onerror="this.style.display='none'">
+      <img src="${leagueLogo}" data-logo-base="${leagueBase}" alt="${leagueName}" class="match-league-logo" onerror="this.style.display='none'">
       <span class="match-league-name">${leagueName}</span>
       <span class="match-status-badge ${badgeClass}">${badgeText}</span>
     </div>
     <div class="match-teams">
       <div class="match-team">
-        <img src="${homeLogo}" alt="${match.homeTeam.name}" class="team-logo" onerror="this.style.opacity='0'">
+        <img src="${homeLogo}" data-logo-base="${homeBase}" alt="${match.homeTeam.name}" class="team-logo" onerror="this.style.opacity='0'">
         <span class="team-name">${match.homeTeam.name}</span>
       </div>
       <div class="score-vs">vs</div>
       <div class="match-team">
-        <img src="${awayLogo}" alt="${match.awayTeam.name}" class="team-logo" onerror="this.style.opacity='0'">
+        <img src="${awayLogo}" data-logo-base="${awayBase}" alt="${match.awayTeam.name}" class="team-logo" onerror="this.style.opacity='0'">
         <span class="team-name">${match.awayTeam.name}</span>
       </div>
     </div>

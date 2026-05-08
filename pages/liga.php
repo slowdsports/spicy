@@ -127,7 +127,7 @@ function canalNombre($id){
 <div class="d-flex align-items-center gap-3">
 
 <div class="league-box">
-<img src="<?= $ligaLogo ?>" alt="">
+<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>" alt="">
 </div>
 
 <div>
@@ -202,7 +202,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 <div class="match-left">
 
 <div class="mini-league">
-<img src="<?= $ligaLogo ?>">
+<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>">
 </div>
 
 <?php if($status==='live'): ?>
@@ -221,7 +221,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 <div class="match-center">
 
 <div class="team-box">
-<img src="<?= $localLogo ?>" class="team-logo">
+<img src="<?= $localLogo ?>" data-logo-base="<?= $localLogo ?>" class="team-logo">
 <span><?= htmlspecialchars($local) ?></span>
 </div>
 
@@ -231,7 +231,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 </div>
 
 <div class="team-box">
-<img src="<?= $visitLogo ?>" class="team-logo">
+<img src="<?= $visitLogo ?>" data-logo-base="<?= $visitLogo ?>" class="team-logo">
 <span><?= htmlspecialchars($visit) ?></span>
 </div>
 

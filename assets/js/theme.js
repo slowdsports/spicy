@@ -2,6 +2,26 @@
  * StreamHub - Sistema de temas (dark/light)
  * Compartido en todas las páginas.
  */
+
+/**
+ * Convierte una ruta base de logo sofascore a su versión dark o normal.
+ * Ej: "assets/img/ligas/sf/384.png"  →  "assets/img/ligas/sf/dark/384.png"
+ * La regex inserta /dark/ antes del nombre de archivo; no se aplica si la ruta
+ * ya contiene /dark/ (el patrón [^/]+ no cruza barras).
+ */
+function sfLogoSrc(baseSrc, theme) {
+  if (!baseSrc) return baseSrc;
+  if (theme !== 'dark') return baseSrc;
+  return baseSrc.replace(/(\/sf\/)([^/]+\.png)$/, '$1dark/$2');
+}
+
+/** Actualiza el src de todos los logos sofascore al tema activo. */
+function updateSfLogos(theme) {
+  document.querySelectorAll('img[data-logo-base]').forEach(function (img) {
+    img.src = sfLogoSrc(img.dataset.logoBase, theme);
+  });
+}
+
 function initTheme() {
   const saved = localStorage.getItem('streamhub-theme') || 'dark';
   applyTheme(saved);
@@ -12,6 +32,7 @@ function applyTheme(theme) {
   localStorage.setItem('streamhub-theme', theme);
   const icon = document.getElementById('theme-icon');
   if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+  updateSfLogos(theme);
 }
 
 function toggleTheme() {
@@ -21,3 +42,8 @@ function toggleTheme() {
 
 // Aplicar inmediatamente al cargar para evitar flash
 initTheme();
+
+// Actualizar logos una vez el DOM está disponible (páginas PHP renderizadas en servidor)
+document.addEventListener('DOMContentLoaded', function () {
+  updateSfLogos(document.documentElement.getAttribute('data-theme') || 'dark');
+});
