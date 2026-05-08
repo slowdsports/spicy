@@ -709,8 +709,113 @@ body {
   padding: 1.5rem 0;
 }
 
-/* Columna izquierda: reproductor */
-.player-column {}
+/* Theater mode */
+.channel-page-layout.theater-mode {
+  grid-template-columns: 1fr;
+}
+.channel-page-layout.theater-mode .chat-column {
+  display: none;
+}
+.channel-page-layout.theater-mode.chat-open .chat-column {
+  display: flex;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 340px;
+  z-index: 1040;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(0,0,0,.5);
+  animation: chat-slide-in .2s ease;
+}
+/* El wrap de mensajes ocupa todo el espacio disponible dentro del panel */
+.channel-page-layout.theater-mode.chat-open .chat-messages-wrap {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+}
+@keyframes chat-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* Backdrop del chat flotante */
+.chat-theater-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 1039;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.chat-theater-backdrop.visible { display: block; }
+
+/* Botón Chat en header (visible solo en teatro) */
+#btn-chat-float { display: none; }
+#btn-chat-float.visible { display: inline-flex; }
+.chat-float-badge {
+  display: none;
+  background: #ef4444;
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 20px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.5;
+}
+.btn-chat-float .chat-float-badge.show { display: inline-block; }
+
+/* Botón cerrar chat (solo en theater mode) */
+.chat-float-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: .78rem;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.chat-float-close:hover { background: var(--bg-card); color: var(--text-primary); }
+.theater-mode.chat-open .chat-float-close { display: inline-flex; }
+
+/* Botón modo teatro */
+.btn-theater {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+.btn-theater:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.btn-theater.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
 
 /* Header del reproductor */
 .player-header {
@@ -1183,6 +1288,27 @@ body {
   background: rgba(34, 197, 94, 0.12);
   border: 1px solid rgba(34, 197, 94, 0.3);
   color: #4ade80;
+}
+
+/* ============================================================
+   NAVBAR MÓVIL
+   ============================================================ */
+@media (max-width: 991.98px) {
+  .streamhub-navbar {
+    height: auto;
+    min-height: 64px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .streamhub-navbar .navbar-collapse {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    margin: 0 -1.5rem;
+    padding: 0.75rem 1.5rem 1rem;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
 }
 
 /* ============================================================

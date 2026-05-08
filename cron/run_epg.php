@@ -9,7 +9,8 @@
  * Frecuencia recomendada: cada hora (los programas de TV cambian cada 30-120 min)
  */
 
-$php  = PHP_BINARY;
+set_time_limit(0);
+
 $base = __DIR__;
 
 $scripts = [
@@ -19,9 +20,11 @@ $scripts = [
 ];
 
 foreach ($scripts as $script) {
-    $path = "$base/$script";
     echo "▶ $script\n";
-    passthru("\"$php\" \"$path\" 2>&1");
+    // Ejecutar en scope aislado para evitar colisión de variables entre scripts
+    (static function (string $path): void {
+        require $path;
+    })("$base/$script");
     echo "\n";
 }
 

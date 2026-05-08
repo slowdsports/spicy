@@ -16,9 +16,29 @@ $canales = [
 
 $url_base = 'https://www.gatotv.com/canal/';
 
+function fetchGatoHTML(string $url): mixed {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        CURLOPT_HTTPHEADER     => [
+            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language: es-AR,es;q=0.8,en;q=0.5',
+        ],
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_SSL_VERIFYPEER => false,
+    ]);
+    $body = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    if (!$body || $code !== 200) return false;
+    return str_get_html($body);
+}
+
 foreach ($canales as $canal_id) {
     $url  = $url_base . $canal_id;
-    $html = file_get_html($url);
+    $html = fetchGatoHTML($url);
 
     if (!$html) {
         echo "Error al cargar: $url\n";

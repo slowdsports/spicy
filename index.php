@@ -18,17 +18,117 @@ if (!in_array($page, $allowed)) {
 require_once 'includes/config.php';
 require_once 'includes/db.php';
 
-// Construir título dinámico
-$titles = [
-    'home'    => 'Tele Deportes - TV en Vivo & Deportes',
-    'tv'      => 'Canales - Tele Deportes',
-    'eventos' => 'Eventos - Tele Deportes',
-    'login'   => 'Iniciar Sesión - Tele Deportes',
-    'canal'   => 'Canal - Tele Deportes',
-    'liga'        => 'Liga - Tele Deportes',
-    'donaciones'  => 'Apoya el Proyecto - Tele Deportes',
-];
-$pageTitle = $titles[$page] ?? 'Tele Deportes';
+// ── Pre-render SEO ───────────────────────────────────────────────────────────
+$_proto    = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$_host     = $_SERVER['HTTP_HOST'] ?? 'teledeportes.online';
+$SITE_URL  = $_proto . '://' . $_host;
+$BASE_FULL = $SITE_URL . BASE_URL;
+
+// Canonical según página y parámetros relevantes
+$_qp = ['p' => $page];
+if ($page === 'canal')   $_qp['id']   = (int)($_GET['id']   ?? 0);
+if ($page === 'liga')  { $_qp['id']   = (int)($_GET['id']   ?? 0);
+                         $_qp['type'] = preg_replace('/[^a-z]/', '', strtolower($_GET['type'] ?? 'soccer')); }
+if ($page === 'eventos') $_qp['type'] = preg_replace('/[^a-z]/', '', strtolower($_GET['type'] ?? 'football'));
+$seoCanonical = $SITE_URL . BASE_URL . '?' . http_build_query($_qp);
+
+$seoTitle       = 'Tele Deportes - TV en Vivo & Deportes';
+$seoDescription = 'Mira deportes en vivo y gratis. Fútbol, básquet, tenis, béisbol y más canales de TV sin registro.';
+$seoKeywords    = 'deportes en vivo, fútbol en vivo, ver fútbol gratis, canales TV en vivo, streaming deportivo, Tele Deportes';
+$seoRobots      = 'index, follow';
+$seoOgType      = 'website';
+$seoOgImage     = $BASE_FULL . 'assets/img/og-image.jpg';
+$seoJsonLd      = null;
+
+switch ($page) {
+    case 'home':
+        $seoTitle       = 'Tele Deportes - Ver TV y Deportes en Vivo Gratis';
+        $seoDescription = 'Mira fútbol, básquet, tenis y más deportes en vivo y gratis. Canales de TV 24/7 sin registro ni pago.';
+        $seoKeywords    = 'deportes en vivo, fútbol gratis, ver partido en vivo, canales TV en vivo, streaming deportivo, Tele Deportes';
+        $seoJsonLd = json_encode([
+            '@context'        => 'https://schema.org',
+            '@type'           => 'WebSite',
+            'name'            => 'Tele Deportes',
+            'url'             => $BASE_FULL,
+            'description'     => $seoDescription,
+            'inLanguage'      => 'es',
+            'potentialAction' => [
+                '@type'       => 'SearchAction',
+                'target'      => ['@type' => 'EntryPoint', 'urlTemplate' => $BASE_FULL . '?p=tv&q={search_term_string}'],
+                'query-input' => 'required name=search_term_string',
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        break;
+
+    case 'tv':
+        $seoTitle       = 'Canales de TV en Vivo Gratis - Tele Deportes';
+        $seoDescription = 'Todos los canales de TV en vivo: ESPN, Fox Sports, Univision, TNT y más. Sin registro ni pago.';
+        $seoKeywords    = 'canales TV en vivo, ESPN en vivo, Fox Sports gratis, Univision online, ver TV gratis';
+        break;
+
+    case 'eventos':
+        $_evType = preg_replace('/[^a-z]/', '', strtolower($_GET['type'] ?? 'football'));
+        $_evLabels = [
+            'football'   => ['nombre' => 'Fútbol',   'desc' => 'partidos de fútbol en vivo'],
+            'basketball' => ['nombre' => 'Básquet',  'desc' => 'partidos de básquet en vivo'],
+            'tennis'     => ['nombre' => 'Tenis',    'desc' => 'torneos de tenis en vivo'],
+            'baseball'   => ['nombre' => 'Béisbol',  'desc' => 'partidos de béisbol en vivo'],
+        ];
+        $_ev = $_evLabels[$_evType] ?? $_evLabels['football'];
+        $seoTitle       = "{$_ev['nombre']} en Vivo Hoy - Tele Deportes";
+        $seoDescription = "Mira los {$_ev['desc']} hoy. Transmisiones en directo, gratis y sin registro en Tele Deportes.";
+        $seoKeywords    = "{$_ev['nombre']} en vivo, {$_ev['desc']}, streaming {$_ev['nombre']}, ver {$_ev['nombre']} gratis";
+        break;
+
+    case 'liga':
+        $_ligaId  = (int)($_GET['id'] ?? 0);
+        $_ligaNom = "Liga {$_ligaId}";
+        if ($_ligaId > 0 && file_exists(__DIR__ . '/data/matches.json')) {
+            foreach (json_decode(file_get_contents(__DIR__ . '/data/matches.json'), true) ?? [] as $_m) {
+                if ((string)($_m['league'] ?? '') === (string)$_ligaId && !empty($_m['leagueName'])) {
+                    $_ligaNom = $_m['leagueName'];
+                    break;
+                }
+            }
+        }
+        $seoTitle       = "{$_ligaNom} en Vivo - Tele Deportes";
+        $seoDescription = "Todos los partidos de {$_ligaNom} en vivo. Transmisiones en directo, gratis y sin registro.";
+        $seoKeywords    = "{$_ligaNom} en vivo, partidos {$_ligaNom}, streaming {$_ligaNom}, ver {$_ligaNom} gratis";
+        break;
+
+    case 'canal':
+        $_cId = (int)($_GET['id'] ?? 0);
+        if ($_cId > 0) {
+            try {
+                $_cStmt = getDBConnection()->prepare("SELECT nombre FROM fuentes WHERE id = ? LIMIT 1");
+                $_cStmt->bind_param('i', $_cId);
+                $_cStmt->execute();
+                $_cRow = $_cStmt->get_result()->fetch_assoc();
+                $_cStmt->close();
+                if (!empty($_cRow['nombre'])) {
+                    $_cn = htmlspecialchars($_cRow['nombre'], ENT_QUOTES);
+                    $seoTitle       = "{$_cn} en Vivo - Tele Deportes";
+                    $seoDescription = "Mira {$_cn} en vivo y gratis en Tele Deportes. Transmisión en directo disponible 24/7 sin registro.";
+                    $seoKeywords    = "{$_cn} en vivo, {$_cn} online, ver {$_cn} gratis, {$_cn} directo";
+                    $seoOgType      = 'video.other';
+                }
+            } catch (Throwable $_e) {}
+        }
+        break;
+
+    case 'donaciones':
+        $seoTitle       = 'Apoya Tele Deportes - Donaciones';
+        $seoDescription = 'Apoya Tele Deportes con una donación. Tu aporte nos ayuda a mantener el streaming deportivo gratuito para todos.';
+        $seoKeywords    = 'apoyar Tele Deportes, donar, streaming deportivo gratis, Buy Me a Coffee';
+        break;
+
+    case 'login':
+        $seoTitle  = 'Iniciar Sesión - Tele Deportes';
+        $seoRobots = 'noindex, nofollow';
+        break;
+}
+// ────────────────────────────────────────────────────────────────────────────
+$pageTitle = $seoTitle;
 ?>
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
@@ -36,7 +136,37 @@ $pageTitle = $titles[$page] ?? 'Tele Deportes';
   <?php include __DIR__ . '/includes/ads.php'; ?>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= htmlspecialchars($pageTitle) ?></title>
+  <title><?= htmlspecialchars($seoTitle) ?></title>
+
+  <!-- SEO básico -->
+  <meta name="description" content="<?= htmlspecialchars($seoDescription) ?>">
+  <meta name="keywords"    content="<?= htmlspecialchars($seoKeywords) ?>">
+  <meta name="robots"      content="<?= $seoRobots ?>">
+  <meta name="author"      content="Tele Deportes">
+  <link rel="canonical"    href="<?= htmlspecialchars($seoCanonical) ?>">
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="<?= $seoOgType ?>">
+  <meta property="og:site_name"   content="Tele Deportes">
+  <meta property="og:locale"      content="es_LA">
+  <meta property="og:title"       content="<?= htmlspecialchars($seoTitle) ?>">
+  <meta property="og:description" content="<?= htmlspecialchars($seoDescription) ?>">
+  <meta property="og:url"         content="<?= htmlspecialchars($seoCanonical) ?>">
+  <meta property="og:image"       content="<?= htmlspecialchars($seoOgImage) ?>">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt"   content="Tele Deportes - Streaming deportivo">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="<?= htmlspecialchars($seoTitle) ?>">
+  <meta name="twitter:description" content="<?= htmlspecialchars($seoDescription) ?>">
+  <meta name="twitter:image"       content="<?= htmlspecialchars($seoOgImage) ?>">
+
+  <?php if ($seoJsonLd): ?>
+  <!-- JSON-LD -->
+  <script type="application/ld+json"><?= $seoJsonLd ?></script>
+  <?php endif; ?>
 
   <!-- ── Protección anti-DevTools: se carga primero ─────────────────────── -->
   <script>

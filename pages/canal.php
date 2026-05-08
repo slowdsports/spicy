@@ -150,6 +150,7 @@ if ($partidoId > 0) {
   border: 1px solid var(--border);
   border-radius: 12px;
   margin-bottom: .75rem;
+  position: relative;
 }
 .partido-meta {
   display: flex;
@@ -310,12 +311,30 @@ if ($partidoId > 0) {
             <span><?= $pVisit ?></span>
           </div>
         </div>
+        <div style="margin-left:auto;display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn-theater" id="btn-chat-float" title="Chat en vivo">
+            <i class="fas fa-comments"></i><span>Chat</span>
+            <span class="chat-float-badge" id="chat-float-badge"></span>
+          </button>
+          <button class="btn-theater" id="btn-theater" title="Modo teatro">
+            <i class="fas fa-expand-alt"></i><span>Teatro</span>
+          </button>
+        </div>
       </div>
       <span id="player-channel-name" style="display:none">Cargando...</span>
       <?php else: ?>
       <div class="player-header">
         <span class="player-channel-name" id="player-channel-name">Cargando...</span>
-        <div class="live-pill">EN VIVO</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="live-pill">EN VIVO</div>
+          <button class="btn-theater" id="btn-chat-float" title="Chat en vivo">
+            <i class="fas fa-comments"></i><span>Chat</span>
+            <span class="chat-float-badge" id="chat-float-badge"></span>
+          </button>
+          <button class="btn-theater" id="btn-theater" title="Modo teatro">
+            <i class="fas fa-expand-alt"></i><span>Teatro</span>
+          </button>
+        </div>
       </div>
       <?php endif; ?>
       <div class="player-iframe-wrapper" style="position:relative;">
@@ -404,6 +423,9 @@ if ($partidoId > 0) {
         <span class="chat-users-count" id="chat-users">
           <i class="fas fa-circle" style="font-size:0.45rem;color:#22c55e;margin-right:4px;"></i> 0 viendo
         </span>
+        <button class="chat-float-close" id="chat-float-close" title="Cerrar chat">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
       <div class="chat-messages-wrap">
         <div class="chat-messages" id="chat-messages"></div>
@@ -429,6 +451,10 @@ if ($partidoId > 0) {
       </div>
     </div>
   </div>
+
+  <!-- Teatro: backdrop para cerrar el panel de chat -->
+  <div class="chat-theater-backdrop" id="chat-theater-backdrop"></div>
+
   <?php if (!isPrivileged()): ?>
   <div style="margin-top:1rem; background:var(--bg-card); border:1px solid var(--border-accent); border-radius:14px; padding:1rem 1.2rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
     <span style="font-size:1.5rem; flex-shrink:0; line-height:1;">☕</span>
@@ -645,5 +671,80 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   observer.observe(document.getElementById('player-channel-name'), { childList: true });
+});
+
+// Teatro mode + chat flotante
+document.addEventListener('DOMContentLoaded', function () {
+  const layout   = document.querySelector('.channel-page-layout');
+  const btn      = document.getElementById('btn-theater');
+  if (!layout || !btn) return;
+
+  const KEY       = 'td_theater';
+  const icon      = btn.querySelector('i');
+  const label     = btn.querySelector('span');
+  const floatBtn  = document.getElementById('btn-chat-float');
+  const backdrop  = document.getElementById('chat-theater-backdrop');
+  const closeBtn  = document.getElementById('chat-float-close');
+  const badge     = document.getElementById('chat-float-badge');
+  let   unread    = 0;
+
+  // ── Panel flotante ────────────────────────────────────────────────────
+  function setChatOpen(open) {
+    layout.classList.toggle('chat-open', open);
+    if (backdrop) backdrop.classList.toggle('visible', open);
+    if (floatBtn) floatBtn.classList.toggle('active', open);
+    const bmcBtn = document.getElementById('bmc-wbtn');
+    if (bmcBtn) bmcBtn.style.visibility = open ? 'hidden' : '';
+    if (open) {
+      unread = 0;
+      if (badge) { badge.textContent = ''; badge.classList.remove('show'); }
+      const msgs = document.getElementById('chat-messages');
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }
+  }
+
+  // Contador de mensajes no leídos cuando el panel está cerrado en teatro
+  const chatMessages = document.getElementById('chat-messages');
+  if (chatMessages) {
+    new MutationObserver(function () {
+      const isTheater = layout.classList.contains('theater-mode');
+      const isOpen    = layout.classList.contains('chat-open');
+      if (isTheater && !isOpen) {
+        unread++;
+        if (badge) {
+          badge.textContent = unread > 99 ? '99+' : unread;
+          badge.classList.add('show');
+        }
+      }
+    }).observe(chatMessages, { childList: true });
+  }
+
+  // ── Modo teatro ───────────────────────────────────────────────────────
+  function apply(on) {
+    layout.classList.toggle('theater-mode', on);
+    btn.classList.toggle('active', on);
+    if (icon)  icon.className    = on ? 'fas fa-compress-alt' : 'fas fa-expand-alt';
+    if (label) label.textContent = on ? 'Normal' : 'Teatro';
+    btn.title = on ? 'Salir del modo teatro' : 'Modo teatro';
+    if (floatBtn) floatBtn.classList.toggle('visible', on);
+    // Al salir del teatro, cerrar el panel si estaba abierto
+    if (!on) setChatOpen(false);
+  }
+
+  // Restaurar preferencia guardada
+  apply(localStorage.getItem(KEY) === '1');
+
+  btn.addEventListener('click', function () {
+    const next = !layout.classList.contains('theater-mode');
+    apply(next);
+    localStorage.setItem(KEY, next ? '1' : '0');
+  });
+
+  // Eventos del panel chat
+  if (floatBtn) floatBtn.addEventListener('click', function () {
+    setChatOpen(!layout.classList.contains('chat-open'));
+  });
+  if (backdrop) backdrop.addEventListener('click', function () { setChatOpen(false); });
+  if (closeBtn) closeBtn.addEventListener('click', function () { setChatOpen(false); });
 });
 </script>
