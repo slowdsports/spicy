@@ -35,8 +35,6 @@
      INICIALIZACIÓN
   ═══════════════════════════════════════════════════════════ */
   function init() {
-    if (!CANAL_ID) return;
-
     $msgs      = document.getElementById('chat-messages');
     $input     = document.getElementById('chat-input-field');
     $sendBtn   = document.getElementById('chat-send-btn');
