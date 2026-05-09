@@ -37,6 +37,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit();
     }
 
+    // ── Partidos destacados: lista con datos de matches.json ──────
+    if ($action === 'get_destacados') {
+        $conn = getDBConnection();
+        $rows = $conn->query("
+            SELECT id, partido_id, posicion, activo
+            FROM partidos_destacados
+            ORDER BY posicion ASC, id ASC
+        ")->fetch_all(MYSQLI_ASSOC);
+
+        $jsonPath = __DIR__ . '/../../data/matches.json';
+        $matches  = file_exists($jsonPath)
+            ? (json_decode(file_get_contents($jsonPath), true) ?? [])
+            : [];
+
+        $byId = [];
+        foreach ($matches as $m) { $byId[(int)$m['id']] = $m; }
+
+        foreach ($rows as &$row) {
+            $m = $byId[(int)$row['partido_id']] ?? [];
+            $row['homeTeam']   = $m['homeTeam']['name'] ?? '—';
+            $row['awayTeam']   = $m['awayTeam']['name'] ?? '—';
+            $row['leagueName'] = $m['leagueName'] ?? '—';
+            $row['fecha_hora'] = $m['fecha_hora'] ?? '';
+            $row['tipo']       = $m['tipo'] ?? '';
+            $row['liga']       = $m['league'] ?? '';
+        }
+        unset($row);
+
+        echo json_encode(['success' => true, 'data' => $rows]);
+        exit();
+    }
+
+    // ── Selector de partidos (para el modal de agregar) ───────────
+    if ($action === 'get_partidos_select') {
+        $jsonPath = __DIR__ . '/../../data/matches.json';
+        $matches  = file_exists($jsonPath)
+            ? (json_decode(file_get_contents($jsonPath), true) ?? [])
+            : [];
+
+        $list = [];
+        foreach ($matches as $m) {
+            $list[] = [
+                'id'          => (int)$m['id'],
+                'homeTeam'    => $m['homeTeam']['name'] ?? '',
+                'awayTeam'    => $m['awayTeam']['name'] ?? '',
+                'leagueName'  => $m['leagueName'] ?? '',
+                'fecha_hora'  => $m['fecha_hora'] ?? '',
+                'tipo'        => $m['tipo'] ?? '',
+                'liga'        => $m['league'] ?? '',
+            ];
+        }
+
+        echo json_encode(['success' => true, 'data' => $list]);
+        exit();
+    }
+
     echo json_encode(['success' => false, 'message' => 'Acción GET desconocida']);
     exit();
 }
@@ -53,11 +109,12 @@ try {
     if ($action === 'delete') {
         $id    = (int)($input['id'] ?? 0);
         $table = match ($entity) {
-            'canal'   => 'canales',
-            'fuente'  => 'fuentes',
-            'liga'    => 'ligas',
-            'partido' => 'partidos',
-            default   => null,
+            'canal'      => 'canales',
+            'fuente'     => 'fuentes',
+            'liga'       => 'ligas',
+            'partido'    => 'partidos',
+            'destacado'  => 'partidos_destacados',
+            default      => null,
         };
 
         if (!$table || !$id) { resp(false, 'Entidad o ID inválido'); }
@@ -151,6 +208,37 @@ try {
         $ok = $stmt->execute();
         $stmt->close();
         resp($ok, $ok ? 'Liga guardada' : 'Error al guardar');
+    }
+
+    // ── GUARDAR PARTIDO DESTACADO ─────────────────────────────
+    if ($action === 'save' && $entity === 'destacado') {
+        $d          = $input['data'] ?? [];
+        $partido_id = (int)($d['partido_id'] ?? 0);
+        $posicion   = (int)($d['posicion']   ?? 0);
+
+        if (!$partido_id) { resp(false, 'ID de partido inválido'); }
+
+        $stmt = $conn->prepare("
+            INSERT INTO partidos_destacados (partido_id, posicion, activo)
+            VALUES (?, ?, 1)
+            ON DUPLICATE KEY UPDATE posicion = VALUES(posicion)
+        ");
+        $stmt->bind_param('ii', $partido_id, $posicion);
+        $ok = $stmt->execute();
+        $stmt->close();
+        resp($ok, $ok ? 'Partido destacado guardado' : 'Error al guardar');
+    }
+
+    // ── TOGGLE ACTIVO DESTACADO ───────────────────────────────
+    if ($action === 'toggle' && $entity === 'destacado') {
+        $id = (int)($input['id'] ?? 0);
+        if (!$id) { resp(false, 'ID inválido'); }
+
+        $stmt = $conn->prepare("UPDATE partidos_destacados SET activo = IF(activo=1,0,1) WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        resp($ok, $ok ? 'Estado actualizado' : 'Error al actualizar');
     }
 
     // ── GUARDAR CANALES DE UN PARTIDO ─────────────────────────

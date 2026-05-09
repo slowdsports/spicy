@@ -51,6 +51,142 @@ if ($maintenance === 1) {
   </div>
 </section>
 
+<!-- BANNER: PARTIDOS DESTACADOS (oculto hasta que JS confirme que hay datos) -->
+<section id="featured-section" style="display:none; padding:1.5rem 0; background:var(--bg-secondary); border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="section-title" style="margin-bottom:1rem;">
+      <span><i class="fas fa-star" style="color:#fbbf24; margin-right:6px;"></i>Partidos Destacados</span>
+      <span class="section-subtitle">No te los pierdas</span>
+    </div>
+    <div class="featured-slider" id="featured-slider"></div>
+  </div>
+</section>
+
+<style>
+.featured-slider {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.featured-slider::-webkit-scrollbar { display: none; }
+.featured-slider.grabbing { cursor: grabbing; user-select: none; }
+
+.featured-card {
+  flex: 0 0 260px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.featured-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--accent-soft) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.featured-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.featured-card:hover::before { opacity: 1; }
+
+.fc-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.fc-league-logo {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.fc-league-name {
+  font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-secondary);
+}
+.fc-time {
+  white-space: nowrap;
+  font-size: 0.72rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.fc-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.fc-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.fc-team-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+.fc-team-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.fc-vs {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.fc-cta {
+  margin-top: auto;
+}
+.fc-cta-btn {
+  display: block;
+  text-align: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 1rem;
+  border-radius: 100px;
+  letter-spacing: 0.03em;
+  transition: opacity 0.15s;
+}
+.featured-card:hover .fc-cta-btn { opacity: 0.9; }
+</style>
+
+<script src="<?= BASE_URL ?>assets/js/destacados.js"></script>
+
 <!-- SECCIÓN 1: PARTIDOS EN VIVO -->
 <section class="matches-section" id="matches-section">
   <div class="container">

@@ -9,8 +9,9 @@ $menu = [
     'canales'  => ['icon' => 'fa-tv',           'label' => 'Canales'],
     'fuentes'  => ['icon' => 'fa-broadcast-tower', 'label' => 'Fuentes'],
     'ligas'    => ['icon' => 'fa-trophy',       'label' => 'Ligas'],
-    'partidos' => ['icon' => 'fa-futbol',       'label' => 'Partidos'],
-    'config'   => ['icon' => 'fa-gear',         'label' => 'Configuración'],
+    'partidos'    => ['icon' => 'fa-futbol',       'label' => 'Partidos'],
+    'destacados'  => ['icon' => 'fa-star',         'label' => 'Destacados'],
+    'config'      => ['icon' => 'fa-gear',         'label' => 'Configuración'],
     'reportes'  => ['icon' => 'fa-flag',         'label' => 'Reportes'],
     'usuarios'  => ['icon' => 'fa-users',        'label' => 'Usuarios'],
 ];
