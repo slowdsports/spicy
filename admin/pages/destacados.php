@@ -30,7 +30,7 @@ try {
 </div>
 
 <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1.25rem;">
-  Los partidos activos aparecen en el banner de la página principal ordenados por posición (menor = primero). Máximo recomendado: 6.
+  Los partidos activos aparecen en el banner de la página principal ordenados por posición (menor = primero).
 </p>
 
 <!-- Tabla de destacados -->

@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  var BASE = (typeof BASE_URL !== 'undefined') ? BASE_URL : '/spicy/';
+  var BASE = (typeof BASE_URL !== 'undefined') ? BASE_URL : '/';
 
   function init() {
     var section = document.getElementById('featured-section');
