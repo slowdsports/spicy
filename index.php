@@ -17,6 +17,7 @@ if (!in_array($page, $allowed)) {
 
 require_once 'includes/config.php';
 require_once 'includes/db.php';
+_autoLoginFromCookie(); // solo en el router público, nunca en APIs ni admin
 
 // ── Pre-render SEO ───────────────────────────────────────────────────────────
 $_proto    = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';

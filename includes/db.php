@@ -67,10 +67,10 @@ function _autoLoginFromCookie(): void {
         $upd->execute();
         $upd->close();
 
-        // Refrescar cookie en el navegador
+        // Refrescar cookie en el navegador (path restringido al directorio del sitio)
         $cookieOpts = [
             'expires'  => time() + 60 * 60 * 24 * 365,
-            'path'     => '/',
+            'path'     => BASE_URL,
             'httponly' => true,
             'samesite' => 'Lax',
         ];
@@ -81,5 +81,5 @@ function _autoLoginFromCookie(): void {
     }
 }
 
-// Intentar auto-login en cada carga de página
-_autoLoginFromCookie();
+// Nota: _autoLoginFromCookie() debe llamarse explícitamente desde index.php,
+// NO aquí, para evitar que corra en APIs, admin y otros contextos.

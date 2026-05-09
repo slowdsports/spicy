@@ -27,6 +27,14 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Impedir que Nginx / proxies compartan la respuesta PHP entre usuarios.
+// Cada respuesta PHP puede contener datos de sesión específicos del usuario.
+// Los navegadores individuales todavía pueden cachear localmente (Back button, etc.).
+if (!headers_sent()) {
+    header('Cache-Control: private, no-store');
+    header('X-Accel-Expires: 0'); // directiva específica de Nginx
+}
+
 // ============================================================
 // HELPERS DE URL
 // ============================================================

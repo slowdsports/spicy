@@ -143,7 +143,7 @@ function _persistSession(int $userId): void {
 
         setcookie('sh_rem', $raw, [
             'expires'  => time() + 60 * 60 * 24 * 365,
-            'path'     => '/',
+            'path'     => BASE_URL,
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
@@ -163,7 +163,7 @@ function _destroyPersistentSession(): void {
         $del->execute();
         $del->close();
     } catch (Throwable $e) {}
-    setcookie('sh_rem', '', ['expires' => 1, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
+    setcookie('sh_rem', '', ['expires' => 1, 'path' => BASE_URL, 'httponly' => true, 'samesite' => 'Lax']);
 }
 
 function send(bool $ok, string $msg, $data = null, int $code = 200): void {
