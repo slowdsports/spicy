@@ -80,9 +80,11 @@
   function doPoll() {
     if (!polling) return;
 
-    var url = BASE + 'chat/poll.php?canal=' + CANAL_ID + '&last_id=' + lastId;
+    var fd = new FormData();
+    fd.append('canal',   CANAL_ID);
+    fd.append('last_id', lastId);
 
-    fetch(url, { method: 'GET', cache: 'no-store' })
+    fetch(BASE + 'chat/poll.php', { method: 'POST', body: fd })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
