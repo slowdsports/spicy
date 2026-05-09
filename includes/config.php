@@ -4,17 +4,25 @@
  * Incluido en todas las páginas antes de cualquier output.
  */
 
-// ---- Base de datos ----
 define('DB_HOST', 'localhost');
 define('DB_USER', 'u5869826_root');
 define('DB_PASS', 'OF0wh^]#kK9C+U1W');
 define('DB_NAME', 'u5869826_streamhub');
+define('BASE_URL', $_env['BASE_URL'] ?? '/');
 
+unset($_env);
 
-// ---- URL base (ajustar según carpeta del proyecto) ----
-define('BASE_URL', '/');
+// Sesiones persistentes: cookie dura 1 año en el navegador
+// (el remember-me token en BD cubre el caso de que la sesión
+//  del servidor expire por inactividad, igual que Facebook/Twitter)
+ini_set('session.gc_maxlifetime', 60 * 60 * 24 * 365);
+session_set_cookie_params([
+    'lifetime' => 60 * 60 * 24 * 365,
+    'path'     => '/',
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
 
-// Iniciar sesión PHP si no está iniciada
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
