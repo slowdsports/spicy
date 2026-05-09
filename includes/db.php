@@ -13,3 +13,73 @@ function getDBConnection(): mysqli {
     $conn->set_charset('utf8mb4');
     return $conn;
 }
+
+/**
+ * Si hay cookie sh_rem y no hay sesión activa, intenta re-autenticar
+ * al usuario silenciosamente (remember-me token).
+ */
+function _autoLoginFromCookie(): void {
+    if (isset($_SESSION['user_id'])) return;
+    $raw = $_COOKIE['sh_rem'] ?? '';
+    if (strlen($raw) !== 64) return;
+
+    try {
+        $conn = getDBConnection();
+
+        // Crear tabla si no existe (primera vez en hosting)
+        $conn->query("CREATE TABLE IF NOT EXISTS sesiones_persistentes (
+            id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            usuario_id  INT UNSIGNED NOT NULL,
+            token_hash  CHAR(64) NOT NULL,
+            expira_en   DATETIME NOT NULL,
+            creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_token (token_hash),
+            KEY idx_usuario (usuario_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $hash = hash('sha256', $raw);
+        $now  = date('Y-m-d H:i:s');
+
+        $stmt = $conn->prepare(
+            "SELECT sp.id, sp.usuario_id, u.nombre, u.email, u.rol
+             FROM sesiones_persistentes sp
+             JOIN usuarios u ON u.id = sp.usuario_id
+             WHERE sp.token_hash = ? AND sp.expira_en > ? AND u.activo = 1
+             LIMIT 1"
+        );
+        $stmt->bind_param('ss', $hash, $now);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$row) return;
+
+        // Restaurar sesión PHP
+        $_SESSION['user_id']    = $row['usuario_id'];
+        $_SESSION['user_name']  = $row['nombre'];
+        $_SESSION['user_email'] = $row['email'];
+        $_SESSION['user_rol']   = $row['rol'];
+
+        // Extender vigencia del token 1 año más
+        $newExpiry = date('Y-m-d H:i:s', strtotime('+1 year'));
+        $upd = $conn->prepare("UPDATE sesiones_persistentes SET expira_en = ? WHERE id = ?");
+        $upd->bind_param('si', $newExpiry, $row['id']);
+        $upd->execute();
+        $upd->close();
+
+        // Refrescar cookie en el navegador
+        $cookieOpts = [
+            'expires'  => time() + 60 * 60 * 24 * 365,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ];
+        setcookie('sh_rem', $raw, $cookieOpts);
+
+    } catch (Throwable $e) {
+        // No interrumpir la carga de página si la BD falla
+    }
+}
+
+// Intentar auto-login en cada carga de página
+_autoLoginFromCookie();

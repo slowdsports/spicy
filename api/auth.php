@@ -44,6 +44,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Soportar logout por GET (desde enlace de navbar)
 if (isset($_GET['action']) && $_GET['action'] === 'logout_redirect') {
+    _destroyPersistentSession();
     $_SESSION = [];
     session_destroy();
     header('Location: ' . BASE_URL . '?p=home');
@@ -84,6 +85,7 @@ function handleLogin(array $d): void {
         if (!password_verify($d['password'], $user['password'])) { send(false, 'Credenciales incorrectas'); return; }
         $_SESSION['user_id'] = $user['id']; $_SESSION['user_name'] = $user['nombre'];
         $_SESSION['user_email'] = $user['email']; $_SESSION['user_rol'] = $user['rol'];
+        _persistSession((int)$user['id']);
         send(true, 'Login exitoso', ['id' => $user['id'], 'name' => $user['nombre'], 'email' => $user['email'], 'rol' => $user['rol']]);
     } catch (Exception $e) { send(false, 'Error del servidor', null, 500); }
 }
@@ -108,12 +110,60 @@ function handleRegister(array $d): void {
     } catch (Exception $e) { send(false, 'Error del servidor', null, 500); }
 }
 
-function handleLogout(): void { $_SESSION = []; session_destroy(); send(true, 'Sesión cerrada'); }
+function handleLogout(): void { _destroyPersistentSession(); $_SESSION = []; session_destroy(); send(true, 'Sesión cerrada'); }
 
 function handleCheck(): void {
     if (isset($_SESSION['user_id'])) {
         send(true, 'Sesión activa', ['id' => $_SESSION['user_id'], 'name' => $_SESSION['user_name'], 'email' => $_SESSION['user_email'], 'rol' => $_SESSION['user_rol']]);
     } else { send(false, 'No hay sesión activa'); }
+}
+
+function _persistSession(int $userId): void {
+    try {
+        $conn = getDBConnection();
+
+        $conn->query("CREATE TABLE IF NOT EXISTS sesiones_persistentes (
+            id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            usuario_id  INT UNSIGNED NOT NULL,
+            token_hash  CHAR(64) NOT NULL,
+            expira_en   DATETIME NOT NULL,
+            creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_token (token_hash),
+            KEY idx_usuario (usuario_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $raw    = bin2hex(random_bytes(32)); // 64 hex chars
+        $hash   = hash('sha256', $raw);
+        $expiry = date('Y-m-d H:i:s', strtotime('+1 year'));
+
+        $ins = $conn->prepare("INSERT INTO sesiones_persistentes (usuario_id, token_hash, expira_en) VALUES (?, ?, ?)");
+        $ins->bind_param('iss', $userId, $hash, $expiry);
+        $ins->execute();
+        $ins->close();
+
+        setcookie('sh_rem', $raw, [
+            'expires'  => time() + 60 * 60 * 24 * 365,
+            'path'     => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    } catch (Throwable $e) {
+        // Cookie persistence is best-effort; don't break login on failure
+    }
+}
+
+function _destroyPersistentSession(): void {
+    $raw = $_COOKIE['sh_rem'] ?? '';
+    if (strlen($raw) !== 64) return;
+    try {
+        $conn = getDBConnection();
+        $hash = hash('sha256', $raw);
+        $del  = $conn->prepare("DELETE FROM sesiones_persistentes WHERE token_hash = ?");
+        $del->bind_param('s', $hash);
+        $del->execute();
+        $del->close();
+    } catch (Throwable $e) {}
+    setcookie('sh_rem', '', ['expires' => 1, 'path' => '/', 'httponly' => true, 'samesite' => 'Lax']);
 }
 
 function send(bool $ok, string $msg, $data = null, int $code = 200): void {
