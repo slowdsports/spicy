@@ -24,21 +24,18 @@ $apiLeague = isset($_POST['filtrarLiga'])
     ? (int)$_POST['filtrarLiga']
     : (int)($_GET['filtrarLiga'] ?? 0);
 
-$isDarkAction = ($_GET['action'] ?? '') === 'darkEquipos';
-
-if (!$apiLeague && !$isDarkAction) {
+if (!$apiLeague) {
     exit('Error: no se especificó liga.');
 }
 
 /* ─────────────────────────────────────────────
    Carpetas imágenes
 ───────────────────────────────────────────── */
-$ligaImgDir     = __DIR__ . '/../assets/img/ligas/sf/';
-$ligaDarkDir    = __DIR__ . '/../assets/img/ligas/sf/dark/';
-$equipoImgDir   = __DIR__ . '/../assets/img/equipos/sf/';
-$equipoDarkDir  = __DIR__ . '/../assets/img/equipos/sf/dark/';
+$ligaImgDir  = __DIR__ . '/../assets/img/ligas/sf/';
+$ligaDarkDir = __DIR__ . '/../assets/img/ligas/sf/dark/';
+$equipoImgDir = __DIR__ . '/../assets/img/equipos/sf/';
 
-foreach ([$ligaImgDir, $ligaDarkDir, $equipoImgDir, $equipoDarkDir] as $dir) {
+foreach ([$ligaImgDir, $ligaDarkDir, $equipoImgDir] as $dir) {
     if (!is_dir($dir)) {
         mkdir($dir, 0755, true);
     }
@@ -72,30 +69,6 @@ function downloadFile(string $url, string $dest): void
     if ($bin) {
         @file_put_contents($dest, $bin);
     }
-}
-
-/* ─────────────────────────────────────────────
-   Acción: descargar dark de todos los equipos existentes
-───────────────────────────────────────────── */
-if ($isDarkAction) {
-    foreach ([$equipoImgDir, $equipoDarkDir] as $dir) {
-        if (!is_dir($dir)) mkdir($dir, 0755, true);
-    }
-    $downloaded = 0;
-    foreach (glob($equipoImgDir . '*.png') as $file) {
-        $teamId  = basename($file, '.png');
-        $darkDest = $equipoDarkDir . $teamId . '.png';
-        if (!file_exists($darkDest)) {
-            downloadFile(
-                "https://api.sofascore.app/api/v1/team/{$teamId}/image/dark",
-                $darkDest
-            );
-            if (file_exists($darkDest)) $downloaded++;
-        }
-    }
-    $total = count(glob($equipoDarkDir . '*.png'));
-    echo "✓ Dark equipos: {$downloaded} nuevas descargadas, {$total} disponibles en total.";
-    exit;
 }
 
 function asignarCanalesDefecto(int $ligaId, string $sport): array
@@ -297,11 +270,6 @@ foreach ($eventsData['events'] as $event) {
         $equipoImgDir . $homeId . ".png"
     );
 
-    downloadFile(
-        "https://api.sofascore.app/api/v1/team/{$homeId}/image/dark",
-        $equipoDarkDir . $homeId . ".png"
-    );
-
     /* Equipo visitante */
     $awayId   = (int)$event['awayTeam']['id'];
     $awayName = $event['awayTeam']['name'] ?? '';
@@ -327,11 +295,6 @@ foreach ($eventsData['events'] as $event) {
     downloadFile(
         "https://api.sofascore.app/api/v1/team/{$awayId}/image",
         $equipoImgDir . $awayId . ".png"
-    );
-
-    downloadFile(
-        "https://api.sofascore.app/api/v1/team/{$awayId}/image/dark",
-        $equipoDarkDir . $awayId . ".png"
     );
 
     /* Partido */

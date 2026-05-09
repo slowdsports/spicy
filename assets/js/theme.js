@@ -12,6 +12,7 @@
 function sfLogoSrc(baseSrc, theme) {
   if (!baseSrc) return baseSrc;
   if (theme !== 'dark') return baseSrc;
+  if (!baseSrc.includes('/ligas/sf/')) return baseSrc;
   return baseSrc.replace(/(\/sf\/)([^/]+\.png)$/, '$1dark/$2');
 }
 

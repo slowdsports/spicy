@@ -30,11 +30,6 @@ try {
       <i class="fas fa-cloud-download-alt"></i> Importar vía Sofascore
     </button>
 
-    <!-- Descargar dark de equipos existentes -->
-    <button class="btn-interact" style="border-radius:10px;" onclick="descargarDarkEquipos()" id="btn-dark-equipos">
-      <i class="fas fa-moon"></i> Dark equipos
-    </button>
-
     <!-- Crear manualmente -->
     <button class="btn-admin-add" onclick="abrirModalLiga()">
       <i class="fas fa-plus"></i> Nueva liga
@@ -179,25 +174,6 @@ try {
 </div>
 
 <script>
-function descargarDarkEquipos() {
-  const btn = document.getElementById('btn-dark-equipos');
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Descargando...';
-  btn.disabled = true;
-
-  fetch(`<?= BASE_URL ?>admin/sofa.php?action=darkEquipos`)
-    .then(r => r.text())
-    .then(text => {
-      adminToast(text || 'Dark equipos completado.', 'success');
-    })
-    .catch(err => {
-      adminToast('Error: ' + err.message, 'error');
-    })
-    .finally(() => {
-      btn.innerHTML = '<i class="fas fa-moon"></i> Dark equipos';
-      btn.disabled = false;
-    });
-}
-
 function mostrarImportarLiga() {
   document.getElementById('panel-sofa-liga').style.display = 'block';
   document.getElementById('sofa-liga-id').focus();
