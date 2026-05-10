@@ -51,6 +51,16 @@ try {
 
     ksort($featured);
 
+    // Prefijar leagueLogo con BASE_URL dinámicamente (el JSON la guarda sin prefijo)
+    foreach ($featured as &$m) {
+        if (!empty($m['leagueLogo'])
+            && !str_starts_with($m['leagueLogo'], '/')
+            && !str_starts_with($m['leagueLogo'], 'http')) {
+            $m['leagueLogo'] = BASE_URL . $m['leagueLogo'];
+        }
+    }
+    unset($m);
+
     echo json_encode(['ok' => true, 'matches' => array_values($featured)], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $e) {
