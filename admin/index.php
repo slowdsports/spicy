@@ -87,6 +87,8 @@ $pageTitle = $titles[$page] ?? 'Admin';
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Tom Select -->
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<!-- jQuery (requerido por DataTables) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <!-- Data Tables -->
 <script src="https://cdn.datatables.net/2.3.8/js/dataTables.min.js"></script>
 <!-- Tema -->

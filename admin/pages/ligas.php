@@ -19,11 +19,10 @@ try {
   <div class="admin-section-title">Ligas deportivas</div>
   <div class="d-flex gap-2 align-items-center flex-wrap">
 
-    <!-- Buscador -->
-    <div style="position:relative;">
-      <i class="fas fa-search" style="position:absolute; left:0.7rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.78rem;"></i>
-      <input type="text" id="search-ligas" class="admin-search" placeholder="Buscar liga...">
-    </div>
+    <!-- Regenerar matches.json (las ligas forman parte de los partidos) -->
+    <button class="btn-interact" onclick="generarJSON('partidos')" id="btn-json-partidos">
+      <i class="fas fa-file-export"></i> Actualizar JSON
+    </button>
 
     <!-- Importar desde Sofascore -->
     <button class="btn-sofa" onclick="mostrarImportarLiga()">
@@ -89,7 +88,7 @@ try {
         </td></tr>
       <?php else: ?>
         <?php foreach ($ligas as $l): ?>
-        <tr data-nombre="<?= strtolower(htmlspecialchars($l['ligaNombre'] . ' ' . $l['ligaPais'])) ?>">
+        <tr>
           <td style="font-family:'Space Mono',monospace; font-size:0.75rem; color:var(--text-muted);"><?= $l['id'] ?></td>
           <td>
             <?php

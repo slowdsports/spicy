@@ -37,41 +37,6 @@ try {
         ORDER BY c.nombre ASC, f.nombre ASC
     ")->fetch_all(MYSQLI_ASSOC);
 
-    /* =====================================================
-       GENERAR JSON DE FUENTES
-       Ruta: /data/fuentes.json
-    ===================================================== */
-    $jsonFuentes = [];
-
-    foreach ($fuentes as $f) {
-        $jsonFuentes[] = [
-            'id'         => (int)$f['id'],
-            'nombre'     => $f['nombre'] ?? '',
-            'canal'      => (int)$f['canal_id'] ?: null,
-            'tipo'       => (int)$f['tipo_id'] ?: null,
-            'epg'        => $f['epg'] ?? '',
-            'activo'     => (int)$f['activo'],
-            'sandbox'    => (int)($f['sandbox']    ?? 1),
-            'mostrar_tv' => (int)($f['mostrar_tv'] ?? 1),
-        ];
-    }
-
-    $dir = __DIR__ . '/../../data';
-
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
-    }
-
-    file_put_contents(
-        $dir . '/fuentes.json',
-        json_encode(
-            $jsonFuentes,
-            JSON_PRETTY_PRINT |
-            JSON_UNESCAPED_UNICODE |
-            JSON_UNESCAPED_SLASHES
-        )
-    );
-
 } catch (Exception $e) {
     $fuentes = [];
 }
@@ -79,11 +44,10 @@ try {
 
 <div class="admin-section-header">
   <div class="admin-section-title">Fuentes de transmisión</div>
-  <div class="d-flex gap-2 align-items-center">
-    <div style="position:relative;">
-      <i class="fas fa-search" style="position:absolute; left:0.7rem; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.78rem;"></i>
-      <input type="text" id="search-fuentes" class="admin-search" placeholder="Buscar fuente...">
-    </div>
+  <div class="d-flex gap-2 align-items-center flex-wrap">
+    <button class="btn-interact" onclick="generarJSON('fuentes')" id="btn-json-fuentes">
+      <i class="fas fa-file-export"></i> Actualizar JSON
+    </button>
     <button class="btn-admin-add" onclick="abrirModalFuente()">
       <i class="fas fa-plus"></i> Nueva fuente
     </button>
@@ -113,7 +77,7 @@ try {
         </td></tr>
       <?php else: ?>
         <?php foreach ($fuentes as $f): ?>
-        <tr data-nombre="<?= strtolower(htmlspecialchars($f['nombre'] . ' ' . $f['canal_nombre'])) ?>">
+        <tr>
           <td style="color:var(--text-muted); font-size:0.75rem;"><?= $f['id'] ?></td>
           <td style="font-weight:600; color:var(--text-primary); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             <?= htmlspecialchars($f['nombre']) ?>

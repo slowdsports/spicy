@@ -70,12 +70,6 @@ $idsAutoDesactivados = array_column($autodesactivados, 'fuente_id');
     <span style="font-family:'Space Mono',monospace; font-size:.85rem; font-weight:700; color:var(--text-primary);">
       Todos los reportes
     </span>
-    <!-- Buscador -->
-    <div style="margin-left:auto; position:relative;">
-      <i class="fas fa-search" style="position:absolute;left:.65rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.72rem;"></i>
-      <input type="text" id="search-reportes" class="admin-search" placeholder="Buscar fuente o usuario..."
-             style="padding-left:1.9rem;">
-    </div>
   </div>
 
   <?php if (empty($reportes)): ?>
@@ -104,7 +98,7 @@ $idsAutoDesactivados = array_column($autodesactivados, 'fuente_id');
           $nombreUsuario     = $r['usuario_nombre'] ?? 'Usuario #' . $r['user_id'];
           $totalFuente       = $cuentas[$r['fuente_id']] ?? 0;
         ?>
-        <tr data-search="<?= strtolower(htmlspecialchars($nombreFuente . ' ' . $nombreUsuario)) ?>">
+        <tr>
           <td style="color:var(--text-muted);font-size:.75rem;"><?= $r['id'] ?></td>
 
           <td>
@@ -186,7 +180,7 @@ $idsAutoDesactivados = array_column($autodesactivados, 'fuente_id');
       <p>Ninguna fuente ha sido auto-desactivada.</p>
     </div>
   <?php else: ?>
-    <table class="admin-table">
+    <table class="admin-table" id="tabla-autodesactivadas">
       <thead>
         <tr>
           <th style="width:50px;">#</th>

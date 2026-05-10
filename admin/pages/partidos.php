@@ -152,105 +152,6 @@ try {
         $partidos = $conn->query($sql)->fetch_all(MYSQLI_ASSOC);
     }
     
-    /* =====================================================
-       GENERAR MATCHES.JSON
-    ===================================================== */
-    $jsonMatches = [];
-    $now = time();
-    $tz  = new DateTimeZone('America/Tegucigalpa');
-
-    foreach ($partidos as $p) {
-
-        $dt = !empty($p['fecha_hora'])
-            ? new DateTime($p['fecha_hora'], $tz)
-            : null;
-        $ts = $dt ? $dt->getTimestamp() : 0;
-
-        if (!$ts || $ts > $now) {
-            $status  = 'upcoming';
-            $timeTxt = $dt ? $dt->format('H:i') : '--:--';
-        } elseif ($ts > $now - 10800) {
-            $status  = 'live';
-            $timeTxt = 'EN VIVO';
-        } else {
-            $status  = 'finished';
-            $timeTxt = 'Finalizó';
-        }
-
-        $match = [
-        'id' => (int)$p['id'],
-
-        'league'     => $p['liga'] ?? '',
-        'leagueName' => $p['nombre_liga'] ?? '',
-        'leagueLogo' => BASE_URL . 'assets/img/ligas/sf/' . ($p['liga'] ?? '') . '.png',
-
-        'status'     => $status,
-        'time'       => $timeTxt,
-        'fecha_hora' => $p['fecha_hora'] ?? '',
-        'timestamp'  => $ts,
-        'tipo'       => $p['tipo'] ?? '',
-    
-        'homeTeam' => [
-            'name'  => $p['equipo_local'] ?? '',
-            'logo'  => $p['id_local'] ?? '',
-            'score' => 0
-        ],
-    
-        'awayTeam' => [
-            'name'  => $p['equipo_visitante'] ?? '',
-            'logo'  => $p['id_visitante'] ?? '',
-            'score' => 0
-        ]
-    ];
-    
-    /* CANALES DINÁMICOS */
-    for ($i = 1; $i <= 10; $i++) {
-        $match["cnl{$i}"]     = $p["canal{$i}"] ?? '';
-        $match["cnl{$i}Name"] = $p["fuente{$i}_nombre"] ?? '';
-        $match["cnl{$i}Logo"] = $p["canal{$i}_logo"] ?? '';
-    }
-    
-    $jsonMatches[] = $match;
-    }
-
-    /* =====================================================
-       ORDENAR: próximos primero, luego pasados
-    ===================================================== */
-    usort($jsonMatches, function ($a, $b) use ($now) {
-        $ta   = $a['timestamp'];
-        $tb   = $b['timestamp'];
-        $aUp  = $ta >= $now;
-        $bUp  = $tb >= $now;
-
-        // Un futuro siempre antes que un pasado
-        if ($aUp !== $bUp) return $aUp ? -1 : 1;
-
-        // Ambos futuros: el más próximo primero
-        if ($aUp) return $ta - $tb;
-
-        // Ambos pasados/en vivo: el más reciente primero
-        return $tb - $ta;
-    });
-
-    /* =====================================================
-       GUARDAR JSON
-    ===================================================== */
-    $dir = __DIR__ . '/../../data';
-
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
-    }
-
-    file_put_contents(
-        $dir . '/matches.json',
-        json_encode(
-            $jsonMatches,
-            JSON_PRETTY_PRINT |
-            JSON_UNESCAPED_UNICODE |
-            JSON_UNESCAPED_SLASHES
-        )
-    );
-
     /* ─────────────────────────────
        Canales modal
     ───────────────────────────── */
@@ -275,6 +176,10 @@ try {
     <div class="admin-section-title">Partidos</div>
 
     <div class="d-flex gap-2 align-items-center flex-wrap">
+
+        <button class="btn-interact" onclick="generarJSON('partidos')" id="btn-json-partidos">
+            <i class="fas fa-file-export"></i> Actualizar JSON
+        </button>
 
         <!-- filtro deporte -->
         <select id="filtro-tipo" class="form-select"

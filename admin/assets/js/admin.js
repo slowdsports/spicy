@@ -8,7 +8,8 @@
  *  - Toast de notificaciones
  */
 
-const API = '../admin/api/crud.php'; // ruta relativa desde admin/
+const API      = '../admin/api/crud.php';         // ruta relativa desde admin/
+const API_JSON = '../admin/api/generate_json.php'; // generación manual de JSON
 
 // ============================================================
 // TOAST DE NOTIFICACIONES
@@ -24,6 +25,37 @@ function adminToast(msg, type = 'success') {
   t.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
   clearTimeout(t._timer);
   t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ============================================================
+// GENERAR JSON MANUALMENTE
+// ============================================================
+function generarJSON(entity) {
+  const btnId = 'btn-json-' + entity;
+  const btn   = document.getElementById(btnId);
+  const label = { canales: 'channels.json', fuentes: 'fuentes.json', partidos: 'matches.json' };
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+  }
+
+  fetch(API_JSON, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ entity }),
+  })
+  .then(r => r.json())
+  .then(res => {
+    adminToast(res.message, res.success ? 'success' : 'error');
+  })
+  .catch(() => adminToast('Error al generar ' + (label[entity] ?? 'JSON'), 'error'))
+  .finally(() => {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-file-export"></i> Actualizar JSON';
+    }
+  });
 }
 
 // ============================================================
@@ -270,10 +302,12 @@ function tsSet(id, val) {
   }
 }
 
-/** Inicializa Tom Select en todos los <select> del DOM que tengan id. */
+/** Inicializa Tom Select en todos los <select> del DOM que tengan id,
+ *  excepto los generados por DataTables (terminan en _length). */
 function initAdminSelects() {
   document.querySelectorAll('select[id]').forEach(el => {
     if (_ts[el.id]) return;
+    if (el.id.endsWith('_length')) return; // select de cantidad de filas de DataTables
     _ts[el.id] = new TomSelect(el, {
       allowEmptyOption: true,
       maxOptions: 500,
@@ -288,65 +322,47 @@ document.addEventListener('DOMContentLoaded', initAdminSelects);
 // ── DATATABLES — tablas con búsqueda, orden y paginación ─────
 // ============================================================
 
+const DT_LANG = {
+  search:       'Buscar:',
+  lengthMenu:   'Mostrar _MENU_',
+  info:         '_START_–_END_ de _TOTAL_',
+  infoEmpty:    'Sin resultados',
+  infoFiltered: '(filtrado de _MAX_)',
+  emptyTable:   'No hay datos disponibles',
+  zeroRecords:  'Sin coincidencias',
+  paginate:     { previous: '‹', next: '›' },
+};
+
+const DT_TABLES = [
+  'tabla-canales',
+  'tabla-fuentes',
+  'tabla-ligas',
+  'tabla-reportes',
+  'tabla-partidos',
+  'tabla-usuarios',
+  'tabla-donaciones',
+  'tabla-autodesactivadas',
+];
+
 function initAdminTables() {
-  const cfg = {
-    'tabla-canales':   { searchId: 'search-canales' },
-    'tabla-fuentes':   { searchId: 'search-fuentes' },
-    'tabla-ligas':     { searchId: 'search-ligas' },
-    'tabla-reportes':  { searchId: 'search-reportes' },
-    'tabla-partidos':  { searchId: null },             // usa filtros por URL, sin input de búsqueda
-    'tabla-usuarios':  {
-      searchId: 'search-usuarios',
-      colFilters: [{ col: 2, inputId: 'filter-rol' }],
-    },
-  };
-
-  Object.entries(cfg).forEach(([tableId, opts]) => {
-    const el = document.getElementById(tableId);
-    if (!el || !window.DataTable) return;
-
-    const dt = new DataTable(el, {
-      paging:     true,
-      pageLength: 25,
-      ordering:   true,
-      searching:  true,
-      info:       true,
-      layout: {
-        topStart:    null,
-        topEnd:      null,
-        bottomStart: 'info',
-        bottomEnd:   'paging',
-      },
-      columnDefs: [
-        { orderable: false, targets: -1 }, // columna Acciones no es ordenable
-      ],
-      language: {
-        info:         'Mostrando _START_–_END_ de _TOTAL_',
-        infoEmpty:    'Sin resultados',
-        infoFiltered: '(filtrado de _MAX_)',
-        emptyTable:   'No hay datos disponibles',
-        zeroRecords:  'Sin coincidencias',
-        paginate:     { previous: '‹', next: '›' },
-      },
-    });
-
-    // Conectar el input de búsqueda existente al DataTable
-    const searchEl = opts.searchId ? document.getElementById(opts.searchId) : null;
-    if (searchEl) {
-      searchEl.addEventListener('input', () => dt.search(searchEl.value).draw());
-    }
-
-    // Conectar filtros de columna (ej. filter-rol en usuarios)
-    (opts.colFilters ?? []).forEach(({ col, inputId }) => {
-      const sel = document.getElementById(inputId);
-      if (!sel) return;
-      sel.addEventListener('change', () => {
-        const v = sel.value;
-        // Búsqueda exacta con regex para no hacer match parcial
-        dt.column(col).search(v ? '^' + v + '$' : '', { regex: true }).draw();
+  DT_TABLES.forEach(function (tableId) {
+    var el = document.getElementById(tableId);
+    if (!el) return;
+    if ($.fn.DataTable.isDataTable(el)) return; // ya inicializada
+    try {
+      $(el).DataTable({
+        pageLength: 25,
+        columnDefs: [{ orderable: false, targets: -1 }],
+        language:   DT_LANG,
       });
-    });
+    } catch (e) {
+      console.warn('[DataTable]', tableId, e);
+    }
   });
 }
 
-document.addEventListener('DOMContentLoaded', initAdminTables);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAdminTables);
+} else {
+  initAdminTables();
+}

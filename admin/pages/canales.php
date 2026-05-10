@@ -32,41 +32,6 @@ try {
 
     $catMap = array_column($categorias, 'nombre', 'id');
 
-    /* =====================================================
-       GENERAR JSON
-       Ruta: /now/data/channels.json
-    ===================================================== */
-    $jsonChannels = [];
-
-    foreach ($canales as $c) {
-
-        $jsonChannels[] = [
-            'id'          => (int)$c['id'],
-            'name'        => $c['nombre'] ?? '',
-            'category'    => $catMap[$c['categoria_id']] ?? (string)($c['categoria_id'] ?? ''),
-            'logo'        => $c['imagen'] ?? '',
-            'description' => '',
-            'views'       => $c['views'] ?: '0',
-            'active'      => (int)$c['activo']
-        ];
-    }
-
-    $dir = __DIR__ . '/../../data';
-
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
-    }
-
-    file_put_contents(
-        $dir . '/channels.json',
-        json_encode(
-            $jsonChannels,
-            JSON_PRETTY_PRINT |
-            JSON_UNESCAPED_UNICODE |
-            JSON_UNESCAPED_SLASHES
-        )
-    );
-
 } catch (Throwable $e) {
 
     $canales = [];
@@ -80,25 +45,13 @@ try {
 
 <div class="admin-section-header">
   <div class="admin-section-title">Canales</div>
-
-  <div class="d-flex gap-2 align-items-center">
-
-    <!-- Buscar -->
-    <div style="position:relative;">
-      <i class="fas fa-search"
-         style="position:absolute;left:.7rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.78rem;"></i>
-
-      <input type="text"
-             id="search-canales"
-             class="admin-search"
-             placeholder="Buscar canal...">
-    </div>
-
-    <!-- Nuevo -->
+  <div class="d-flex gap-2 align-items-center flex-wrap">
+    <button class="btn-interact" onclick="generarJSON('canales')" id="btn-json-canales">
+      <i class="fas fa-file-export"></i> Actualizar JSON
+    </button>
     <button class="btn-admin-add" onclick="abrirModalCanal()">
       <i class="fas fa-plus"></i> Nuevo canal
     </button>
-
   </div>
 </div>
 
@@ -136,7 +89,7 @@ try {
 
 <?php foreach ($canales as $c): ?>
 
-<tr data-nombre="<?= strtolower(htmlspecialchars($c['nombre'])) ?>">
+<tr>
 
 <td style="color:var(--text-muted);font-size:.75rem;">
 <?= $c['id'] ?>

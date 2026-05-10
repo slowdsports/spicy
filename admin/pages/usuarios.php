@@ -60,20 +60,6 @@ $now = time();
   </div>
 </div>
 
-<!-- Filtros -->
-<div style="display:flex; gap:.75rem; margin-bottom:1.25rem; flex-wrap:wrap; align-items:center;">
-  <div style="position:relative; flex:1; min-width:180px;">
-    <i class="fas fa-search" style="position:absolute;left:.65rem;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.72rem;pointer-events:none;"></i>
-    <input type="text" id="search-usuarios" class="admin-search" placeholder="Buscar usuario…" style="padding-left:1.9rem; width:100%;">
-  </div>
-  <select id="filter-rol" class="admin-search" style="min-width:130px; padding-left:.9rem;">
-    <option value="">Todos los roles</option>
-    <option value="admin">Admin</option>
-    <option value="spicy">Spicy</option>
-    <option value="usuario">Usuario</option>
-  </select>
-</div>
-
 <!-- Tabla de usuarios -->
 <div class="admin-table-wrapper" style="margin-bottom:2rem;">
   <div style="padding:.75rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
@@ -101,10 +87,9 @@ $now = time();
         $esAdmin   = $u['rol'] === 'admin';
         $esSpicy   = $u['rol'] === 'spicy';
         $expirado  = $esSpicy && $u['spicy_hasta'] && strtotime($u['spicy_hasta']) < $now;
-        $searchVal = strtolower($u['nombre'] . ' ' . $u['email'] . ' ' . $u['rol']);
         $spicyHastaJs = $u['spicy_hasta'] ? htmlspecialchars($u['spicy_hasta']) : '';
       ?>
-      <tr data-search="<?= htmlspecialchars($searchVal) ?>" data-rol="<?= $u['rol'] ?>">
+      <tr>
 
         <td style="color:var(--text-muted);font-size:.75rem;"><?= $u['id'] ?></td>
 
@@ -180,7 +165,7 @@ $now = time();
   <?php if (empty($historial)): ?>
     <div class="admin-empty"><i class="fas fa-coffee"></i><p>Aún no hay donaciones registradas.</p></div>
   <?php else: ?>
-  <table class="admin-table">
+  <table class="admin-table" id="tabla-donaciones">
     <thead>
       <tr>
         <th style="width:44px;">#</th>
