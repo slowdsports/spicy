@@ -12,7 +12,8 @@ $menu = [
     'partidos'    => ['icon' => 'fa-futbol',       'label' => 'Partidos'],
     'destacados'  => ['icon' => 'fa-star',         'label' => 'Destacados'],
     'config'      => ['icon' => 'fa-gear',         'label' => 'Configuración'],
-    'reportes'  => ['icon' => 'fa-flag',         'label' => 'Reportes'],
+    'chat'        => ['icon' => 'fa-comments',     'label' => 'Chat'],
+    'reportes'    => ['icon' => 'fa-flag',         'label' => 'Reportes'],
     'usuarios'  => ['icon' => 'fa-users',        'label' => 'Usuarios'],
 ];
 ?>

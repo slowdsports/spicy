@@ -48,6 +48,14 @@ if ($channelId > 0) {
 }
 $jsCanal = json_encode($fuenteData['canal'] ?? '');
 
+// Chat config
+$_chatCfgFile = __DIR__ . '/../data/chat-config.json';
+$_chatCfg     = file_exists($_chatCfgFile)
+    ? json_decode(file_get_contents($_chatCfgFile), true) ?? []
+    : [];
+$chatMode     = in_array($_chatCfg['mode'] ?? '', ['custom', 'twitch']) ? $_chatCfg['mode'] : 'custom';
+$twitchChannel = preg_replace('/[^a-zA-Z0-9_]/', '', $_chatCfg['twitch_channel'] ?? '');
+
 // Favoritos del usuario logueado
 $favoritosData = [];
 if (isLoggedIn()) {
@@ -552,6 +560,8 @@ const INIT_LIKE    = <?= $initLike   ? 'true' : 'false' ?>;
 const INIT_SAVE    = <?= $initSave   ? 'true' : 'false' ?>;
 const CHAT_USER_ROL  = <?= json_encode($_SESSION['user_rol'] ?? '') ?>;
 const CHAT_USER_NAME = <?= json_encode(userName()) ?>;
+const CHAT_MODE      = <?= json_encode($chatMode) ?>;
+const TWITCH_CHANNEL = <?= json_encode($twitchChannel) ?>;
 </script>
 
 <script src="<?= BASE_URL ?>assets/js/chat.js"></script>

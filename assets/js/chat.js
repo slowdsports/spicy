@@ -13,6 +13,8 @@
   var CANAL_ID  = 0;   // chat global — mismo para todos los canales
   var LOGGED_IN = (typeof IS_LOGGED_IN  !== 'undefined') ? IS_LOGGED_IN  : false;
   var USER_ROL  = (typeof CHAT_USER_ROL !== 'undefined') ? CHAT_USER_ROL : 'usuario';
+  var MODE      = (typeof CHAT_MODE     !== 'undefined') ? CHAT_MODE     : 'custom';
+  var TW_CH     = (typeof TWITCH_CHANNEL !== 'undefined') ? TWITCH_CHANNEL : '';
   var MAX_MSGS  = 150;   // mensajes máximos en el DOM
   var RATE_MS   = 800;   // ms mínimo entre envíos (lado cliente)
   var POLL_MS   = 2000;  // intervalo de polling
@@ -47,6 +49,13 @@
     // Neutralizar chat demo de channel.js
     window.startDemoChat  = function () {};
     window.addChatMessage = function () {};
+
+    // Modo Twitch: no polling, embed iframe
+    if (MODE === 'twitch') {
+      initTwitchChat();
+      return;
+    }
+
     $msgs.innerHTML = '';
 
     setupScroll();
@@ -61,6 +70,46 @@
         startPolling();
       }
     });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     MODO TWITCH — sin polling, embed del chat
+  ═══════════════════════════════════════════════════════════ */
+  function initTwitchChat() {
+    var chatCol = document.querySelector('.chat-column');
+    if (!chatCol) return;
+
+    // Actualizar cabecera
+    var header = chatCol.querySelector('.chat-title');
+    if (header) {
+      header.innerHTML = '<i class="fab fa-twitch" style="color:#9147ff;"></i> Chat de Twitch';
+    }
+
+    // Ocultar contador de usuarios y área de input
+    if ($usersEl) $usersEl.style.display = 'none';
+    var inputArea = chatCol.querySelector('.chat-input-area');
+    if (inputArea) inputArea.style.display = 'none';
+
+    // Reemplazar área de mensajes con el iframe de Twitch
+    var wrap = chatCol.querySelector('.chat-messages-wrap');
+    if (!wrap) return;
+
+    if (!TW_CH) {
+      wrap.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+        'height:100%;gap:12px;color:var(--text-muted);font-size:0.82rem;padding:2rem;text-align:center;">' +
+        '<i class="fab fa-twitch" style="font-size:2rem;color:#9147ff;opacity:.5;"></i>' +
+        'Canal de Twitch no configurado.</div>';
+      return;
+    }
+
+    var parent = window.location.hostname;
+    var src = 'https://www.twitch.tv/embed/' + encodeURIComponent(TW_CH) +
+              '/chat?parent=' + encodeURIComponent(parent) + '&darkpopout';
+
+    wrap.innerHTML =
+      '<iframe src="' + src + '" style="width:100%;height:100%;border:none;border-radius:0 0 12px 12px;" ' +
+      'allowfullscreen></iframe>';
   }
 
   /* ═══════════════════════════════════════════════════════════
