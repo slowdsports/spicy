@@ -114,14 +114,19 @@ try {
             $ins->close();
 
             // Total de reportes para esta fuente
-            $countRes      = $conn->query("SELECT COUNT(*) AS total FROM canal_reportes WHERE fuente_id = {$fuenteId}");
-            $totalReportes = (int)($countRes->fetch_assoc()['total'] ?? 0);
+            $stmtCnt = $conn->prepare("SELECT COUNT(*) AS total FROM canal_reportes WHERE fuente_id = ?");
+            $stmtCnt->bind_param('i', $fuenteId);
+            $stmtCnt->execute();
+            $totalReportes = (int)($stmtCnt->get_result()->fetch_assoc()['total'] ?? 0);
+            $stmtCnt->close();
 
             // Auto-desactivar al alcanzar 5 reportes
             if ($totalReportes >= 5) {
-                $chkAuto = $conn->query(
-                    "SELECT id FROM canal_autodesactivados WHERE fuente_id = {$fuenteId} LIMIT 1"
-                );
+                $stmtAuto = $conn->prepare("SELECT id FROM canal_autodesactivados WHERE fuente_id = ? LIMIT 1");
+                $stmtAuto->bind_param('i', $fuenteId);
+                $stmtAuto->execute();
+                $chkAuto = $stmtAuto->get_result();
+                $stmtAuto->close();
                 if ($chkAuto->num_rows === 0) {
                     $upd = $conn->prepare("UPDATE fuentes SET activo = 0 WHERE id = ?");
                     $upd->bind_param('i', $fuenteId);

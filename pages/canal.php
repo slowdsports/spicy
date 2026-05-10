@@ -74,20 +74,20 @@ $initSave   = false;
 
 if ($isLoggedIn && $channelId > 0) {
     try {
-        $uid    = userId();
-        $connI  = getDBConnection();
+        $uid   = userId();
+        $connI = getDBConnection();
 
-        $chkL = $connI->prepare("SELECT id FROM canal_likes WHERE user_id = ? AND fuente_id = ? LIMIT 1");
-        $chkL->bind_param('ii', $uid, $channelId);
-        $chkL->execute();
-        $initLike = $chkL->get_result()->num_rows > 0;
-        $chkL->close();
-
-        $chkS = $connI->prepare("SELECT id FROM canal_guardados WHERE user_id = ? AND fuente_id = ? LIMIT 1");
-        $chkS->bind_param('ii', $uid, $channelId);
-        $chkS->execute();
-        $initSave = $chkS->get_result()->num_rows > 0;
-        $chkS->close();
+        $chk = $connI->prepare("
+            SELECT
+                EXISTS(SELECT 1 FROM canal_likes    WHERE user_id = ? AND fuente_id = ?) AS liked,
+                EXISTS(SELECT 1 FROM canal_guardados WHERE user_id = ? AND fuente_id = ?) AS saved
+        ");
+        $chk->bind_param('iiii', $uid, $channelId, $uid, $channelId);
+        $chk->execute();
+        $row      = $chk->get_result()->fetch_assoc();
+        $initLike = (bool)($row['liked'] ?? false);
+        $initSave = (bool)($row['saved'] ?? false);
+        $chk->close();
     } catch (Throwable $e) { /* ignore */ }
 }
 

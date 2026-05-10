@@ -116,10 +116,10 @@ function updateCountdown(el) {
 }
 
 function initCountdowns() {
-  document.querySelectorAll('.match-countdown').forEach(el => {
-    updateCountdown(el);
-    setInterval(() => updateCountdown(el), 1000);
-  });
+  const els = document.querySelectorAll('.match-countdown');
+  if (!els.length) return;
+  els.forEach(updateCountdown);
+  setInterval(() => els.forEach(updateCountdown), 1000);
 }
 
 function createMatchCard(match) {
@@ -280,7 +280,7 @@ async function loadSavedChannels() {
   if (!section) return;
 
   try {
-    const res  = await fetch(SAVED_JSON_URL + '?t=' + Date.now());
+    const res  = await fetch(SAVED_JSON_URL);
     const data = await res.json();
     if (!data.fuentes || data.fuentes.length === 0) return;
 

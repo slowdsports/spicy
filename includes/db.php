@@ -26,16 +26,19 @@ function _autoLoginFromCookie(): void {
     try {
         $conn = getDBConnection();
 
-        // Crear tabla si no existe (primera vez en hosting)
-        $conn->query("CREATE TABLE IF NOT EXISTS sesiones_persistentes (
-            id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            usuario_id  INT UNSIGNED NOT NULL,
-            token_hash  CHAR(64) NOT NULL,
-            expira_en   DATETIME NOT NULL,
-            creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY uq_token (token_hash),
-            KEY idx_usuario (usuario_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // Crear tabla solo si aún no se verificó en esta sesión
+        if (empty($_SESSION['_sp_tables_ok'])) {
+            $conn->query("CREATE TABLE IF NOT EXISTS sesiones_persistentes (
+                id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                usuario_id  INT UNSIGNED NOT NULL,
+                token_hash  CHAR(64) NOT NULL,
+                expira_en   DATETIME NOT NULL,
+                creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_token (token_hash),
+                KEY idx_usuario (usuario_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $_SESSION['_sp_tables_ok'] = 1;
+        }
 
         $hash = hash('sha256', $raw);
         $now  = date('Y-m-d H:i:s');

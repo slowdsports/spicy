@@ -26,15 +26,18 @@ $last_id  = intval($_POST['last_id'] ?? $_GET['last_id'] ?? -1);  // -1 = primer
 try {
     $db = getDBConnection();
 
-    // Verificar que las tablas existen (sin intentar crearlas — el servidor
-    // de producción puede no tener privilegio CREATE; créalas via phpMyAdmin)
-    $tables = [];
-    $tr = $db->query("SHOW TABLES LIKE 'chat_%'");
-    while ($row = $tr->fetch_row()) $tables[] = $row[0];
+    // Verificar tablas usando flag de archivo (evita SHOW TABLES en cada poll)
+    $flagFile = __DIR__ . '/../data/.chat_tables_ready';
+    if (!file_exists($flagFile)) {
+        $tables = [];
+        $tr = $db->query("SHOW TABLES LIKE 'chat_%'");
+        while ($row = $tr->fetch_row()) $tables[] = $row[0];
 
-    if (!in_array('chat_messages', $tables) || !in_array('chat_online', $tables)) {
-        echo json_encode(['ok' => false, 'error' => 'tables_missing']);
-        exit;
+        if (!in_array('chat_messages', $tables) || !in_array('chat_online', $tables)) {
+            echo json_encode(['ok' => false, 'error' => 'tables_missing']);
+            exit;
+        }
+        file_put_contents($flagFile, '1'); // tablas confirmadas; se salta en futuros polls
     }
 
     // Actualizar presencia del usuario en este canal

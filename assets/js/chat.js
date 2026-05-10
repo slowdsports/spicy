@@ -94,6 +94,9 @@
     var wrap = chatCol.querySelector('.chat-messages-wrap');
     if (!wrap) return;
 
+    // Hacer que el wrap ocupe todo el alto libre (sin input area)
+    chatCol.classList.add('twitch-mode');
+
     if (!TW_CH) {
       wrap.innerHTML =
         '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
