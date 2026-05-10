@@ -1,8 +1,7 @@
 <?php
 /**
  * API pública — Partidos destacados del día.
- * Devuelve los partidos marcados como activos en partidos_destacados,
- * enriquecidos con los datos de matches.json.
+ * Consulta la BD directamente: no depende del estado de matches.json.
  */
 
 require_once __DIR__ . '/../includes/config.php';
@@ -14,55 +13,87 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 try {
     $db = getDBConnection();
 
+    // 1. IDs activos ordenados por posición
     $rows = $db->query("
-        SELECT partido_id
+        SELECT partido_id, posicion
         FROM partidos_destacados
         WHERE activo = 1
         ORDER BY posicion ASC, id ASC
     ");
 
-    if (!$rows) {
+    if (!$rows || $rows->num_rows === 0) {
         echo json_encode(['ok' => true, 'matches' => []]);
         exit;
     }
 
-    $featuredIds = array_column($rows->fetch_all(MYSQLI_ASSOC), 'partido_id');
+    $featured   = $rows->fetch_all(MYSQLI_ASSOC);
+    $ordenByPid = [];
+    $ids        = [];
+    foreach ($featured as $f) {
+        $pid = (int)$f['partido_id'];
+        $ids[] = $pid;
+        $ordenByPid[$pid] = (int)$f['posicion'];
+    }
 
-    if (empty($featuredIds)) {
+    if (empty($ids)) {
         echo json_encode(['ok' => true, 'matches' => []]);
         exit;
     }
 
-    $jsonPath = __DIR__ . '/../data/matches.json';
-    $allMatches = file_exists($jsonPath)
-        ? (json_decode(file_get_contents($jsonPath), true) ?? [])
-        : [];
+    // 2. Consultar partidos desde la BD (sin depends de matches.json)
+    $placeholders = implode(',', $ids);   // ya son enteros, safe
+    $partidos = $db->query("
+        SELECT
+            p.id, p.fecha_hora, p.tipo, p.liga,
+            loc.nombre  AS equipo_local,    loc.id AS id_local,
+            vis.nombre  AS equipo_visitante, vis.id AS id_visitante,
+            li.ligaNombre AS leagueName
+        FROM partidos p
+        LEFT JOIN equipos loc ON p.`local`    = loc.id
+        LEFT JOIN equipos vis ON p.visitante  = vis.id
+        LEFT JOIN ligas   li  ON p.liga       = li.id
+        WHERE p.id IN ($placeholders)
+    ")->fetch_all(MYSQLI_ASSOC);
 
-    // Indexar posición para mantener el orden definido en el admin
-    $posById = array_flip($featuredIds);
-    $featured = [];
+    // 3. Calcular status y construir respuesta
+    $now = time();
+    $tz  = new DateTimeZone('America/Tegucigalpa');
+    $result = [];
 
-    foreach ($allMatches as $m) {
-        $mid = (int)($m['id'] ?? 0);
-        if (isset($posById[$mid])) {
-            $featured[$posById[$mid]] = $m;
-        }
+    foreach ($partidos as $p) {
+        $dt = !empty($p['fecha_hora']) ? new DateTime($p['fecha_hora'], $tz) : null;
+        $ts = $dt ? $dt->getTimestamp() : 0;
+
+        if (!$ts || $ts > $now)     { $status = 'upcoming'; $time = $dt ? $dt->format('H:i') : '--:--'; }
+        elseif ($ts > $now - 10800) { $status = 'live';     $time = 'EN VIVO'; }
+        else                        { $status = 'finished'; $time = 'Finalizó'; }
+
+        $pid = (int)$p['id'];
+        $result[] = [
+            'id'         => $pid,
+            'league'     => $p['liga'] ?? '',
+            'leagueName' => $p['leagueName'] ?? '',
+            'leagueLogo' => BASE_URL . 'assets/img/ligas/sf/' . ($p['liga'] ?? '') . '.png',
+            'status'     => $status,
+            'time'       => $time,
+            'fecha_hora' => $p['fecha_hora'] ?? '',
+            'timestamp'  => $ts,
+            'tipo'       => $p['tipo'] ?? '',
+            'homeTeam'   => ['name' => $p['equipo_local']     ?? '', 'logo' => $p['id_local']     ?? '', 'score' => 0],
+            'awayTeam'   => ['name' => $p['equipo_visitante'] ?? '', 'logo' => $p['id_visitante'] ?? '', 'score' => 0],
+            '_posicion'  => $ordenByPid[$pid] ?? 99,
+        ];
     }
 
-    ksort($featured);
+    // Ordenar por posición definida en el admin
+    usort($result, fn($a, $b) => $a['_posicion'] <=> $b['_posicion']);
 
-    // Prefijar leagueLogo con BASE_URL dinámicamente (el JSON la guarda sin prefijo)
-    foreach ($featured as &$m) {
-        if (!empty($m['leagueLogo'])
-            && !str_starts_with($m['leagueLogo'], '/')
-            && !str_starts_with($m['leagueLogo'], 'http')) {
-            $m['leagueLogo'] = BASE_URL . $m['leagueLogo'];
-        }
-    }
-    unset($m);
+    // Limpiar campo interno antes de enviar
+    foreach ($result as &$r) unset($r['_posicion']);
+    unset($r);
 
-    echo json_encode(['ok' => true, 'matches' => array_values($featured)], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['ok' => true, 'matches' => $result], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 } catch (Throwable $e) {
-    echo json_encode(['ok' => false, 'matches' => []]);
+    echo json_encode(['ok' => false, 'matches' => [], 'error' => $e->getMessage()]);
 }

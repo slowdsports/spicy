@@ -17,35 +17,37 @@ async function loadChannelPage() {
       fetch('data/fuentes.json'),
       fetch('data/channels.json')
     ]);
+
+    if (!sourcesRes.ok || !channelsRes.ok) { showPlayerFromPHP(); return; }
+
     const sources  = await sourcesRes.json();
     const channels = await channelsRes.json();
 
     const source = sources.find(c => c.id === id);
-    if (!source) { window.location.href = '?p=home'; return; }
+    if (!source) { showPlayerFromPHP(); return; } // JSON desactualizado — mostrar sin enriquecer
 
     const channel = channels.find(c => c.id === source.canal) ?? null;
 
-    renderPlayerPage(source, channel);
+    enrichPlayerUI(source, channel);
     const recommended = sources.filter(c => c.id !== id && c.activo === 1 && c.mostrar_tv !== 0).slice(0, 8);
     renderRecommendedChannels(recommended, channels);
     startDemoChat();
   } catch (e) {
-    console.error('Error cargando fuente:', e);
+    showPlayerFromPHP(); // fallback si el JSON falla
   }
 }
 
-function renderPlayerPage(source, channel) {
+function showPlayerFromPHP() {
+  const placeholder = document.getElementById('player-placeholder');
+  if (placeholder) placeholder.style.display = 'none';
+  const iframe = document.getElementById('player-iframe');
+  if (iframe) iframe.style.display = 'block';
+}
+
+function enrichPlayerUI(source, channel) {
   document.title = `${source.nombre} - Tele Deportes`;
   const nameEl = document.getElementById('player-channel-name');
   if (nameEl) nameEl.textContent = source.nombre;
-
-  const iframe = document.getElementById('player-iframe');
-  if (iframe && iframe.src) {
-    // El src ya está cargado desde PHP, solo mostrar
-    const placeholder = document.getElementById('player-placeholder');
-    if (placeholder) placeholder.style.display = 'none';
-    iframe.style.display = 'block';
-  }
 
   const titleEl = document.getElementById('channel-title');
   if (titleEl) titleEl.textContent = source.nombre;

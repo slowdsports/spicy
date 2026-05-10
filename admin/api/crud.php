@@ -221,7 +221,7 @@ try {
         $stmt = $conn->prepare("
             INSERT INTO partidos_destacados (partido_id, posicion, activo)
             VALUES (?, ?, 1)
-            ON DUPLICATE KEY UPDATE posicion = VALUES(posicion)
+            ON DUPLICATE KEY UPDATE posicion = VALUES(posicion), activo = 1
         ");
         $stmt->bind_param('ii', $partido_id, $posicion);
         $ok = $stmt->execute();

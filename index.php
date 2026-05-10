@@ -209,7 +209,7 @@ $pageTitle = $seoTitle;
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-<script>var BASE_URL = '<?= BASE_URL ?>';</script>
+<script>window.BASE_URL = '<?= BASE_URL ?>';</script>
 
 <?php
 // En la página de login no mostramos navbar completo
