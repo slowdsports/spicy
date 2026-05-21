@@ -14,6 +14,7 @@ $menu = [
     'config'      => ['icon' => 'fa-gear',         'label' => 'Configuración'],
     'chat'        => ['icon' => 'fa-comments',     'label' => 'Chat'],
     'reportes'    => ['icon' => 'fa-flag',         'label' => 'Reportes'],
+    'accesos_eu'  => ['icon' => 'fa-earth-europe', 'label' => 'Accesos EU'],
     'usuarios'  => ['icon' => 'fa-users',        'label' => 'Usuarios'],
 ];
 ?>

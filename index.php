@@ -9,7 +9,7 @@ $page = isset($_GET['p']) ? trim($_GET['p']) : 'home';
 // Sanitizar: solo letras, números y guiones
 $page = preg_replace('/[^a-z0-9\-]/', '', strtolower($page));
 
-$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga', 'donaciones'];
+$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga', 'donaciones', 'eu_pendiente'];
 
 if (!in_array($page, $allowed)) {
     $page = 'home';
@@ -17,7 +17,9 @@ if (!in_array($page, $allowed)) {
 
 require_once 'includes/config.php';
 require_once 'includes/db.php';
+require_once 'includes/eu_check.php';
 _autoLoginFromCookie(); // solo en el router público, nunca en APIs ni admin
+checkEuAccess($page);   // bloqueo de acceso para usuarios europeos no aprobados
 
 // ── Pre-render SEO ───────────────────────────────────────────────────────────
 $_proto    = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -212,15 +214,16 @@ $pageTitle = $seoTitle;
 <script>window.BASE_URL = '<?= BASE_URL ?>';</script>
 
 <?php
-// En la página de login no mostramos navbar completo
-if ($page !== 'login') {
+// Login y eu_pendiente se muestran sin navbar/footer
+$_noChrome = in_array($page, ['login', 'eu_pendiente']);
+if (!$_noChrome) {
     require 'includes/navbar.php';
 }
 
 // Cargar la vista correspondiente
 require "pages/{$page}.php";
 
-if ($page !== 'login') {
+if (!$_noChrome) {
     require 'includes/footer.php';
 }
 ?>

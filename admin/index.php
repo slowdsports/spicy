@@ -20,7 +20,7 @@ if (!isLoggedIn() || !isAdmin()) {
 // ── Página solicitada ─────────────────────────────────────────
 $page = isset($_GET['p']) ? preg_replace('/[^a-z0-9\-]/', '', strtolower($_GET['p'])) : 'home';
 
-$allowed = ['home', 'canales', 'fuentes', 'ligas', 'partidos', 'destacados', 'config', 'chat', 'reportes', 'usuarios'];
+$allowed = ['home', 'canales', 'fuentes', 'ligas', 'partidos', 'destacados', 'config', 'chat', 'reportes', 'accesos_eu', 'usuarios'];
 if (!in_array($page, $allowed)) {
     $page = 'home';
 }
@@ -36,6 +36,7 @@ $titles = [
     'config'     => 'Configuración',
     'chat'       => 'Chat',
     'reportes'   => 'Reportes',
+    'accesos_eu' => 'Accesos EU',
     'usuarios'   => 'Usuarios',
 ];
 $pageTitle = $titles[$page] ?? 'Admin';
