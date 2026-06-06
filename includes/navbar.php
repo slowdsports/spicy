@@ -72,6 +72,13 @@ $uName    = userName();
         </li>
 
         <li class="nav-item">
+          <a href="<?= url('mundial2026') ?>"
+             class="nav-link nav-mundial <?= $currentPage === 'mundial2026' ? 'active-mundial' : '' ?>">
+            <i class="fas fa-trophy me-1"></i> Mundial 2026
+          </a>
+        </li>
+
+        <li class="nav-item">
           <a href="<?= url('donaciones') ?>" class="nav-link <?= $currentPage === 'donaciones' ? 'active' : '' ?>">
             <i class="fas fa-coffee me-1"></i> Donaciones
           </a>
@@ -145,4 +152,20 @@ $uName    = userName();
 }
 .sh-dropdown .dropdown-item:hover { background: var(--accent-soft); color: var(--accent); }
 .sh-dropdown .dropdown-item.active { background: var(--accent); color: white; }
+
+/* Link dorado del Mundial */
+.nav-mundial {
+  color: #d97706 !important;
+  font-weight: 700 !important;
+  position: relative;
+}
+.nav-mundial i { color: #f59e0b; }
+.nav-mundial:hover {
+  color: #f59e0b !important;
+  background: rgba(245,158,11,.12) !important;
+}
+.nav-mundial.active-mundial {
+  color: #f59e0b !important;
+  background: rgba(245,158,11,.15) !important;
+}
 </style>

@@ -9,7 +9,7 @@ $page = isset($_GET['p']) ? trim($_GET['p']) : 'home';
 // Sanitizar: solo letras, números y guiones
 $page = preg_replace('/[^a-z0-9\-]/', '', strtolower($page));
 
-$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga', 'donaciones', 'eu_pendiente'];
+$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga', 'donaciones', 'eu_pendiente', 'mundial2026'];
 
 if (!in_array($page, $allowed)) {
     $page = 'home';
@@ -123,6 +123,12 @@ switch ($page) {
         $seoTitle       = 'Apoya Tele Deportes - Donaciones';
         $seoDescription = 'Apoya Tele Deportes con una donación. Tu aporte nos ayuda a mantener el streaming deportivo gratuito para todos.';
         $seoKeywords    = 'apoyar Tele Deportes, donar, streaming deportivo gratis, Buy Me a Coffee';
+        break;
+
+    case 'mundial2026':
+        $seoTitle       = 'FIFA World Cup 2026™ en Vivo - Tele Deportes';
+        $seoDescription = 'Mira todos los partidos del Mundial FIFA 2026 en vivo y gratis. USA, Canadá y México como sedes. 48 selecciones, transmisiones en directo.';
+        $seoKeywords    = 'mundial 2026, FIFA World Cup 2026, mundial en vivo, ver mundial gratis, copa del mundo 2026, partidos mundial';
         break;
 
     case 'login':
@@ -263,12 +269,13 @@ if (!$_noChrome) {
 <?php
 // Scripts específicos por página
 $scripts = [
-    'home'    => 'assets/js/main.js',
-    'tv'      => 'assets/js/channels.js',
-    'canal'   => 'assets/js/channel.js',
-    'eventos' => 'assets/js/eventos.js',
-    'liga'    => 'assets/js/liga.js',
-    'login'   => 'assets/js/auth.js',
+    'home'        => 'assets/js/main.js',
+    'tv'          => 'assets/js/channels.js',
+    'canal'       => 'assets/js/channel.js',
+    'eventos'     => 'assets/js/eventos.js',
+    'liga'        => 'assets/js/liga.js',
+    'mundial2026' => 'assets/js/liga.js',
+    'login'       => 'assets/js/auth.js',
 ];
 if ($page === 'home') {
     echo '<script src="assets/js/huso.js"></script>';
