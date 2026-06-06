@@ -13,7 +13,7 @@
 <div class="auth-page">
   <div class="auth-card">
 
-    <div class="auth-logo">Stream<span style="color:var(--accent);">Hub</span></div>
+    <div class="auth-logo">Tele<span style="color:var(--accent);"> Deportes</span></div>
     <p class="auth-subtitle">Tu plataforma de streaming favorita</p>
 
     <div class="auth-tabs">

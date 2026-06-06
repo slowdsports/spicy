@@ -13,7 +13,7 @@ $_EU_COUNTRIES = [
     'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg', 'Malta',
     'Netherlands', 'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia',
     'Spain', 'Sweden', 'United Kingdom', 'Norway', 'Iceland', 'Liechtenstein',
-    'Switzerland','Honduras',
+    'Switzerland'
 ];
 
 function _euGetIp(): string {
