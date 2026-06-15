@@ -13,6 +13,12 @@ if ((int)$ligaId <= 0) {
     exit;
 }
 
+// Liga 16 (Mundial 2026) → experiencia dedicada
+if ($ligaId === '16') {
+    include __DIR__ . '/mundial2026.php';
+    return;
+}
+
 /* ==========================================================
    JSON
 ========================================================== */
@@ -21,6 +27,18 @@ $allPartidos = [];
 
 if (file_exists($jsonPath)) {
     $allPartidos = json_decode(file_get_contents($jsonPath), true) ?? [];
+}
+
+// Mapa de fuentes: id → {ios, tipo}
+$fuenteMap = [];
+$fuentesPath = __DIR__ . '/../data/fuentes.json';
+if (file_exists($fuentesPath)) {
+    foreach (json_decode(file_get_contents($fuentesPath), true) ?? [] as $f) {
+        $fuenteMap[(int)$f['id']] = [
+            'ios'  => !empty($f['ios']),
+            'tipo' => (int)($f['tipo'] ?? 0),
+        ];
+    }
 }
 
 /* ==========================================================
@@ -175,12 +193,16 @@ for($x=1;$x<=10;$x++){
     $keyName = "cnl{$x}Name";
     $keyLogo = "cnl{$x}Logo";
     if(!empty($p[$key])){
-        $cid  = trim($p[$key]);
-        $logo = !empty($p[$keyLogo]) ? $p[$keyLogo] : canalLogo($cid);
+        $cid     = (int)trim($p[$key]);
+        $logo    = !empty($p[$keyLogo]) ? $p[$keyLogo] : canalLogo($cid);
+        $hasIos  = !empty($fuenteMap[$cid]['ios']);
+        $tipoFnt = (int)($fuenteMap[$cid]['tipo'] ?? 0);
         $canalesPartido[] = [
-            'id'    => $cid,
-            'nombre'=> $p[$keyName] ?? "Canal {$cid}",
-            'logo'  => $logo
+            'id'     => $cid,
+            'nombre' => $p[$keyName] ?? "Canal {$cid}",
+            'logo'   => $logo,
+            'ios'    => $hasIos,
+            'noIos'  => (!$hasIos && $tipoFnt === 3),
         ];
     }
 }
@@ -288,7 +310,16 @@ No hay canales disponibles.
 <?= htmlspecialchars($canal['nombre']) ?>
 </div>
 
-<i class="fas fa-play-circle"></i>
+<?php if($canal['ios']): ?>
+<span class="chnl-ios-badge ok" title="Fuente alternativa iOS disponible"><i class="fab fa-apple"></i></span>
+<?php elseif($canal['noIos']): ?>
+<span class="chnl-ios-badge no" title="No disponible en iOS (DASH)">
+  <i class="fab fa-apple"></i>
+  <small class="chnl-ios-x">✕</small>
+</span>
+<?php else: ?>
+<i class="fas fa-play-circle chnl-play-icon"></i>
+<?php endif; ?>
 
 </a>
 
@@ -525,10 +556,58 @@ object-fit:contain;
 .channel-row-name{
 font-weight:600;
 font-size:.85rem;
+flex:1;
+display:flex;
+align-items:center;
+gap:.5rem;
+flex-wrap:wrap;
 }
 
-.channel-row i{
-margin-left:auto;
+.chnl-ios-badge{
+position:relative;
+display:inline-flex;
+align-items:center;
+justify-content:center;
+width:30px;
+height:30px;
+border-radius:50%;
+font-size:.9rem;
+flex-shrink:0;
+}
+
+.chnl-ios-badge.ok{
+color:#22c55e;
+background:rgba(34,197,94,.12);
+border:1px solid rgba(34,197,94,.3);
+}
+
+.chnl-ios-badge.no{
+color:rgba(255,255,255,.3);
+background:rgba(239,68,68,.06);
+border:1px solid rgba(239,68,68,.18);
+}
+
+.chnl-ios-x{
+position:absolute;
+bottom:-3px;
+right:-3px;
+width:13px;
+height:13px;
+background:rgba(239,68,68,.85);
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:7px;
+color:#fff;
+font-weight:900;
+line-height:1;
+font-style:normal;
+}
+
+.chnl-play-icon{
+flex-shrink:0;
+color:var(--text-muted);
 }
 
 .empty-box{

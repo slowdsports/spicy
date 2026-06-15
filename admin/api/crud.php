@@ -160,6 +160,9 @@ try {
         $nombre      = trim($d['nombre']       ?? '');
         $canal       = (int)($d['canal']       ?? 0);
         $url         = trim($d['url']          ?? '');
+        $urlIos      = trim($d['url_ios']      ?? '') ?: null;
+        $allowed_ios = ['hls', 'iframe'];
+        $tipoIos     = in_array($d['tipo_ios'] ?? '', $allowed_ios) ? $d['tipo_ios'] : 'hls';
         $ckKey       = trim($d['ck_key']       ?? '') ?: null;
         $ckKeyId     = trim($d['ck_keyid']     ?? '') ?: null;
         $pais        = $d['pais'] ? (int)$d['pais'] : null;
@@ -174,11 +177,11 @@ try {
         if (!$nombre || !$canal || !$url || !$tipo) { resp(false, 'Nombre, canal, URL y tipo son obligatorios'); }
 
         if ($id) {
-            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=?, sandbox=?, mostrar_tv=?, reproductor=? WHERE id=?");
-            $stmt->bind_param('sissssissiisi', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor, $id);
+            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, url_ios=?, tipo_ios=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=?, sandbox=?, mostrar_tv=?, reproductor=? WHERE id=?");
+            $stmt->bind_param('sissssssissiisi', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor, $id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, ck_key, ck_keyid, pais, tipo, epg, activo, sandbox, mostrar_tv, reproductor) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param('sissssissiis', $nombre, $canal, $url, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor);
+            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, url_ios, tipo_ios, ck_key, ck_keyid, pais, tipo, epg, activo, sandbox, mostrar_tv, reproductor) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->bind_param('sissssssissiis', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor);
         }
 
         $ok = $stmt->execute();

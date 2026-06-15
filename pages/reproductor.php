@@ -53,7 +53,7 @@ if ($fuenteId > 0) {
     try {
         $conn = getDBConnection();
         $stmt = $conn->prepare("
-            SELECT f.id, f.nombre, f.url, f.tipo, f.ck_key, f.ck_keyid, f.sandbox, f.reproductor,
+            SELECT f.id, f.nombre, f.url, f.url_ios, f.tipo_ios, f.tipo, f.ck_key, f.ck_keyid, f.sandbox, f.reproductor,
                    t.nombre as tipo_nombre
             FROM fuentes f
             LEFT JOIN tipos_fuente t ON f.tipo = t.id
@@ -80,6 +80,21 @@ $reproducotorFile = __DIR__ . "/reproductor-{$tipoId}.php";
 if (!file_exists($reproducotorFile)) {
     http_response_code(500);
     exit();
+}
+
+// ── Detección iOS: redirigir a fuente alternativa o mostrar error ─────────────
+$ua    = strtolower($_SERVER['HTTP_USER_AGENT'] ?? '');
+$isIOS = (bool)preg_match('/iphone|ipad|ipod/', $ua);
+
+if ($isIOS) {
+    if (!empty($fuenteData['url_ios'])) {
+        // Tiene alternativa → reproducir con Clappr inline
+        $reproducotorFile = __DIR__ . '/reproductor-ios.php';
+    } elseif ($tipoId === 3) {
+        // DASH sin alternativa iOS → mostrar error
+        $reproducotorFile = __DIR__ . '/reproductor-ios-error.php';
+    }
+    // Otros tipos (HLS, YouTube, etc.) funcionan bien en iOS → se reproducen normalmente
 }
 
 ob_start('_encodeOutput');

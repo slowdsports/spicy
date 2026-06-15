@@ -139,15 +139,18 @@ function guardarCanal() {
 // ============================================================
 
 function abrirModalFuente(data = null) {
-  document.getElementById('fuente-id').value       = data?.id       ?? '';
-  document.getElementById('fuente-nombre').value   = data?.nombre   ?? '';
+  document.getElementById('fuente-id').value        = data?.id       ?? '';
+  document.getElementById('fuente-nombre').value    = data?.nombre   ?? '';
   tsSet('fuente-canal',      data?.canal_id  ?? '');
-  document.getElementById('fuente-url').value      = data?.url      ?? '';
+  document.getElementById('fuente-url').value       = data?.url      ?? '';
+  document.getElementById('fuente-url-ios').value   = data?.url_ios  ?? '';
+  const tiIos = document.getElementById('fuente-tipo-ios');
+  if (tiIos) tiIos.value = data?.tipo_ios ?? 'hls';
   tsSet('fuente-tipo',       data?.tipo_id   ?? '');
   tsSet('fuente-pais',       data?.pais_id   ?? '');
-  document.getElementById('fuente-epg').value      = data?.epg      ?? '';
-  document.getElementById('fuente-ck-key').value   = data?.ck_key   ?? '';
-  document.getElementById('fuente-ck-keyid').value = data?.ck_keyid ?? '';
+  document.getElementById('fuente-epg').value       = data?.epg      ?? '';
+  document.getElementById('fuente-ck-key').value    = data?.ck_key   ?? '';
+  document.getElementById('fuente-ck-keyid').value  = data?.ck_keyid ?? '';
   tsSet('fuente-activo',     data?.activo     ?? '1');
   tsSet('fuente-mostrar-tv', data?.mostrar_tv ?? '1');
   document.getElementById('fuente-sandbox').checked = (data?.sandbox ?? 1) == 1;
@@ -169,6 +172,8 @@ function guardarFuente() {
     nombre:      document.getElementById('fuente-nombre').value.trim(),
     canal:       document.getElementById('fuente-canal').value,
     url:         document.getElementById('fuente-url').value.trim(),
+    url_ios:     document.getElementById('fuente-url-ios').value.trim() || null,
+    tipo_ios:    document.getElementById('fuente-tipo-ios')?.value || 'hls',
     tipo:        document.getElementById('fuente-tipo').value,
     pais:        document.getElementById('fuente-pais').value,
     epg:         document.getElementById('fuente-epg').value.trim(),

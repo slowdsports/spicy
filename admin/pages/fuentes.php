@@ -4,13 +4,21 @@
  * Lista todas las fuentes con su canal asociado. CRUD con modal.
  */
 
-// Migraciones: agregar columnas si no existen
-try {
-    $conn = getDBConnection();
-    $conn->query("ALTER TABLE fuentes ADD COLUMN IF NOT EXISTS sandbox      TINYINT(1)   NOT NULL DEFAULT 1");
-    $conn->query("ALTER TABLE fuentes ADD COLUMN IF NOT EXISTS mostrar_tv   TINYINT(1)   NOT NULL DEFAULT 1");
-    $conn->query("ALTER TABLE fuentes ADD COLUMN IF NOT EXISTS reproductor  VARCHAR(20)  NOT NULL DEFAULT 'bitmovin'");
-} catch (Exception $e) { /* columnas ya existen */ }
+// Migraciones: usa SHOW COLUMNS para compatibilidad total con MySQL 5.7 / 8.x.
+// query() nunca lanza excepciones, así que no hay try/catch aquí.
+$_conn_mig = getDBConnection();
+$_migcols = [
+    'sandbox'     => "ALTER TABLE fuentes ADD COLUMN sandbox     TINYINT(1)  NOT NULL DEFAULT 1",
+    'mostrar_tv'  => "ALTER TABLE fuentes ADD COLUMN mostrar_tv  TINYINT(1)  NOT NULL DEFAULT 1",
+    'reproductor' => "ALTER TABLE fuentes ADD COLUMN reproductor VARCHAR(20) NOT NULL DEFAULT 'bitmovin'",
+    'url_ios'     => "ALTER TABLE fuentes ADD COLUMN url_ios     VARCHAR(2000) DEFAULT NULL",
+    'tipo_ios'    => "ALTER TABLE fuentes ADD COLUMN tipo_ios    VARCHAR(20) NOT NULL DEFAULT 'hls'",
+];
+foreach ($_migcols as $_col => $_sql) {
+    $_r = $_conn_mig->query("SHOW COLUMNS FROM fuentes LIKE '{$_col}'");
+    if ($_r && $_r->num_rows === 0) $_conn_mig->query($_sql);
+}
+unset($_conn_mig, $_migcols, $_col, $_sql, $_r);
 
 // Datos para selects del modal (se cargan independientemente)
 try {
@@ -26,7 +34,7 @@ try {
 try {
     $conn    = getDBConnection();
     $fuentes = $conn->query("
-        SELECT f.id, f.nombre, f.url, f.ck_key, f.ck_keyid, f.epg, f.activo, f.sandbox, f.mostrar_tv, f.reproductor,
+        SELECT f.id, f.nombre, f.url, f.url_ios, f.tipo_ios, f.ck_key, f.ck_keyid, f.epg, f.activo, f.sandbox, f.mostrar_tv, f.reproductor,
                c.nombre  AS canal_nombre,  f.canal  AS canal_id,
                p.paisNombre AS pais_nombre, f.pais  AS pais_id,
                t.nombre  AS tipo_nombre,   f.tipo   AS tipo_id
@@ -37,7 +45,7 @@ try {
         ORDER BY c.nombre ASC, f.nombre ASC
     ")->fetch_all(MYSQLI_ASSOC);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $fuentes = [];
 }
 ?>
@@ -96,13 +104,19 @@ try {
             <?php endif; ?>
           </td>
           <td style="font-size:0.78rem; color:var(--text-muted);"><?= htmlspecialchars($f['pais_nombre'] ?? '—') ?></td>
-          <!-- Indicador DRM -->
+          <!-- Indicador DRM / iOS -->
           <td>
             <?php if ($f['ck_key']): ?>
               <span style="font-size:0.68rem; background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.3); padding:1px 6px; border-radius:4px; font-weight:700;">
                 <i class="fas fa-lock me-1"></i>DRM
               </span>
-            <?php else: ?>
+            <?php endif; ?>
+            <?php if (!empty($f['url_ios'])): ?>
+              <span style="font-size:0.68rem; background:rgba(34,197,94,0.12); color:#22c55e; border:1px solid rgba(34,197,94,0.3); padding:1px 6px; border-radius:4px; font-weight:700; margin-left:2px;">
+                <i class="fab fa-apple me-1"></i>iOS
+              </span>
+            <?php endif; ?>
+            <?php if (!$f['ck_key'] && empty($f['url_ios'])): ?>
               <span style="color:var(--text-muted); font-size:0.75rem;">—</span>
             <?php endif; ?>
           </td>
@@ -187,6 +201,32 @@ try {
           <div class="col-12">
             <label class="form-label">URL del stream <span style="color:#ef4444;">*</span></label>
             <input type="text" id="fuente-url" class="form-control" placeholder="https://... o m3u8://...">
+          </div>
+
+          <!-- URL alternativa iOS -->
+          <div class="col-12">
+            <div style="background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.2); border-radius:10px; padding:1rem;">
+              <p style="font-size:0.78rem; font-weight:700; color:#22c55e; margin:0 0 0.75rem;">
+                <i class="fab fa-apple me-1"></i> Fuente alternativa para iOS
+                <span style="font-weight:400; color:var(--text-muted);">(opcional)</span>
+              </p>
+              <div class="row g-2">
+                <div class="col-12 col-md-8">
+                  <label class="form-label" style="font-size:0.78rem; color:var(--text-muted);">URL de la fuente iOS</label>
+                  <input type="text" id="fuente-url-ios" class="form-control" placeholder="https://... ó https://embed.ejemplo.com/canal">
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" style="font-size:0.78rem; color:var(--text-muted);">Tipo de fuente</label>
+                  <select id="fuente-tipo-ios" class="form-select">
+                    <option value="hls">HLS / M3U8</option>
+                    <option value="iframe">iFrame</option>
+                  </select>
+                </div>
+              </div>
+              <p style="font-size:0.72rem; color:var(--text-muted); margin:0.6rem 0 0; line-height:1.5;">
+                Se carga automáticamente en iPhone, iPad o iPod. <strong style="color:var(--text-secondary);">HLS/M3U8</strong> usa Clappr; <strong style="color:var(--text-secondary);">iFrame</strong> incrusta la URL directamente.
+              </p>
+            </div>
           </div>
 
           <!-- Tipo -->

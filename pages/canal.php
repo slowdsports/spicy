@@ -25,11 +25,22 @@ if ($channelId > 0) {
                 'tipo' => $fuenteData['tipo']
             ]);
 
-            $stmt2 = $conn->prepare("SELECT id, nombre, tipo FROM fuentes WHERE canal = ? ORDER BY id");
+            // Intentar incluir ios; fallback a query simple si url_ios no existe aún
+            $stmt2 = $conn->prepare("SELECT id, nombre, tipo, (url_ios IS NOT NULL AND url_ios <> '') AS ios FROM fuentes WHERE canal = ? ORDER BY id");
+            if (!$stmt2) {
+                $stmt2 = $conn->prepare("SELECT id, nombre, tipo FROM fuentes WHERE canal = ? ORDER BY id");
+            }
             $stmt2->bind_param('s', $fuenteData['canal']);
             $stmt2->execute();
             $fuentes = $stmt2->get_result()->fetch_all(MYSQLI_ASSOC);
             $stmt2->close();
+
+            // Normalizar ios y calcular noIos desde los datos de DB
+            foreach ($fuentes as &$_frow) {
+                $_frow['ios']   = !empty($_frow['ios']);
+                $_frow['noIos'] = !$_frow['ios'] && ((int)$_frow['tipo'] === 3);
+            }
+            unset($_frow);
 
             // Incrementar vistas del canal padre
             $canalId = (int)$fuenteData['canal'];
@@ -91,6 +102,19 @@ if ($isLoggedIn && $channelId > 0) {
     } catch (Throwable $e) { /* ignore */ }
 }
 
+// Mapa iOS desde fuentes.json (boolean + tipo, sin exponer URL)
+$_fiosPath = __DIR__ . '/../data/fuentes.json';
+$fuenteIosMap = [];
+if (file_exists($_fiosPath)) {
+    foreach (json_decode(file_get_contents($_fiosPath), true) ?? [] as $_fj) {
+        $fuenteIosMap[(int)$_fj['id']] = [
+            'ios'  => !empty($_fj['ios']),
+            'tipo' => (int)($_fj['tipo'] ?? 0),
+        ];
+    }
+}
+unset($_fiosPath, $_fj);
+
 // Partido context
 $partidoId      = (int) get('partido', '0');
 $partidoData    = null;
@@ -114,10 +138,13 @@ if ($partidoId > 0) {
             $logo = !empty($partidoData["cnl{$x}Logo"])
                 ? $partidoData["cnl{$x}Logo"]
                 : BASE_URL . "assets/img/canales/{$cid}.png";
+            $_pcid = (int)$cid;
             $canalesPartido[] = [
-                'id'     => (int)$cid,
-                'nombre' => $partidoData["cnl{$x}Name"] ?? "Canal {$cid}",
+                'id'     => $_pcid,
+                'nombre' => $partidoData["cnl{$x}Name"] ?? "Canal {$_pcid}",
                 'logo'   => $logo,
+                'ios'    => $fuenteIosMap[$_pcid]['ios']  ?? false,
+                'noIos'  => !($fuenteIosMap[$_pcid]['ios'] ?? false) && (($fuenteIosMap[$_pcid]['tipo'] ?? 0) === 3),
             ];
         }
     }
@@ -134,6 +161,16 @@ if ($partidoId > 0) {
   width: 100%;
   padding-top: 4px;
 }
+
+.pill-ios-icon {
+  font-size: 0.75em;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.pill-ios-icon.ok { color: #22c55e; }
+.pill-ios-icon.no { color: rgba(255,255,255,.25); }
+.source-pill.active .pill-ios-icon.ok { color: rgba(255,255,255,.9); }
+.source-pill.active .pill-ios-icon.no { color: rgba(255,255,255,.35); }
 
 .source-pill {
   padding: 4px 14px;
@@ -386,6 +423,9 @@ if ($partidoId > 0) {
           <a href="<?= url('canal', ['id' => $mc['id'], 'partido' => $partidoId]) ?>"
              class="source-pill<?= $mc['id'] === $channelId ? ' active' : '' ?>">
             <?= htmlspecialchars($mc['nombre']) ?>
+            <?php if (!empty($mc['ios'])): ?>
+            <i class="fab fa-apple pill-ios-icon ok" title="iOS disponible"></i>
+            <?php endif; ?>
           </a>
           <?php endforeach; ?>
         </div>
@@ -426,6 +466,9 @@ if ($partidoId > 0) {
             data-id="<?= (int) $f['id'] ?>"
             data-tipo="<?= (int) $f['tipo'] ?>">
             <?= htmlspecialchars($f['nombre'] ?: 'Fuente ' . ($i + 1)) ?>
+            <?php if (!empty($f['ios'])): ?>
+            <i class="fab fa-apple pill-ios-icon ok" title="iOS disponible"></i>
+            <?php endif; ?>
           </button>
           <?php endforeach; ?>
         </div>
