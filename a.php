@@ -101,9 +101,13 @@ document.addEventListener('DOMContentLoaded', function () {
             video: { forwardduration: isIOS ? 12 : 30, backwardduration: 2 },
             audio: { forwardduration: isIOS ? 12 : 30, backwardduration: 2 }
         },
-        adaptation: {
-            startupBitrate:    isIOS ? 1000000 : 1500000,
-            maxStartupBitrate: isIOS ? 2500000 : 3000000
+        adaptation: isIOS ? {
+            // Arrancar en 800 kbps y no saltar — el lock post-carga mantiene la calidad
+            startupBitrate:    800000,
+            maxStartupBitrate: 800000
+        } : {
+            startupBitrate:    1500000,
+            maxStartupBitrate: 3000000
         },
         tweaks: {
             max_video_download_delay: 12,
@@ -111,36 +115,39 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // iOS → HLS: Bitmovin lo enruta a Safari nativo (VideoToolbox hardware)
-    //            = sin trozos, sin overhead MMS/DASH
-    // Otros → DASH + ClearKey: comportamiento probado
     var source = {
-        drm: { clearkey: [{ keyId: CK_KEYID, key: CK_KEY }] }
+        dash: DASH_URL,
+        drm:  { clearkey: [{ keyId: CK_KEYID, key: CK_KEY }] }
     };
-    if (isIOS) {
-        source.hls = HLS_URL;
-        console.log('[player] iOS → HLS');
-    } else {
-        source.dash = DASH_URL;
-        console.log('[player] DASH');
-    }
 
     player.load(source)
-        .then(showPlayer)
-        .catch(function (err) {
-            var msg = err.message || err.code || JSON.stringify(err);
-            console.error('[Bitmovin]', err);
+        .then(function () {
+            showPlayer();
 
-            // Si HLS falla en iOS (DRM no resuelto), intentar DASH como fallback
-            if (isIOS && source.hls) {
-                console.warn('[player] HLS falló, reintentando con DASH...');
-                document.querySelector('.s-title').textContent = 'Cargando (DASH)...';
-                player.load({ dash: DASH_URL, drm: source.drm })
-                    .then(showPlayer)
-                    .catch(function (e2) { showError('Error: ' + (e2.message || e2.code)); });
-            } else {
-                showError('Error: ' + msg);
+            if (isIOS) {
+                // En iOS el ABR cambia calidad constantemente → micro-stalls visuales.
+                // Bloqueamos a la calidad más estable disponible (≤ 1.5 Mbps).
+                setTimeout(function () {
+                    var qs = player.getAvailableVideoQualities();
+                    if (!qs || !qs.length) return;
+
+                    qs.sort(function (a, b) { return a.bitrate - b.bitrate; });
+                    console.log('[iOS] calidades disponibles:', qs.map(function(q){ return q.bitrate; }));
+
+                    // La más alta por debajo de 1.5 Mbps; si todas superan ese límite, la más baja
+                    var target = qs[0];
+                    for (var i = 0; i < qs.length; i++) {
+                        if (qs[i].bitrate <= 1500000) target = qs[i];
+                    }
+
+                    player.setVideoQuality(target.id);
+                    console.log('[iOS] calidad bloqueada:', target.bitrate, 'bps —', target.label || target.id);
+                }, 2000);
             }
+        })
+        .catch(function (err) {
+            showError('Error: ' + (err.message || err.code || JSON.stringify(err)));
+            console.error('[Bitmovin]', err);
         });
 });
 </script>
