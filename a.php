@@ -7,12 +7,31 @@
     <meta name="robots" content="noindex">
     <meta name="referrer" content="none">
     <title>KVEA Test</title>
-    <script src="//cdn.bitmovin.com/player/web/8/bitmovinplayer.js"></script>
+
+    <!-- Bitmovin solo para no-iOS -->
+    <script>
+    if (!/iPad|iPhone|iPod/.test(navigator.userAgent) || window.MSStream) {
+        document.write('<script src="\/\/cdn.bitmovin.com\/player\/web\/8\/bitmovinplayer.js"><\/script>');
+    }
+    </script>
+
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; }
         #wrapper { position: relative; width: 100%; height: 100vh; }
+
+        /* Bitmovin container (no-iOS) */
         #player { width: 100%; height: 100%; background: #000; }
+
+        /* Video nativo iOS */
+        #native-video {
+            display: none;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            object-fit: contain;
+        }
+
         #status {
             position: absolute;
             inset: 0;
@@ -35,6 +54,8 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .s-title { font-size: 1.15em; font-weight: 600; color: #fff; }
+
+        /* Estilos Bitmovin */
         .bmpui-ui-watermark {
             background-image: url("https://eduveel1.github.io/baleada/img/iRTVW_PLAYER.png");
             top: 0; left: 0; min-width: 5em;
@@ -55,77 +76,95 @@
         <div class="s-title">Cargando canal...</div>
     </div>
     <div id="player"></div>
+    <video id="native-video" playsinline autoplay muted controls></video>
 </div>
 
 <script>
-// Bypass de licencia Bitmovin
-(function () {
-    var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
-    function override(u) {
-        var wm = document.querySelector('button.bmpui-ui-watermark');
-        if (wm) wm.setAttribute('disabled', 'disabled');
-        if (u.indexOf('licensing.bitmovin.com/licensing')  > -1) return GRANT;
-        if (u.indexOf('licensing.bitmovin.com/impression') > -1) return GRANT;
-        return u;
-    }
-    var _open = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function () {
-        arguments[1] = override(arguments[1]);
-        return _open.apply(this, arguments);
-    };
-})();
+var BASE      = 'https://live-oneapp-prd-news.akamaized.net/Content/CMAF_OL2-CTR-4s-v2/Live/channel(kvea)/';
+var DASH_URL  = BASE + 'master.mpd';
+var HLS_URL   = BASE + 'master.m3u8';
+var CK_KEYID  = 'ce7ab3022e753307997f58afe001bac4';
+var CK_KEY    = '72d631a66e635c60829a0fe7705516c1';
 
-var statusEl = document.getElementById('status');
+var statusEl  = document.getElementById('status');
+var isIOS     = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
 function showPlayer() { statusEl.style.display = 'none'; }
+function showError(msg) { document.querySelector('.s-title').textContent = 'Error: ' + msg; }
 
-document.addEventListener('DOMContentLoaded', function () {
-    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+// ══════════════════════════════════════════════════════════
+// iOS — Video nativo con HLS (Safari lo reproduce sin MSE,
+//        con el codec pipeline optimizado del sistema)
+// ══════════════════════════════════════════════════════════
+if (isIOS) {
+    var vid = document.getElementById('native-video');
+    vid.style.display = 'block';
 
-    var player = new bitmovin.player.Player(document.getElementById('player'), {
-        key:      '11d3698c-efdf-42f1-8769-54663995de2b',
-        analytics: false,
-        cast:     { enable: !isIOS },
-        playback: {
-            autoplay:    true,
-            muted:       true,
-            playsinline: true   // crítico en iOS: evita el player nativo en fullscreen
-        },
-        style: { width: '100%', height: '100%' },
-        buffer: {
-            // iOS purga buffers grandes bajo presión de memoria → buffer pequeño
-            video: { forwardduration: isIOS ? 10 : 30, backwardduration: 2 },
-            audio: { forwardduration: isIOS ? 10 : 30, backwardduration: 2 }
-        },
-        adaptation: {
-            startupBitrate:    isIOS ? 800000  : 1500000,
-            maxStartupBitrate: isIOS ? 2000000 : 3000000
-        },
-        tweaks: {
-            max_video_download_delay: isIOS ? 8  : 12,
-            startup_threshold:        isIOS ? 3  : 2,
-            native_hls_parsing:       isIOS       // iOS usa playback nativo HLS
-        }
+    vid.src = HLS_URL;
+
+    vid.addEventListener('canplay', showPlayer);
+    vid.addEventListener('playing', showPlayer);
+
+    vid.addEventListener('error', function () {
+        var err = vid.error;
+        showError(err ? ('code ' + err.code + ' - ' + (err.message || '')) : 'desconocido');
+        console.error('Video nativo error:', err);
     });
 
-    var BASE = 'https://live-oneapp-prd-news.akamaized.net/Content/CMAF_OL2-CTR-4s-v2/Live/channel(kvea)/';
+    vid.load();
 
-    var source = {
-        // En iOS Bitmovin elige HLS automáticamente; en otros usa DASH
-        dash: BASE + 'master.mpd',
-        hls:  BASE + 'master.m3u8',
-        drm: {
-            clearkey: [{
-                keyId: 'ce7ab3022e753307997f58afe001bac4',
-                key:   '72d631a66e635c60829a0fe7705516c1'
-            }]
+// ══════════════════════════════════════════════════════════
+// No-iOS — Bitmovin con DASH + ClearKey DRM
+// ══════════════════════════════════════════════════════════
+} else {
+
+    // Bypass de licencia Bitmovin
+    (function () {
+        var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
+        function override(u) {
+            if (u.indexOf('licensing.bitmovin.com/licensing')  > -1) return GRANT;
+            if (u.indexOf('licensing.bitmovin.com/impression') > -1) return GRANT;
+            return u;
         }
-    };
+        var _open = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function () {
+            arguments[1] = override(arguments[1]);
+            return _open.apply(this, arguments);
+        };
+    })();
 
-    player.load(source).then(showPlayer).catch(function (err) {
-        console.error('Bitmovin error:', err);
-        document.querySelector('.s-title').textContent = 'Error: ' + (err.message || err.code || JSON.stringify(err));
+    document.addEventListener('DOMContentLoaded', function () {
+        var player = new bitmovin.player.Player(document.getElementById('player'), {
+            key:      '11d3698c-efdf-42f1-8769-54663995de2b',
+            analytics: false,
+            cast:     { enable: true },
+            playback: { autoplay: true, muted: true },
+            style:    { width: '100%', height: '100%' },
+            buffer: {
+                video: { forwardduration: 30, backwardduration: 5 },
+                audio: { forwardduration: 30, backwardduration: 5 }
+            },
+            adaptation: {
+                startupBitrate:    1500000,
+                maxStartupBitrate: 3000000
+            },
+            tweaks: {
+                max_video_download_delay: 12,
+                startup_threshold:        2
+            }
+        });
+
+        player.load({
+            dash: DASH_URL,
+            drm: {
+                clearkey: [{ keyId: CK_KEYID, key: CK_KEY }]
+            }
+        }).then(showPlayer).catch(function (err) {
+            console.error('Bitmovin error:', err);
+            showError(err.message || err.code || JSON.stringify(err));
+        });
     });
-});
+}
 </script>
 </body>
 </html>
