@@ -117,68 +117,71 @@ if (isIOS) {
     var vid = document.getElementById('native-video');
     vid.style.display = 'block';
 
-    if (Hls.isSupported()) {
-        // iOS 17+ — MMS disponible, hls.js puede usar EME/ClearKey
-        console.log('[player] iOS: hls.js con MMS + ClearKey EME');
+    // Mostrar el reproductor de inmediato — el <video> nativo
+    // gestiona su propio estado de carga; el spinner nuestro
+    // solo bloquea y puede quedarse colgado esperando eventos DRM.
+    showPlayer();
+
+    var hlsReady = false;
+
+    // iOS 17+ tiene ManagedMediaSource (MMS) que incluye EME
+    var hasMMS = typeof ManagedMediaSource !== 'undefined';
+
+    if (hasMMS && Hls.isSupported()) {
+        console.log('[iOS] hls.js + MMS + ClearKey EME');
 
         var hls = new Hls({
             emeEnabled: true,
             drmSystems: {
-                'org.w3c.clearkey': {
-                    licenseUrl: CK_DATA_URI
-                }
+                'org.w3c.clearkey': { licenseUrl: CK_DATA_URI }
             },
-            // Buffer conservador para iOS
-            maxBufferLength:         10,
-            maxMaxBufferLength:      20,
-            maxBufferHole:           0.5,
-            liveSyncDurationCount:   3,
+            maxBufferLength:             10,
+            maxMaxBufferLength:          20,
+            maxBufferHole:               0.5,
+            liveSyncDurationCount:       3,
             liveMaxLatencyDurationCount: 5,
-            // Arrancar en calidad baja
-            startLevel:              -1,
-            abrBandWidthFactor:      0.8,
-            abrBandWidthUpFactor:    0.5
+            startLevel:                  -1,
+            abrBandWidthFactor:          0.8,
+            abrBandWidthUpFactor:        0.5
         });
 
         hls.loadSource(HLS_URL);
         hls.attachMedia(vid);
 
-        hls.on(Hls.Events.MANIFEST_PARSED, function() {
-            vid.play().catch(function(){});
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+            hlsReady = true;
+            vid.play().catch(function () {});
         });
-        hls.on(Hls.Events.MEDIA_ATTACHED, showPlayer);
-        hls.on(Hls.Events.ERROR, function(event, data) {
+
+        hls.on(Hls.Events.ERROR, function (event, data) {
+            console.warn('[hls.js]', data.type, data.details, data);
             if (data.fatal) {
-                switch (data.type) {
-                    case Hls.ErrorTypes.NETWORK_ERROR:
-                        console.warn('[hls.js] Network error, reintentando...');
-                        hls.startLoad();
-                        break;
-                    case Hls.ErrorTypes.MEDIA_ERROR:
-                        console.warn('[hls.js] Media error, recuperando...');
-                        hls.recoverMediaError();
-                        break;
-                    default:
-                        showError(data.details + ' (' + data.type + ')');
-                        break;
+                if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                    hls.startLoad();
+                } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                    hls.recoverMediaError();
+                } else {
+                    showError(data.details + ' (' + data.type + ')');
                 }
             }
         });
 
+        // Timeout: si el manifest no llega en 15s, informar
+        setTimeout(function () {
+            if (!hlsReady) showError('Timeout — revisa consola para detalles DRM');
+        }, 15000);
+
     } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
-        // iOS < 17 — sin MMS, intenta nativo (sin ClearKey, puede fallar con DRM)
-        console.log('[player] iOS: video nativo HLS (sin EME)');
-        vid.src = HLS_URL;
-        vid.addEventListener('canplay', showPlayer);
-        vid.addEventListener('error', function() {
+        console.log('[iOS] video nativo HLS (sin EME) — iOS < 17');
+        vid.addEventListener('error', function () {
             var e = vid.error;
-            showError('iOS < 17 sin soporte EME — código ' + (e ? e.code : '?') +
-                      '. Actualiza a iOS 17+ para reproducir este canal.');
+            showError('code ' + (e ? e.code : '?') + ' — requiere iOS 17+ para DRM');
         });
+        vid.src = HLS_URL;
         vid.load();
 
     } else {
-        showError('Este dispositivo iOS no puede reproducir el stream.');
+        showError('Este dispositivo no puede reproducir el stream.');
     }
 
 // ══════════════════════════════════════════════════════════
