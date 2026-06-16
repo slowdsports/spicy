@@ -90,11 +90,8 @@ if ($isIOS) {
     if (!empty($fuenteData['url_ios'])) {
         // Tiene alternativa → reproducir con Clappr inline
         $reproducotorFile = __DIR__ . '/reproductor-ios.php';
-    } elseif ($tipoId === 3) {
-        // DASH sin alternativa iOS → mostrar error
-        $reproducotorFile = __DIR__ . '/reproductor-ios-error.php';
     }
-    // Otros tipos (HLS, YouTube, etc.) funcionan bien en iOS → se reproducen normalmente
+    // Sin alternativa iOS → reproducir con el player normal (sin distinción de dispositivo)
 }
 
 ob_start('_encodeOutput');
