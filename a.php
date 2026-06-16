@@ -7,26 +7,12 @@
     <meta name="robots" content="noindex">
     <meta name="referrer" content="none">
     <title>KVEA Test</title>
-    <script>
-    // Cargar solo el reproductor necesario para no bajar dos librerías grandes
-    var _iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (_iOS) {
-        document.write('<script src="https:\/\/cdn.jsdelivr.net\/npm\/shaka-player@4\/dist\/shaka-player.compiled.js"><\/script>');
-    } else {
-        document.write('<script src="\/\/cdn.bitmovin.com\/player\/web\/8\/bitmovinplayer.js"><\/script>');
-    }
-    </script>
+    <script src="//cdn.bitmovin.com/player/web/8/bitmovinplayer.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; }
         #wrapper { position: relative; width: 100%; height: 100vh; }
         #player { width: 100%; height: 100%; background: #000; }
-        #shaka-video {
-            display: none;
-            width: 100%; height: 100%;
-            background: #000;
-            object-fit: contain;
-        }
         #status {
             position: absolute;
             inset: 0; z-index: 100;
@@ -44,7 +30,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .s-title { font-size: 1.15em; font-weight: 600; color: #fff; }
-        /* Bitmovin branding */
         .bmpui-ui-watermark {
             background-image: url("https://eduveel1.github.io/baleada/img/iRTVW_PLAYER.png");
             top: 0; left: 0; min-width: 5em;
@@ -65,8 +50,6 @@
         <div class="s-title">Cargando canal...</div>
     </div>
     <div id="player"></div>
-    <!-- sin autoplay ni muted en HTML: los gestiona Shaka/JS para evitar conflicto con MMS -->
-    <video id="shaka-video" playsinline controls></video>
 </div>
 
 <script>
@@ -74,9 +57,9 @@ var DASH_URL = 'https://live-oneapp-prd-news.akamaized.net/Content/CMAF_OL2-CTR-
 var CK_KEYID = 'ce7ab3022e753307997f58afe001bac4';
 var CK_KEY   = '72d631a66e635c60829a0fe7705516c1';
 
-var isIOS    = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-var statusEl = document.getElementById('status');
+var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
+var statusEl = document.getElementById('status');
 function showPlayer() { statusEl.style.display = 'none'; }
 function showError(msg) {
     document.querySelector('.spinner').style.display = 'none';
@@ -84,127 +67,79 @@ function showError(msg) {
     console.error('[player]', msg);
 }
 
-// ══════════════════════════════════════════════════════════════
-// iOS — Shaka Player con MMS + ClearKey
-// Shaka tiene soporte específico para CENC-CTR via MMS en iOS 17+
-// ══════════════════════════════════════════════════════════════
-if (isIOS) {
-
-    var vid = document.getElementById('shaka-video');
-    vid.style.display = 'block';
-
-    // muted antes de todo — iOS lo necesita antes de que se adjunte la fuente
-    vid.muted  = true;
-    vid.volume = 0;
-
-    shaka.polyfill.installAll(); // detecta y activa MMS en iOS 17+
-
-    if (!shaka.Player.isBrowserSupported()) {
-        showError('Este dispositivo no puede reproducir el canal.');
-    } else {
-        var shk = new shaka.Player(vid);
-
-        // Nivel de log WARNING para ver errores sin spam en consola
-        shaka.log.setLevel(shaka.log.Level.WARNING);
-
-        var clearKeysMap = {};
-        clearKeysMap[CK_KEYID] = CK_KEY;
-
-        shk.configure({
-            drm: {
-                clearKeys: clearKeysMap
-            },
-            streaming: {
-                bufferingGoal:               12,
-                rebufferingGoal:             2,
-                bufferBehind:                5,
-                lowLatencyMode:              false,
-                inaccurateManifestTolerance: 0,
-                // Forzar uso de MMS si está disponible
-                useNativeHlsOnSafari:        false
-            },
-            abr: {
-                enabled:                  true,
-                defaultBandwidthEstimate: 1000000,
-                switchInterval:           8,
-                bandwidthUpgradeTarget:   0.85,
-                bandwidthDowngradeTarget: 0.95
-            }
-        });
-
-        shk.addEventListener('error', function (e) {
-            console.error('[Shaka] error:', e.detail);
-            showError('Shaka error ' + e.detail.code + ' — ver consola');
-        });
-
-        shk.load(DASH_URL)
-            .then(function () {
-                var info = shk.drmInfo();
-                console.log('[Shaka] cargado. DRM info:', info);
-                showPlayer();
-                // Desmutar después de que el player esté listo
-                vid.muted = false;
-                return vid.play();
-            })
-            .then(function () {
-                console.log('[Shaka] reproduciendo');
-            })
-            .catch(function (e) {
-                // play() puede rechazarse por política de autoplay → el usuario toca Play
-                if (e && e.name === 'NotAllowedError') {
-                    console.warn('[Shaka] autoplay bloqueado — esperando gesto del usuario');
-                    showPlayer(); // mostrar video con botón Play
-                } else {
-                    console.error('[Shaka] error:', e);
-                    showError('Error: ' + (e.message || e.code || JSON.stringify(e)));
-                }
-            });
+// Bypass licencia Bitmovin
+(function () {
+    var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
+    function ov(u) {
+        if (u.indexOf('licensing.bitmovin.com/licensing')  > -1) return GRANT;
+        if (u.indexOf('licensing.bitmovin.com/impression') > -1) return GRANT;
+        return u;
     }
+    var _o = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function () { arguments[1] = ov(arguments[1]); return _o.apply(this, arguments); };
+})();
 
-// ══════════════════════════════════════════════════════════════
-// No-iOS — Bitmovin con DASH + ClearKey (funciona bien)
-// ══════════════════════════════════════════════════════════════
-} else {
+document.addEventListener('DOMContentLoaded', function () {
 
-    (function () {
-        var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
-        function ov(u) {
-            if (u.indexOf('licensing.bitmovin.com/licensing')  > -1) return GRANT;
-            if (u.indexOf('licensing.bitmovin.com/impression') > -1) return GRANT;
-            return u;
+    var player = new bitmovin.player.Player(document.getElementById('player'), {
+        key:      '11d3698c-efdf-42f1-8769-54663995de2b',
+        analytics: false,
+        cast:     { enable: !isIOS },
+        playback: {
+            autoplay:    true,
+            muted:       true,
+            playsinline: true,
+            // El stream OL2 de Akamai tiene chunked-transfer CMAF.
+            // Bitmovin detecta low-latency y consume fragmentos parciales,
+            // lo que en iOS MMS produce video a trozos. Lo desactivamos:
+            lowLatency:  false
+        },
+        style: { width: '100%', height: '100%' },
+        buffer: isIOS ? {
+            // En iOS: buffer moderado, preferimos estabilidad a baja latencia
+            video: { forwardduration: 16, backwardduration: 2 },
+            audio: { forwardduration: 16, backwardduration: 2 }
+        } : {
+            video: { forwardduration: 30, backwardduration: 5 },
+            audio: { forwardduration: 30, backwardduration: 5 }
+        },
+        adaptation: {
+            startupBitrate:    isIOS ? 860000  : 1500000,
+            maxStartupBitrate: isIOS ? 860000  : 3000000
+        },
+        tweaks: {
+            max_video_download_delay: 12,
+            startup_threshold:        isIOS ? 4 : 2,
+            // Asegura que no intenta reanudar desde posición cercana al live edge
+            live_edge_segment_delay_factor: isIOS ? 3 : 1
         }
-        var _o = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function () { arguments[1] = ov(arguments[1]); return _o.apply(this, arguments); };
-    })();
-
-    document.addEventListener('DOMContentLoaded', function () {
-        var player = new bitmovin.player.Player(document.getElementById('player'), {
-            key:      '11d3698c-efdf-42f1-8769-54663995de2b',
-            analytics: false,
-            cast:     { enable: true },
-            playback: { autoplay: true, muted: true },
-            style:    { width: '100%', height: '100%' },
-            buffer: {
-                video: { forwardduration: 30, backwardduration: 5 },
-                audio: { forwardduration: 30, backwardduration: 5 }
-            },
-            adaptation: {
-                startupBitrate:    1500000,
-                maxStartupBitrate: 3000000
-            },
-            tweaks: {
-                max_video_download_delay: 12,
-                startup_threshold:        2
-            }
-        });
-
-        player.load({ dash: DASH_URL, drm: { clearkey: [{ keyId: CK_KEYID, key: CK_KEY }] } })
-            .then(showPlayer)
-            .catch(function (err) {
-                showError('Error: ' + (err.message || err.code || JSON.stringify(err)));
-            });
     });
-}
+
+    player.load({
+        dash: DASH_URL,
+        drm:  { clearkey: [{ keyId: CK_KEYID, key: CK_KEY }] }
+    })
+    .then(function () {
+        showPlayer();
+        if (isIOS) {
+            // Bloquear a 860 kbps — calidad estable sin saltos de ABR
+            setTimeout(function () {
+                var qs = player.getAvailableVideoQualities();
+                if (!qs || !qs.length) return;
+                qs.sort(function (a, b) { return a.bitrate - b.bitrate; });
+                var target = qs[0];
+                for (var i = 0; i < qs.length; i++) {
+                    if (qs[i].bitrate <= 900000) target = qs[i];
+                }
+                player.setVideoQuality(target.id);
+                console.log('[iOS] calidad fijada:', target.bitrate + ' bps');
+            }, 2000);
+        }
+    })
+    .catch(function (err) {
+        showError('Error: ' + (err.message || err.code || JSON.stringify(err)));
+    });
+});
 </script>
 </body>
 </html>
