@@ -87,6 +87,11 @@ function handlePoll(): void {
 }
 
 function handleApprove(): void {
+    // Fallback: intentar re-autenticar desde cookie remember-me si la sesión
+    // no sobrevivió entre el fetch de api/auth.php y este endpoint
+    if (!isset($_SESSION['user_id'])) {
+        _autoLoginFromCookie();
+    }
     if (!isset($_SESSION['user_id'])) { send(false, 'Sesión requerida', null, 401); return; }
 
     $token = preg_replace('/[^a-f0-9]/', '', $_GET['token'] ?? ($_POST['token'] ?? ''));

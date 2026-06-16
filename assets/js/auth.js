@@ -203,8 +203,7 @@ async function initTvMode() {
 
 function tvSetStatus(type, text) {
   const box = document.getElementById('tv-status-box');
-  const txt = document.getElementById('tv-status-text');
-  if (!box || !txt) return;
+  if (!box) return;
   box.className = 'tv-status-box' + (type === 'ok' ? ' status-ok' : type === 'expired' || type === 'error' ? ' status-expired' : '');
   const icons = { ok: 'fa-check-circle', expired: 'fa-times-circle', error: 'fa-exclamation-circle', pending: 'fa-clock' };
   box.innerHTML = `<i class="fas ${icons[type] || icons.pending} me-2"></i><span>${text}</span>`;
@@ -216,41 +215,44 @@ async function approveTvLogin(afterLogin = false) {
   const btn = document.getElementById('btn-tv-approve');
   if (btn) { btn.disabled = true; btn.textContent = 'Autorizando…'; }
 
-  const alertEl = document.getElementById('mobile-auth-alert');
+  // Usar cualquier div de alerta disponible en la página actual
+  const alertEl = document.getElementById('mobile-auth-alert')
+               || document.getElementById('alert-login');
+
+  function showApproveAlert(msg, type) {
+    if (!alertEl) return;
+    alertEl.textContent  = msg;
+    alertEl.className    = 'alert-sh alert-' + type;
+    alertEl.style.display = 'block';
+  }
 
   try {
-    const res  = await fetch(`${window.TV_API_BASE}?action=approve&token=${window.TV_TOKEN}`, { method: 'POST' });
+    const res  = await fetch(`${window.TV_API_BASE}?action=approve&token=${window.TV_TOKEN}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+    });
     const data = await res.json();
 
     if (data.success) {
-      if (alertEl) {
-        alertEl.textContent = '✅ ¡TV autorizada! Ya puedes usar tu Smart TV.';
-        alertEl.className   = 'alert-sh alert-success';
-        alertEl.style.display = 'block';
-      }
+      showApproveAlert('✅ ¡TV autorizada! Ya puedes usar tu Smart TV.', 'success');
       if (btn) {
         btn.textContent = '¡TV autorizada!';
-        const cancelLink = document.querySelector('[href*="p=home"]');
-        if (cancelLink) { cancelLink.style.display = 'none'; }
+        const cancelLink = document.querySelector('a[href*="p=home"]');
+        if (cancelLink) cancelLink.style.display = 'none';
       }
-      // Si llegamos aquí después de hacer login, redirigir al home
       if (afterLogin) {
         setTimeout(() => { window.location.href = '?p=home'; }, 1500);
       }
     } else {
-      if (alertEl) {
-        alertEl.textContent = data.message || 'No se pudo autorizar. El código puede haber expirado.';
-        alertEl.className   = 'alert-sh alert-error';
-        alertEl.style.display = 'block';
-      }
+      showApproveAlert(data.message || 'No se pudo autorizar. El código puede haber expirado.', 'error');
       if (btn) { btn.disabled = false; btn.textContent = 'Autorizar mi TV'; }
+      if (afterLogin) {
+        // Login fue exitoso, igual redirigir aunque el approve falló
+        setTimeout(() => { window.location.href = '?p=home'; }, 2500);
+      }
     }
   } catch (e) {
-    if (alertEl) {
-      alertEl.textContent = 'Error de conexión. Inténtalo de nuevo.';
-      alertEl.className   = 'alert-sh alert-error';
-      alertEl.style.display = 'block';
-    }
+    showApproveAlert('Error de conexión. Inténtalo de nuevo.', 'error');
     if (btn) { btn.disabled = false; btn.textContent = 'Autorizar mi TV'; }
   }
 }

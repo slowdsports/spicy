@@ -142,7 +142,7 @@ $pageTitle = $seoTitle;
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
-  <?php include __DIR__ . '/includes/ads.php'; ?>
+  <?php if ($page !== 'login') include __DIR__ . '/includes/ads.php'; ?>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars($seoTitle) ?></title>
@@ -287,7 +287,7 @@ if (isset($scripts[$page])) {
 <div<?= (!isLoggedIn() || userId() !== 2) ? ' style="display:none;"' : ' style="text-align:center;"' ?>>
 <script id="_wauh8l">var _wau = _wau || []; _wau.push(["small", "j9isfwldlg", "h8l"]);</script><script async src="//waust.at/s.js"></script>
 </div>
-<?php if (!isSpicy()): ?>
+<?php if (!isSpicy() && $page !== 'login'): ?>
 <script data-name="BMC-Widget"
         data-cfasync="false"
         src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
