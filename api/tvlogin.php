@@ -55,14 +55,14 @@ function ensureTable(): void {
 function handleCreate(): void {
     ensureTable();
     $conn = getDBConnection();
-    // Limpiar tokens viejos
+    // Limpiar tokens viejos (usa NOW() de MySQL para consistencia de zona horaria)
     $conn->query("DELETE FROM tv_login_tokens WHERE expires_at < NOW()");
 
-    $token   = bin2hex(random_bytes(16)); // 32 hex chars
-    $expires = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+    $token = bin2hex(random_bytes(16)); // 32 hex chars
 
-    $ins = $conn->prepare("INSERT INTO tv_login_tokens (token, expires_at) VALUES (?, ?)");
-    $ins->bind_param('ss', $token, $expires);
+    // expires_at se calcula en MySQL para evitar desfase PHP/MySQL de zona horaria
+    $ins = $conn->prepare("INSERT INTO tv_login_tokens (token, expires_at) VALUES (?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))");
+    $ins->bind_param('s', $token);
     $ins->execute();
     $ins->close();
 
@@ -74,7 +74,9 @@ function handlePoll(): void {
     if (strlen($token) !== 32) { send(false, 'Token inválido'); return; }
 
     $conn = getDBConnection();
-    $stmt = $conn->prepare("SELECT status, expires_at FROM tv_login_tokens WHERE token = ? LIMIT 1");
+    // Usa (expires_at <= NOW()) de MySQL para que el cálculo de expiración
+    // sea coherente con handleCreate() y handleApprove()
+    $stmt = $conn->prepare("SELECT status, (expires_at <= NOW()) AS is_expired FROM tv_login_tokens WHERE token = ? LIMIT 1");
     $stmt->bind_param('s', $token);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
@@ -82,7 +84,7 @@ function handlePoll(): void {
 
     if (!$row) { send(true, 'OK', ['status' => 'not_found']); return; }
 
-    $status = (strtotime($row['expires_at']) < time()) ? 'expired' : $row['status'];
+    $status = $row['is_expired'] ? 'expired' : $row['status'];
     send(true, 'OK', ['status' => $status]);
 }
 
