@@ -84,7 +84,22 @@ document.addEventListener('DOMContentLoaded', function () {
         analytics: false,
         cast:     { enable: true },
         playback: { autoplay: true, muted: true },
-        style:    { width: '100%', height: '100%' }
+        style:    { width: '100%', height: '100%' },
+        // Aumentar buffer de video para absorber variaciones de red en live
+        buffer: {
+            video: { forwardduration: 30, backwardduration: 5 },
+            audio: { forwardduration: 30, backwardduration: 5 }
+        },
+        // Arrancar en calidad conservadora para evitar stalls iniciales
+        adaptation: {
+            startupBitrate:   1500000,   // 1.5 Mbps de arranque
+            maxStartupBitrate: 3000000   // no saltar directo a calidades altas
+        },
+        // Tweaks específicos para streams live con segmentos de 4s
+        tweaks: {
+            max_video_download_delay: 12,
+            startup_threshold:        2.0
+        }
     });
 
     var source = {
