@@ -149,6 +149,8 @@ if ($partidoId > 0) {
         }
     }
 }
+
+$isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') === '16');
 ?>
 
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/chat.css">
@@ -313,16 +315,93 @@ if ($partidoId > 0) {
   .partido-meta { flex-direction: row; width: 100%; justify-content: center; }
   .partido-teams { width: 100%; }
 }
+
+/* ── Mundial 2026: tema dorado para canal.php ─────────────── */
+.mundial-canal {
+  --gold:        #f59e0b;
+  --gold-light:  #fbbf24;
+  --gold-soft:   rgba(245,158,11,.13);
+  --gold-border: rgba(245,158,11,.4);
+  --gold-glow:   rgba(245,158,11,.35);
+}
+
+.mundial-canal .partido-header {
+  background: #0f0d06;
+  border-color: rgba(245,158,11,.3);
+  box-shadow: 0 2px 24px rgba(245,158,11,.08);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Barra dorada animada arriba del header cuando es en vivo */
+.mundial-canal .partido-header.is-live::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #d97706, #fbbf24, #d97706);
+  background-size: 200% auto;
+  animation: mundial-bar 2.5s linear infinite;
+}
+@keyframes mundial-bar {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+.mundial-canal .badge-time {
+  background: rgba(245,158,11,.12);
+  color: var(--gold);
+  border: 1px solid rgba(245,158,11,.25);
+}
+.mundial-canal .badge-live {
+  background: rgba(239,68,68,.15);
+  color: #ef4444;
+}
+
+.mundial-canal .partido-vs {
+  color: var(--gold-light);
+  text-shadow: 0 0 12px var(--gold-glow);
+}
+
+.mundial-canal .match-pills-bar {
+  border-bottom-color: rgba(245,158,11,.15);
+}
+.mundial-canal .pills-section-label {
+  color: var(--gold);
+  opacity: .75;
+}
+
+.mundial-canal .source-pill:hover {
+  border-color: var(--gold-border);
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+.mundial-canal .source-pill.active {
+  background: rgba(245,158,11,.18);
+  border-color: var(--gold-border);
+  color: var(--gold-light);
+}
+.mundial-canal .source-pill.active .pill-ios-icon.ok {
+  color: var(--gold-light);
+}
+
+.mundial-canal .channel-info-bar {
+  border-top-color: rgba(245,158,11,.12);
+}
 </style>
 
-<div class="container" style="padding-top:1.5rem;">
+<div class="container<?= $isMundial ? ' mundial-canal' : '' ?>" style="padding-top:1.5rem;">
   <!-- Breadcrumb -->
   <nav style="margin-bottom:1rem;">
     <a href="<?= url('home') ?>" style="color:var(--text-muted); font-size:0.8rem; text-decoration:none;">
       <i class="fas fa-home me-1"></i> Inicio
     </a>
     <span style="color:var(--text-muted); margin:0 0.5rem; font-size:0.8rem;">/</span>
+    <?php if ($isMundial): ?>
+    <a href="<?= url('mundial2026') ?>" style="color:rgba(245,158,11,.6); font-size:0.8rem; text-decoration:none;">Mundial 2026</a>
+    <?php else: ?>
     <a href="<?= url('tv') ?>" style="color:var(--text-muted); font-size:0.8rem; text-decoration:none;">Canales</a>
+    <?php endif; ?>
     <span style="color:var(--text-muted); margin:0 0.5rem; font-size:0.8rem;">/</span>
     <span style="color:var(--text-secondary); font-size:0.8rem;" id="breadcrumb-name">
       <?php if ($partidoData): ?>
@@ -345,7 +424,7 @@ if ($partidoId > 0) {
         $pLeague    = (string)($partidoData['league'] ?? '');
         $pLeagueLogo = BASE_URL . "assets/img/ligas/sf/{$pLeague}.png";
       ?>
-      <div class="partido-header">
+      <div class="partido-header<?= ($isMundial && ($pStatus === 'live')) ? ' is-live' : '' ?>">
         <div class="partido-meta">
           <img src="<?= $pLeagueLogo ?>" data-logo-base="<?= $pLeagueLogo ?>" class="partido-league-img" onerror="this.style.opacity='.2'">
           <?php if (!empty($partidoData['fecha_hora'])): ?>
