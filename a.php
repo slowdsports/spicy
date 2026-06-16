@@ -65,7 +65,8 @@
         <div class="s-title">Cargando canal...</div>
     </div>
     <div id="player"></div>
-    <video id="shaka-video" playsinline autoplay muted controls></video>
+    <!-- sin autoplay ni muted en HTML: los gestiona Shaka/JS para evitar conflicto con MMS -->
+    <video id="shaka-video" playsinline controls></video>
 </div>
 
 <script>
@@ -92,51 +93,71 @@ if (isIOS) {
     var vid = document.getElementById('shaka-video');
     vid.style.display = 'block';
 
-    shaka.polyfill.installAll(); // activa MMS automáticamente en iOS 17+
+    // muted antes de todo — iOS lo necesita antes de que se adjunte la fuente
+    vid.muted  = true;
+    vid.volume = 0;
+
+    shaka.polyfill.installAll(); // detecta y activa MMS en iOS 17+
 
     if (!shaka.Player.isBrowserSupported()) {
         showError('Este dispositivo no puede reproducir el canal.');
     } else {
         var shk = new shaka.Player(vid);
 
+        // Nivel de log WARNING para ver errores sin spam en consola
+        shaka.log.setLevel(shaka.log.Level.WARNING);
+
+        var clearKeysMap = {};
+        clearKeysMap[CK_KEYID] = CK_KEY;
+
         shk.configure({
             drm: {
-                clearKeys: {
-                    // keyId: key  (ambos en hex)
-                    [CK_KEYID]: CK_KEY
-                }
+                clearKeys: clearKeysMap
             },
             streaming: {
-                bufferingGoal:        12,   // acumular 12s antes de considerar estable
-                rebufferingGoal:      2,
-                bufferBehind:         5,
-                // Desactivar modo low-latency — CMAF chunked puede causar artefactos
-                lowLatencyMode:       false,
-                inaccurateManifestTolerance: 0
+                bufferingGoal:               12,
+                rebufferingGoal:             2,
+                bufferBehind:                5,
+                lowLatencyMode:              false,
+                inaccurateManifestTolerance: 0,
+                // Forzar uso de MMS si está disponible
+                useNativeHlsOnSafari:        false
             },
             abr: {
-                enabled:           true,
-                defaultBandwidthEstimate: 1000000,  // estimar 1 Mbps al inicio
-                switchInterval:    8,   // no cambiar de calidad más de 1 vez cada 8s
+                enabled:                  true,
+                defaultBandwidthEstimate: 1000000,
+                switchInterval:           8,
                 bandwidthUpgradeTarget:   0.85,
                 bandwidthDowngradeTarget: 0.95
             }
         });
 
         shk.addEventListener('error', function (e) {
-            console.error('[Shaka] error event:', e.detail);
-            showError('Error ' + e.detail.code + ': ' + e.detail.message);
+            console.error('[Shaka] error:', e.detail);
+            showError('Shaka error ' + e.detail.code + ' — ver consola');
         });
 
         shk.load(DASH_URL)
             .then(function () {
-                console.log('[Shaka] cargado OK');
+                var info = shk.drmInfo();
+                console.log('[Shaka] cargado. DRM info:', info);
                 showPlayer();
-                vid.play().catch(function () {});
+                // Desmutar después de que el player esté listo
+                vid.muted = false;
+                return vid.play();
+            })
+            .then(function () {
+                console.log('[Shaka] reproduciendo');
             })
             .catch(function (e) {
-                console.error('[Shaka] load error:', e);
-                showError('Error ' + (e.code || '') + ': ' + (e.message || JSON.stringify(e)));
+                // play() puede rechazarse por política de autoplay → el usuario toca Play
+                if (e && e.name === 'NotAllowedError') {
+                    console.warn('[Shaka] autoplay bloqueado — esperando gesto del usuario');
+                    showPlayer(); // mostrar video con botón Play
+                } else {
+                    console.error('[Shaka] error:', e);
+                    showError('Error: ' + (e.message || e.code || JSON.stringify(e)));
+                }
             });
     }
 
