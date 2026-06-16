@@ -7,35 +7,15 @@
     <meta name="robots" content="noindex">
     <meta name="referrer" content="none">
     <title>KVEA Test</title>
-
-    <!-- hls.js para iOS (usa MMS + EME en iOS 17+) -->
-    <!-- Bitmovin para el resto -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
-    <script>
-    if (!/iPad|iPhone|iPod/.test(navigator.userAgent) || window.MSStream) {
-        document.write('<script src="\/\/cdn.bitmovin.com\/player\/web\/8\/bitmovinplayer.js"><\/script>');
-    }
-    </script>
-
+    <script src="//cdn.bitmovin.com/player/web/8/bitmovinplayer.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #000; overflow: hidden; }
         #wrapper { position: relative; width: 100%; height: 100vh; }
-
         #player { width: 100%; height: 100%; background: #000; }
-
-        #native-video {
-            display: none;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            object-fit: contain;
-        }
-
         #status {
             position: absolute;
-            inset: 0;
-            z-index: 100;
+            inset: 0; z-index: 100;
             background: #000;
             display: flex;
             flex-direction: column;
@@ -54,7 +34,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .s-title { font-size: 1.15em; font-weight: 600; color: #fff; }
-
         .bmpui-ui-watermark {
             background-image: url("https://eduveel1.github.io/baleada/img/iRTVW_PLAYER.png");
             top: 0; left: 0; min-width: 5em;
@@ -75,7 +54,6 @@
         <div class="s-title">Cargando canal...</div>
     </div>
     <div id="player"></div>
-    <video id="native-video" playsinline autoplay muted controls></video>
 </div>
 
 <script>
@@ -85,153 +63,86 @@ var HLS_URL  = BASE + 'master.m3u8';
 var CK_KEYID = 'ce7ab3022e753307997f58afe001bac4';
 var CK_KEY   = '72d631a66e635c60829a0fe7705516c1';
 
-var statusEl = document.getElementById('status');
-var isIOS    = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
+var statusEl = document.getElementById('status');
 function showPlayer() { statusEl.style.display = 'none'; }
 function showError(msg) {
     document.querySelector('.spinner').style.display = 'none';
-    document.querySelector('.s-title').textContent = 'Error: ' + msg;
-    console.error('[player] ' + msg);
+    document.querySelector('.s-title').textContent = msg;
+    console.error('[player]', msg);
 }
 
-// Convierte hex a Base64url (para JWK)
-function hexToBase64Url(hex) {
-    var bytes = new Uint8Array(hex.match(/../g).map(function(h){ return parseInt(h, 16); }));
-    var bin = '';
-    bytes.forEach(function(b){ bin += String.fromCharCode(b); });
-    return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-}
+// Bypass licencia Bitmovin
+(function () {
+    var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
+    function ov(u) {
+        if (u.indexOf('licensing.bitmovin.com/licensing')  > -1) return GRANT;
+        if (u.indexOf('licensing.bitmovin.com/impression') > -1) return GRANT;
+        return u;
+    }
+    var _o = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function () { arguments[1] = ov(arguments[1]); return _o.apply(this, arguments); };
+})();
 
-// JWK para ClearKey
-var jwk = {
-    keys: [{ kty: 'oct', kid: hexToBase64Url(CK_KEYID), k: hexToBase64Url(CK_KEY) }],
-    type: 'temporary'
-};
-var CK_DATA_URI = 'data:application/json;base64,' + btoa(JSON.stringify(jwk));
+document.addEventListener('DOMContentLoaded', function () {
+    var player = new bitmovin.player.Player(document.getElementById('player'), {
+        key:      '11d3698c-efdf-42f1-8769-54663995de2b',
+        analytics: false,
+        cast:     { enable: !isIOS },
+        playback: {
+            autoplay:    true,
+            muted:       true,
+            playsinline: true   // imprescindible en iOS
+        },
+        style:    { width: '100%', height: '100%' },
+        buffer: {
+            // iOS: buffer moderado, el pipeline nativo gestiona el resto
+            video: { forwardduration: isIOS ? 12 : 30, backwardduration: 2 },
+            audio: { forwardduration: isIOS ? 12 : 30, backwardduration: 2 }
+        },
+        adaptation: {
+            startupBitrate:    isIOS ? 1000000 : 1500000,
+            maxStartupBitrate: isIOS ? 2500000 : 3000000
+        },
+        tweaks: {
+            max_video_download_delay: 12,
+            startup_threshold:        2
+        }
+    });
 
-// ══════════════════════════════════════════════════════════
-// iOS — hls.js con MMS + EME (iOS 17+) o fallback nativo
-// ══════════════════════════════════════════════════════════
-if (isIOS) {
-    var vid = document.getElementById('native-video');
-    vid.style.display = 'block';
-
-    // Mostrar el reproductor de inmediato — el <video> nativo
-    // gestiona su propio estado de carga; el spinner nuestro
-    // solo bloquea y puede quedarse colgado esperando eventos DRM.
-    showPlayer();
-
-    var hlsReady = false;
-
-    // iOS 17+ tiene ManagedMediaSource (MMS) que incluye EME
-    var hasMMS = typeof ManagedMediaSource !== 'undefined';
-
-    if (hasMMS && Hls.isSupported()) {
-        console.log('[iOS] hls.js + MMS + ClearKey EME');
-
-        var hls = new Hls({
-            emeEnabled: true,
-            drmSystems: {
-                'org.w3c.clearkey': { licenseUrl: CK_DATA_URI }
-            },
-            maxBufferLength:             10,
-            maxMaxBufferLength:          20,
-            maxBufferHole:               0.5,
-            liveSyncDurationCount:       3,
-            liveMaxLatencyDurationCount: 5,
-            startLevel:                  -1,
-            abrBandWidthFactor:          0.8,
-            abrBandWidthUpFactor:        0.5
-        });
-
-        hls.loadSource(HLS_URL);
-        hls.attachMedia(vid);
-
-        hls.on(Hls.Events.MANIFEST_PARSED, function () {
-            hlsReady = true;
-            vid.play().catch(function () {});
-        });
-
-        hls.on(Hls.Events.ERROR, function (event, data) {
-            console.warn('[hls.js]', data.type, data.details, data);
-            if (data.fatal) {
-                if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                    hls.startLoad();
-                } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-                    hls.recoverMediaError();
-                } else {
-                    showError(data.details + ' (' + data.type + ')');
-                }
-            }
-        });
-
-        // Timeout: si el manifest no llega en 15s, informar
-        setTimeout(function () {
-            if (!hlsReady) showError('Timeout — revisa consola para detalles DRM');
-        }, 15000);
-
-    } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
-        console.log('[iOS] video nativo HLS (sin EME) — iOS < 17');
-        vid.addEventListener('error', function () {
-            var e = vid.error;
-            showError('code ' + (e ? e.code : '?') + ' — requiere iOS 17+ para DRM');
-        });
-        vid.src = HLS_URL;
-        vid.load();
-
+    // iOS → HLS: Bitmovin lo enruta a Safari nativo (VideoToolbox hardware)
+    //            = sin trozos, sin overhead MMS/DASH
+    // Otros → DASH + ClearKey: comportamiento probado
+    var source = {
+        drm: { clearkey: [{ keyId: CK_KEYID, key: CK_KEY }] }
+    };
+    if (isIOS) {
+        source.hls = HLS_URL;
+        console.log('[player] iOS → HLS');
     } else {
-        showError('Este dispositivo no puede reproducir el stream.');
+        source.dash = DASH_URL;
+        console.log('[player] DASH');
     }
 
-// ══════════════════════════════════════════════════════════
-// No-iOS — Bitmovin con DASH + ClearKey DRM
-// ══════════════════════════════════════════════════════════
-} else {
+    player.load(source)
+        .then(showPlayer)
+        .catch(function (err) {
+            var msg = err.message || err.code || JSON.stringify(err);
+            console.error('[Bitmovin]', err);
 
-    (function () {
-        var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
-        function override(u) {
-            if (u.indexOf('licensing.bitmovin.com/licensing')  > -1) return GRANT;
-            if (u.indexOf('licensing.bitmovin.com/impression') > -1) return GRANT;
-            return u;
-        }
-        var _open = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function () {
-            arguments[1] = override(arguments[1]);
-            return _open.apply(this, arguments);
-        };
-    })();
-
-    document.addEventListener('DOMContentLoaded', function () {
-        var player = new bitmovin.player.Player(document.getElementById('player'), {
-            key:      '11d3698c-efdf-42f1-8769-54663995de2b',
-            analytics: false,
-            cast:     { enable: true },
-            playback: { autoplay: true, muted: true },
-            style:    { width: '100%', height: '100%' },
-            buffer: {
-                video: { forwardduration: 30, backwardduration: 5 },
-                audio: { forwardduration: 30, backwardduration: 5 }
-            },
-            adaptation: {
-                startupBitrate:    1500000,
-                maxStartupBitrate: 3000000
-            },
-            tweaks: {
-                max_video_download_delay: 12,
-                startup_threshold:        2
+            // Si HLS falla en iOS (DRM no resuelto), intentar DASH como fallback
+            if (isIOS && source.hls) {
+                console.warn('[player] HLS falló, reintentando con DASH...');
+                document.querySelector('.s-title').textContent = 'Cargando (DASH)...';
+                player.load({ dash: DASH_URL, drm: source.drm })
+                    .then(showPlayer)
+                    .catch(function (e2) { showError('Error: ' + (e2.message || e2.code)); });
+            } else {
+                showError('Error: ' + msg);
             }
         });
-
-        player.load({
-            dash: DASH_URL,
-            drm:  { clearkey: [{ keyId: CK_KEYID, key: CK_KEY }] }
-        }).then(showPlayer).catch(function (err) {
-            showError(err.message || err.code || JSON.stringify(err));
-        });
-    });
-}
+});
 </script>
 </body>
 </html>
