@@ -2,6 +2,8 @@
  * StreamHub - JS de autenticación (?p=login)
  */
 
+// ── Login / Register normal ───────────────────────────────────────────────
+
 function switchTab(tab) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
@@ -31,14 +33,12 @@ function validateRegister() {
 }
 
 async function apiPost(payload) {
-  // Intento 1: JSON (estándar)
   let res = await fetch('api/auth.php', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(payload),
   });
 
-  // Si el WAF del hosting bloquea JSON (403), reintentar con form-encoded
   if (res.status === 403) {
     const form = new URLSearchParams();
     Object.entries(payload).forEach(([k, v]) => form.append(k, v));
@@ -69,15 +69,23 @@ async function submitLogin() {
       password: document.getElementById('login-password').value,
     });
     if (result.success) {
-      showAlert('login', '¡Bienvenido!', 'success');
-      setTimeout(() => { window.location.href = getRedirectDest(); }, 1000);
+      // Si hay un token de TV pendiente, aprobarlo antes de redirigir
+      if (window.IS_MOBILE_AUTH && window.TV_TOKEN) {
+        showAlert('login', 'Sesión iniciada. Autorizando TV…', 'success');
+        await approveTvLogin(true);
+      } else {
+        showAlert('login', '¡Bienvenido!', 'success');
+        setTimeout(() => { window.location.href = getRedirectDest(); }, 1000);
+      }
     } else {
       showAlert('login', result.message || 'Credenciales incorrectas.', 'error');
-      btn.textContent = 'Iniciar sesión'; btn.disabled = false;
+      btn.textContent = window.IS_MOBILE_AUTH ? 'Iniciar sesión y autorizar TV' : 'Iniciar sesión';
+      btn.disabled = false;
     }
   } catch (e) {
     showAlert('login', 'Error de conexión. Verifica que el servidor está activo.', 'error');
-    btn.textContent = 'Iniciar sesión'; btn.disabled = false;
+    btn.textContent = window.IS_MOBILE_AUTH ? 'Iniciar sesión y autorizar TV' : 'Iniciar sesión';
+    btn.disabled = false;
   }
 }
 
@@ -117,14 +125,150 @@ function clearAlerts() {
   document.querySelectorAll('.alert-sh').forEach(a => a.style.display = 'none');
 }
 
-// Destino tras autenticar: parámetro ?redirect=, o home como fallback.
-// Solo se acepta redirect interno (empieza con ? o /).
 function getRedirectDest() {
   const redirect = new URLSearchParams(window.location.search).get('redirect') || '';
   return /^[?/]/.test(redirect) ? redirect : '?p=home';
 }
 
+// ── Modo TV: QR Login ─────────────────────────────────────────────────────
+
+async function initTvMode() {
+  try {
+    const res  = await fetch(window.TV_API_BASE + '?action=create');
+    const data = await res.json();
+    if (!data.success) { tvSetStatus('error', 'No se pudo generar el código. Recarga la página.'); return; }
+
+    const token      = data.data.token;
+    const expiresIn  = data.data.expires_in || 600;
+    const qrUrl      = window.TV_SCAN_BASE + token;
+
+    // Generar QR
+    const qrEl = document.getElementById('tv-qr');
+    new QRCode(qrEl, {
+      text:         qrUrl,
+      width:        256,
+      height:       256,
+      colorDark:    '#000000',
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+
+    document.getElementById('tv-qr-loading').style.display = 'none';
+    qrEl.style.display = 'block';
+
+    // Temporizador de cuenta regresiva
+    let remaining = expiresIn;
+    const countdownEl = document.getElementById('tv-countdown');
+
+    const countdownId = setInterval(() => {
+      remaining--;
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      if (countdownEl) countdownEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+      if (remaining <= 0) {
+        clearInterval(countdownId);
+        clearInterval(pollId);
+        tvSetStatus('expired', 'Código expirado. Recargando…');
+        setTimeout(() => location.reload(), 3000);
+      }
+    }, 1000);
+
+    // Polling cada 2.5 s
+    const pollId = setInterval(async () => {
+      try {
+        const pr   = await fetch(`${window.TV_API_BASE}?action=poll&token=${token}`);
+        const pd   = await pr.json();
+        const st   = pd.data?.status;
+
+        if (st === 'approved') {
+          clearInterval(pollId);
+          clearInterval(countdownId);
+          tvSetStatus('ok', '¡Autorizado! Iniciando sesión…');
+          setTimeout(() => {
+            window.location.href = `${window.TV_API_BASE}?action=auth&token=${token}`;
+          }, 1200);
+        } else if (st === 'expired' || st === 'not_found') {
+          clearInterval(pollId);
+          clearInterval(countdownId);
+          tvSetStatus('expired', 'Código expirado. Recargando…');
+          setTimeout(() => location.reload(), 3000);
+        }
+      } catch (_) { /* error de red — reintentar en el próximo ciclo */ }
+    }, 2500);
+
+  } catch (e) {
+    tvSetStatus('error', 'Error de conexión. Recarga la página.');
+  }
+}
+
+function tvSetStatus(type, text) {
+  const box = document.getElementById('tv-status-box');
+  const txt = document.getElementById('tv-status-text');
+  if (!box || !txt) return;
+  box.className = 'tv-status-box' + (type === 'ok' ? ' status-ok' : type === 'expired' || type === 'error' ? ' status-expired' : '');
+  const icons = { ok: 'fa-check-circle', expired: 'fa-times-circle', error: 'fa-exclamation-circle', pending: 'fa-clock' };
+  box.innerHTML = `<i class="fas ${icons[type] || icons.pending} me-2"></i><span>${text}</span>`;
+}
+
+// ── Modo Móvil Auth: autorizar TV desde el celular ────────────────────────
+
+async function approveTvLogin(afterLogin = false) {
+  const btn = document.getElementById('btn-tv-approve');
+  if (btn) { btn.disabled = true; btn.textContent = 'Autorizando…'; }
+
+  const alertEl = document.getElementById('mobile-auth-alert');
+
+  try {
+    const res  = await fetch(`${window.TV_API_BASE}?action=approve&token=${window.TV_TOKEN}`, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.success) {
+      if (alertEl) {
+        alertEl.textContent = '✅ ¡TV autorizada! Ya puedes usar tu Smart TV.';
+        alertEl.className   = 'alert-sh alert-success';
+        alertEl.style.display = 'block';
+      }
+      if (btn) {
+        btn.textContent = '¡TV autorizada!';
+        const cancelLink = document.querySelector('[href*="p=home"]');
+        if (cancelLink) { cancelLink.style.display = 'none'; }
+      }
+      // Si llegamos aquí después de hacer login, redirigir al home
+      if (afterLogin) {
+        setTimeout(() => { window.location.href = '?p=home'; }, 1500);
+      }
+    } else {
+      if (alertEl) {
+        alertEl.textContent = data.message || 'No se pudo autorizar. El código puede haber expirado.';
+        alertEl.className   = 'alert-sh alert-error';
+        alertEl.style.display = 'block';
+      }
+      if (btn) { btn.disabled = false; btn.textContent = 'Autorizar mi TV'; }
+    }
+  } catch (e) {
+    if (alertEl) {
+      alertEl.textContent = 'Error de conexión. Inténtalo de nuevo.';
+      alertEl.className   = 'alert-sh alert-error';
+      alertEl.style.display = 'block';
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Autorizar mi TV'; }
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+
 document.addEventListener('DOMContentLoaded', () => {
+  if (window.TV_MODE) {
+    initTvMode();
+    return;
+  }
+
+  if (window.IS_MOBILE_AUTH && window.IS_LOGGED_IN) {
+    // Ya logueado: el botón de aprobar se muestra en el PHP, nada más que hacer
+    return;
+  }
+
+  // Login/Register normal
   document.querySelectorAll('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
