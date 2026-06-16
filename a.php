@@ -79,31 +79,40 @@ var statusEl = document.getElementById('status');
 function showPlayer() { statusEl.style.display = 'none'; }
 
 document.addEventListener('DOMContentLoaded', function () {
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
     var player = new bitmovin.player.Player(document.getElementById('player'), {
         key:      '11d3698c-efdf-42f1-8769-54663995de2b',
         analytics: false,
-        cast:     { enable: true },
-        playback: { autoplay: true, muted: true },
-        style:    { width: '100%', height: '100%' },
-        // Aumentar buffer de video para absorber variaciones de red en live
+        cast:     { enable: !isIOS },
+        playback: {
+            autoplay:    true,
+            muted:       true,
+            playsinline: true   // crítico en iOS: evita el player nativo en fullscreen
+        },
+        style: { width: '100%', height: '100%' },
         buffer: {
-            video: { forwardduration: 30, backwardduration: 5 },
-            audio: { forwardduration: 30, backwardduration: 5 }
+            // iOS purga buffers grandes bajo presión de memoria → buffer pequeño
+            video: { forwardduration: isIOS ? 10 : 30, backwardduration: 2 },
+            audio: { forwardduration: isIOS ? 10 : 30, backwardduration: 2 }
         },
-        // Arrancar en calidad conservadora para evitar stalls iniciales
         adaptation: {
-            startupBitrate:   1500000,   // 1.5 Mbps de arranque
-            maxStartupBitrate: 3000000   // no saltar directo a calidades altas
+            startupBitrate:    isIOS ? 800000  : 1500000,
+            maxStartupBitrate: isIOS ? 2000000 : 3000000
         },
-        // Tweaks específicos para streams live con segmentos de 4s
         tweaks: {
-            max_video_download_delay: 12,
-            startup_threshold:        2.0
+            max_video_download_delay: isIOS ? 8  : 12,
+            startup_threshold:        isIOS ? 3  : 2,
+            native_hls_parsing:       isIOS       // iOS usa playback nativo HLS
         }
     });
 
+    var BASE = 'https://live-oneapp-prd-news.akamaized.net/Content/CMAF_OL2-CTR-4s-v2/Live/channel(kvea)/';
+
     var source = {
-        dash: 'https://live-oneapp-prd-news.akamaized.net/Content/CMAF_OL2-CTR-4s-v2/Live/channel(kvea)/master.mpd',
+        // En iOS Bitmovin elige HLS automáticamente; en otros usa DASH
+        dash: BASE + 'master.mpd',
+        hls:  BASE + 'master.m3u8',
         drm: {
             clearkey: [{
                 keyId: 'ce7ab3022e753307997f58afe001bac4',
