@@ -934,11 +934,6 @@ img[data-logo-base] {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: brightness(0) invert(1);
-}
-
-[data-theme="light"] .channel-avatar img {
-  filter: none;
 }
 
 .channel-title-group h2 {

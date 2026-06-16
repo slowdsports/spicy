@@ -7,6 +7,7 @@ $iframeUrl  = '';
 $fuenteData = null;
 $fuentes    = [];
 $canalViews = 0;
+$canalLogo  = '';
 
 if ($channelId > 0) {
     try {
@@ -42,15 +43,18 @@ if ($channelId > 0) {
             }
             unset($_frow);
 
-            // Incrementar vistas del canal padre
+            // Logo + vistas del canal padre
             $canalId = (int)$fuenteData['canal'];
             if ($canalId > 0) {
                 $stmtV = $conn->prepare("UPDATE canales SET views = views + 1 WHERE id = ?");
                 $stmtV->bind_param('i', $canalId);
                 $stmtV->execute();
                 $stmtV->close();
-                $rowV = $conn->query("SELECT views FROM canales WHERE id = {$canalId} LIMIT 1")->fetch_assoc();
+                $rowV = $conn->query("SELECT views, logo FROM canales WHERE id = {$canalId} LIMIT 1")->fetch_assoc();
                 $canalViews = (int)($rowV['views'] ?? 0);
+                $canalLogo  = !empty($rowV['logo'])
+                    ? $rowV['logo']
+                    : BASE_URL . "assets/img/canales/{$channelId}.png";
             }
         }
     } catch (Throwable $e) {
@@ -514,7 +518,7 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
       <div class="channel-info-bar">
         <div class="channel-info-left">
           <div class="channel-avatar">
-            <img src="" alt="Canal" id="channel-avatar-img">
+            <img src="<?= htmlspecialchars($canalLogo) ?>" alt="Canal" id="channel-avatar-img" onerror="this.style.opacity='.15'">
           </div>
           <div class="channel-title-group">
             <h2 id="channel-title">Canal</h2>
