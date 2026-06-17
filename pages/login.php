@@ -104,7 +104,7 @@ $_tvApiBase  = $BASE_FULL . 'api/tvlogin.php';
 <div class="tv-login-page">
   <div class="tv-login-card">
     <div class="tv-login-logo">Tele<span style="color:var(--accent,#8b5cf6);"> Deportes</span></div>
-    <p class="tv-login-sub">Inicia sesión con tu celular</p>
+    <p class="tv-login-sub" id="tv-login-sub">Inicia sesión con tu celular</p>
 
     <div class="tv-qr-box" id="tv-qr-box">
       <div id="tv-qr-loading" class="tv-qr-loading">
@@ -123,13 +123,45 @@ $_tvApiBase  = $BASE_FULL . 'api/tvlogin.php';
     <div id="tv-status-box" class="tv-status-box">
       <i class="fas fa-clock me-2"></i><span id="tv-status-text">Esperando autorización…</span>
     </div>
-    <p class="tv-countdown">Código expira en <span id="tv-countdown">10:00</span></p>
+    <p class="tv-countdown" id="tv-countdown-row">Código expira en <span id="tv-countdown">10:00</span></p>
 
     <?php if (isset($_GET['tv_error'])): ?>
     <p style="color:#f87171; font-size:0.82rem; margin-top:0.75rem;">
       <i class="fas fa-exclamation-circle me-1"></i>El código anterior no era válido o ya fue usado. Se generó uno nuevo.
     </p>
     <?php endif; ?>
+
+    <!-- Opción alternativa: login con contraseña -->
+    <div style="display:flex; align-items:center; gap:0.75rem; margin:1.1rem 0 0.75rem; color:var(--text-muted,#6b6b80); font-size:0.78rem;">
+      <div style="flex:1; height:1px; background:var(--border,#2a2a3a);"></div>
+      <span>o</span>
+      <div style="flex:1; height:1px; background:var(--border,#2a2a3a);"></div>
+    </div>
+
+    <button type="button" id="tv-cred-toggle" onclick="tvToggleCredentials()"
+            style="background:none; border:1px solid var(--border,#2a2a3a); color:var(--text-secondary,#a0a0b0); font-size:0.84rem; cursor:pointer; border-radius:10px; padding:0.55rem 1rem; width:100%; transition:border-color .2s, color .2s;">
+      <i class="fas fa-keyboard me-2"></i>Iniciar sesión con contraseña
+    </button>
+
+    <!-- Formulario de credenciales (oculto por defecto) -->
+    <div id="tv-cred-form" style="display:none; text-align:left; margin-top:1rem;">
+      <div class="alert-sh" id="alert-login"></div>
+      <div class="form-group">
+        <label class="form-label" for="login-email">
+          <i class="fas fa-envelope me-1"></i>Correo electrónico
+        </label>
+        <input type="email" id="login-email" class="form-control-sh" placeholder="tu@correo.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="login-password">
+          <i class="fas fa-lock me-1"></i>Contraseña
+        </label>
+        <input type="password" id="login-password" class="form-control-sh" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-auth-submit" id="btn-login-submit" onclick="submitLogin()">
+        <i class="fas fa-sign-in-alt me-2"></i>Iniciar sesión
+      </button>
+    </div>
   </div>
 </div>
 

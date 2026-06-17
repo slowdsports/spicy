@@ -209,6 +209,36 @@ function tvSetStatus(type, text) {
   box.innerHTML = `<i class="fas ${icons[type] || icons.pending} me-2"></i><span>${text}</span>`;
 }
 
+// ── Modo TV: alternar entre QR y formulario de credenciales ──────────────
+
+function tvToggleCredentials() {
+  const form       = document.getElementById('tv-cred-form');
+  const toggle     = document.getElementById('tv-cred-toggle');
+  const qrBox      = document.getElementById('tv-qr-box');
+  const steps      = document.querySelector('.tv-steps');
+  const statusBox  = document.getElementById('tv-status-box');
+  const cdRow      = document.getElementById('tv-countdown-row');
+  const sub        = document.getElementById('tv-login-sub');
+
+  const showForm = form.style.display === 'none';
+
+  form.style.display      = showForm ? 'block' : 'none';
+  if (qrBox)    qrBox.style.display    = showForm ? 'none' : '';
+  if (steps)    steps.style.display    = showForm ? 'none' : '';
+  if (statusBox) statusBox.style.display = showForm ? 'none' : '';
+  if (cdRow)    cdRow.style.display    = showForm ? 'none' : '';
+  if (sub)      sub.textContent        = showForm ? 'Inicia sesión con tu cuenta' : 'Inicia sesión con tu celular';
+
+  toggle.innerHTML = showForm
+    ? '<i class="fas fa-qrcode me-2"></i>Usar código QR'
+    : '<i class="fas fa-keyboard me-2"></i>Iniciar sesión con contraseña';
+
+  if (showForm) {
+    const emailInput = document.getElementById('login-email');
+    if (emailInput) emailInput.focus();
+  }
+}
+
 // ── Modo Móvil Auth: autorizar TV desde el celular ────────────────────────
 
 async function approveTvLogin(afterLogin = false) {
