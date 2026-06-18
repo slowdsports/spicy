@@ -112,8 +112,9 @@ $fuenteIosMap = [];
 if (file_exists($_fiosPath)) {
     foreach (json_decode(file_get_contents($_fiosPath), true) ?? [] as $_fj) {
         $fuenteIosMap[(int)$_fj['id']] = [
-            'ios'  => !empty($_fj['ios']),
-            'tipo' => (int)($_fj['tipo'] ?? 0),
+            'ios'        => !empty($_fj['ios']),
+            'tipo'       => (int)($_fj['tipo'] ?? 0),
+            'solo_spicy' => !empty($_fj['solo_spicy']),
         ];
     }
 }
@@ -600,6 +601,68 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
 
   <!-- Teatro: backdrop para cerrar el panel de chat -->
   <div class="chat-theater-backdrop" id="chat-theater-backdrop"></div>
+
+  <?php
+  $isSoloSpicy = $channelId > 0 && !empty($fuenteIosMap[$channelId]['solo_spicy']);
+  if ($isSoloSpicy):
+  ?>
+  <div style="margin-top:1rem; border-radius:14px; padding:1rem 1.25rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
+    <?php if (!isLoggedIn()): ?>
+      background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3);
+    <?php elseif (isSpicy() || isAdmin()): ?>
+      background:rgba(236,72,153,0.08); border:1px solid rgba(236,72,153,0.3);
+    <?php else: ?>
+      background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3);
+    <?php endif; ?>
+  ">
+    <?php if (!isLoggedIn()): ?>
+      <div style="width:38px; height:38px; border-radius:10px; background:rgba(245,158,11,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <i class="fas fa-lock" style="color:#f59e0b; font-size:1rem;"></i>
+      </div>
+      <div style="flex:1; min-width:160px;">
+        <div style="font-size:.9rem; font-weight:700; color:var(--text-primary); margin-bottom:2px;">
+          Canal exclusivo para usuarios Spicy
+        </div>
+        <div style="font-size:.8rem; color:var(--text-muted);">
+          Inicia sesión con tu cuenta Spicy para disfrutar de este contenido premium.
+        </div>
+      </div>
+      <a href="<?= url('login') ?>" style="flex-shrink:0; padding:.5rem 1.1rem; border-radius:8px; background:#f59e0b; color:#fff; font-size:.82rem; font-weight:700; text-decoration:none; white-space:nowrap;">
+        <i class="fas fa-sign-in-alt me-1"></i> Iniciar sesión
+      </a>
+    <?php elseif (isSpicy() || isAdmin()): ?>
+      <div style="width:38px; height:38px; border-radius:10px; background:rgba(236,72,153,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <i class="fas fa-fire" style="color:#f472b6; font-size:1rem;"></i>
+      </div>
+      <div style="flex:1; min-width:160px;">
+        <div style="font-size:.9rem; font-weight:700; color:#f472b6; margin-bottom:2px;">
+          Estás disfrutando de un canal premium Spicy
+        </div>
+        <div style="font-size:.8rem; color:var(--text-muted);">
+          Gracias por tu apoyo. Este contenido exclusivo es solo para usuarios como tú.
+        </div>
+      </div>
+      <span style="flex-shrink:0; padding:.5rem 1.1rem; border-radius:8px; background:rgba(236,72,153,0.15); color:#f472b6; font-size:.82rem; font-weight:700; border:1px solid rgba(236,72,153,0.3);">
+        <i class="fas fa-star me-1"></i> Spicy
+      </span>
+    <?php else: ?>
+      <div style="width:38px; height:38px; border-radius:10px; background:rgba(239,68,68,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+        <i class="fas fa-crown" style="color:#ef4444; font-size:1rem;"></i>
+      </div>
+      <div style="flex:1; min-width:160px;">
+        <div style="font-size:.9rem; font-weight:700; color:var(--text-primary); margin-bottom:2px;">
+          Canal premium — Solo usuarios Spicy
+        </div>
+        <div style="font-size:.8rem; color:var(--text-muted);">
+          Para acceder a este canal sin restricciones, hazte Spicy donando al proyecto.
+        </div>
+      </div>
+      <a href="<?= url('donaciones') ?>" style="flex-shrink:0; padding:.5rem 1.1rem; border-radius:8px; background:var(--accent); color:#fff; font-size:.82rem; font-weight:700; text-decoration:none; white-space:nowrap;" onmouseover="this.style.background='var(--accent-hover)'" onmouseout="this.style.background='var(--accent)'">
+        <i class="fas fa-heart me-1"></i> Hazte Spicy
+      </a>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
 
   <?php if (!isPrivileged()): ?>
   <div style="margin-top:1rem; background:var(--bg-card); border:1px solid var(--border-accent); border-radius:14px; padding:1rem 1.2rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">

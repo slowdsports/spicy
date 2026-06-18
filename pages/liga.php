@@ -35,8 +35,9 @@ $fuentesPath = __DIR__ . '/../data/fuentes.json';
 if (file_exists($fuentesPath)) {
     foreach (json_decode(file_get_contents($fuentesPath), true) ?? [] as $f) {
         $fuenteMap[(int)$f['id']] = [
-            'ios'  => !empty($f['ios']),
-            'tipo' => (int)($f['tipo'] ?? 0),
+            'ios'        => !empty($f['ios']),
+            'tipo'       => (int)($f['tipo'] ?? 0),
+            'solo_spicy' => !empty($f['solo_spicy']),
         ];
     }
 }
@@ -195,14 +196,16 @@ for($x=1;$x<=10;$x++){
     if(!empty($p[$key])){
         $cid     = (int)trim($p[$key]);
         $logo    = !empty($p[$keyLogo]) ? $p[$keyLogo] : canalLogo($cid);
-        $hasIos  = !empty($fuenteMap[$cid]['ios']);
-        $tipoFnt = (int)($fuenteMap[$cid]['tipo'] ?? 0);
+        $hasIos    = !empty($fuenteMap[$cid]['ios']);
+        $tipoFnt   = (int)($fuenteMap[$cid]['tipo'] ?? 0);
+        $soloSpicy = !empty($fuenteMap[$cid]['solo_spicy']);
         $canalesPartido[] = [
-            'id'     => $cid,
-            'nombre' => $p[$keyName] ?? "Canal {$cid}",
-            'logo'   => $logo,
-            'ios'    => $hasIos,
-            'noIos'  => (!$hasIos && $tipoFnt === 3),
+            'id'         => $cid,
+            'nombre'     => $p[$keyName] ?? "Canal {$cid}",
+            'logo'       => $logo,
+            'ios'        => $hasIos,
+            'noIos'      => (!$hasIos && $tipoFnt === 3),
+            'solo_spicy' => $soloSpicy,
         ];
     }
 }
@@ -308,6 +311,11 @@ No hay canales disponibles.
 
 <div class="channel-row-name">
 <?= htmlspecialchars($canal['nombre']) ?>
+<?php if($canal['solo_spicy']): ?>
+<span style="font-size:0.65rem; background:rgba(236,72,153,0.15); color:#f472b6; border:1px solid rgba(236,72,153,0.3); padding:2px 7px; border-radius:100px; font-weight:700; white-space:nowrap; flex-shrink:0;">
+  <i class="fas fa-fire" style="font-size:0.6rem;"></i> Solo Spicy
+</span>
+<?php endif; ?>
 </div>
 
 <?php if($canal['ios']): ?>

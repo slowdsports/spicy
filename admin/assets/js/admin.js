@@ -155,6 +155,7 @@ function abrirModalFuente(data = null) {
   tsSet('fuente-mostrar-tv', data?.mostrar_tv ?? '1');
   document.getElementById('fuente-sandbox').checked     = (data?.sandbox    ?? 1) == 1;
   document.getElementById('fuente-usar-proxy').checked  = (data?.usar_proxy ?? 0) == 1;
+  document.getElementById('fuente-solo-spicy').checked  = (data?.solo_spicy ?? 0) == 1;
 
   const repEl = document.getElementById('fuente-reproductor');
   if (repEl) repEl.value = data?.reproductor ?? 'bitmovin';
@@ -184,6 +185,7 @@ function guardarFuente() {
     mostrar_tv:  document.getElementById('fuente-mostrar-tv').value,
     sandbox:     document.getElementById('fuente-sandbox').checked     ? 1 : 0,
     usar_proxy:  document.getElementById('fuente-usar-proxy').checked  ? 1 : 0,
+    solo_spicy:  document.getElementById('fuente-solo-spicy').checked  ? 1 : 0,
     reproductor: document.getElementById('fuente-reproductor')?.value || 'bitmovin',
   };
 

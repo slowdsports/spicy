@@ -173,17 +173,18 @@ try {
         $sandbox     = (int)($d['sandbox']     ?? 1);
         $mostrar_tv  = (int)($d['mostrar_tv']  ?? 1);
         $usar_proxy  = (int)($d['usar_proxy']  ?? 0);
+        $solo_spicy  = (int)($d['solo_spicy']  ?? 0);
         $allowed     = ['bitmovin', 'clappr', 'jwplayer'];
         $reproductor = in_array($d['reproductor'] ?? '', $allowed) ? $d['reproductor'] : 'bitmovin';
 
         if (!$nombre || !$canal || !$url || !$tipo) { resp(false, 'Nombre, canal, URL y tipo son obligatorios'); }
 
         if ($id) {
-            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, url_ios=?, tipo_ios=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=?, sandbox=?, mostrar_tv=?, reproductor=?, usar_proxy=? WHERE id=?");
-            $stmt->bind_param('sissssssissiisii', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor, $usar_proxy, $id);
+            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, url_ios=?, tipo_ios=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=?, sandbox=?, mostrar_tv=?, reproductor=?, usar_proxy=?, solo_spicy=? WHERE id=?");
+            $stmt->bind_param('sissssssissiisiii', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor, $usar_proxy, $solo_spicy, $id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, url_ios, tipo_ios, ck_key, ck_keyid, pais, tipo, epg, activo, sandbox, mostrar_tv, reproductor, usar_proxy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param('sissssssissiisi', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor, $usar_proxy);
+            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, url_ios, tipo_ios, ck_key, ck_keyid, pais, tipo, epg, activo, sandbox, mostrar_tv, reproductor, usar_proxy, solo_spicy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->bind_param('sissssssissiisii', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor, $usar_proxy, $solo_spicy);
         }
 
         $ok = $stmt->execute();

@@ -57,7 +57,7 @@ try {
         // ── FUENTES → fuentes.json ─────────────────────────────
         case 'fuentes':
             $fuentes = $conn->query("
-                SELECT id, nombre, canal, tipo, epg, activo, sandbox, mostrar_tv,
+                SELECT id, nombre, canal, tipo, epg, activo, sandbox, mostrar_tv, solo_spicy,
                        (url_ios IS NOT NULL AND url_ios <> '') AS ios
                 FROM fuentes ORDER BY nombre ASC
             ")->fetch_all(MYSQLI_ASSOC);
@@ -72,6 +72,7 @@ try {
                 'sandbox'    => (int)($f['sandbox'] ?? 1),
                 'mostrar_tv' => (int)($f['mostrar_tv'] ?? 1),
                 'ios'        => (bool)$f['ios'],
+                'solo_spicy' => (bool)($f['solo_spicy'] ?? false),
             ], $fuentes);
 
             file_put_contents(
