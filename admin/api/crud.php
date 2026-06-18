@@ -114,6 +114,7 @@ try {
             'liga'       => 'ligas',
             'partido'    => 'partidos',
             'destacado'  => 'partidos_destacados',
+            'proxy'      => 'proxies',
             default      => null,
         };
 
@@ -171,17 +172,18 @@ try {
         $activo      = (int)($d['activo']      ?? 1);
         $sandbox     = (int)($d['sandbox']     ?? 1);
         $mostrar_tv  = (int)($d['mostrar_tv']  ?? 1);
+        $usar_proxy  = (int)($d['usar_proxy']  ?? 0);
         $allowed     = ['bitmovin', 'clappr', 'jwplayer'];
         $reproductor = in_array($d['reproductor'] ?? '', $allowed) ? $d['reproductor'] : 'bitmovin';
 
         if (!$nombre || !$canal || !$url || !$tipo) { resp(false, 'Nombre, canal, URL y tipo son obligatorios'); }
 
         if ($id) {
-            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, url_ios=?, tipo_ios=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=?, sandbox=?, mostrar_tv=?, reproductor=? WHERE id=?");
-            $stmt->bind_param('sissssssissiisi', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor, $id);
+            $stmt = $conn->prepare("UPDATE fuentes SET nombre=?, canal=?, url=?, url_ios=?, tipo_ios=?, ck_key=?, ck_keyid=?, pais=?, tipo=?, epg=?, activo=?, sandbox=?, mostrar_tv=?, reproductor=?, usar_proxy=? WHERE id=?");
+            $stmt->bind_param('sissssssissiisii', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor, $usar_proxy, $id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, url_ios, tipo_ios, ck_key, ck_keyid, pais, tipo, epg, activo, sandbox, mostrar_tv, reproductor) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->bind_param('sissssssissiis', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor);
+            $stmt = $conn->prepare("INSERT INTO fuentes (nombre, canal, url, url_ios, tipo_ios, ck_key, ck_keyid, pais, tipo, epg, activo, sandbox, mostrar_tv, reproductor, usar_proxy) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->bind_param('sissssssissiisi', $nombre, $canal, $url, $urlIos, $tipoIos, $ckKey, $ckKeyId, $pais, $tipo, $epg, $activo, $sandbox, $mostrar_tv, $reproductor, $usar_proxy);
         }
 
         $ok = $stmt->execute();
@@ -271,6 +273,44 @@ try {
         $ok = $stmt->execute();
         $stmt->close();
         resp($ok, $ok ? 'Partido actualizado' : 'Error al actualizar');
+    }
+
+    // ── GUARDAR PROXY (crear o editar) ───────────────────────────
+    if ($action === 'save' && $entity === 'proxy') {
+        $d      = $input['data'] ?? [];
+        $id     = (int)($d['id']     ?? 0);
+        $nombre = trim($d['nombre']  ?? '');
+        $url    = trim($d['url']     ?? '');
+        $activo = (int)($d['activo'] ?? 1);
+
+        if (!$url) { resp(false, 'La URL del proxy es obligatoria'); }
+
+        // Normalizar: asegurar barra final
+        $url = rtrim($url, '/') . '/';
+
+        if ($id) {
+            $stmt = $conn->prepare("UPDATE proxies SET nombre=?, url=?, activo=? WHERE id=?");
+            $stmt->bind_param('ssii', $nombre, $url, $activo, $id);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO proxies (nombre, url, activo) VALUES (?,?,?)");
+            $stmt->bind_param('ssi', $nombre, $url, $activo);
+        }
+
+        $ok = $stmt->execute();
+        $stmt->close();
+        resp($ok, $ok ? 'Proxy guardado' : 'Error al guardar (¿URL duplicada?)');
+    }
+
+    // ── TOGGLE ACTIVO PROXY ───────────────────────────────────────
+    if ($action === 'toggle' && $entity === 'proxy') {
+        $id = (int)($input['id'] ?? 0);
+        if (!$id) { resp(false, 'ID inválido'); }
+
+        $stmt = $conn->prepare("UPDATE proxies SET activo = IF(activo=1,0,1) WHERE id=?");
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        resp($ok, $ok ? 'Estado actualizado' : 'Error al actualizar');
     }
 
     resp(false, 'Acción o entidad no reconocida');

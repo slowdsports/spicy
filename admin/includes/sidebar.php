@@ -11,6 +11,7 @@ $menu = [
     'ligas'    => ['icon' => 'fa-trophy',       'label' => 'Ligas'],
     'partidos'    => ['icon' => 'fa-futbol',       'label' => 'Partidos'],
     'destacados'  => ['icon' => 'fa-star',         'label' => 'Destacados'],
+    'proxies'     => ['icon' => 'fa-shield-alt',   'label' => 'Proxies'],
     'config'      => ['icon' => 'fa-gear',         'label' => 'Configuración'],
     'chat'        => ['icon' => 'fa-comments',     'label' => 'Chat'],
     'reportes'    => ['icon' => 'fa-flag',         'label' => 'Reportes'],

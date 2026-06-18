@@ -53,7 +53,7 @@ if ($fuenteId > 0) {
     try {
         $conn = getDBConnection();
         $stmt = $conn->prepare("
-            SELECT f.id, f.nombre, f.url, f.url_ios, f.tipo_ios, f.tipo, f.ck_key, f.ck_keyid, f.sandbox, f.reproductor,
+            SELECT f.id, f.nombre, f.url, f.url_ios, f.tipo_ios, f.tipo, f.ck_key, f.ck_keyid, f.sandbox, f.reproductor, f.usar_proxy,
                    t.nombre as tipo_nombre
             FROM fuentes f
             LEFT JOIN tipos_fuente t ON f.tipo = t.id
@@ -71,6 +71,24 @@ if ($fuenteId > 0) {
 if (!$fuenteData) {
     http_response_code(404);
     exit();
+}
+
+// ── Proxy geo-protección: solo para usuarios Spicy / Admin ────────────────
+if (!empty($fuenteData['usar_proxy']) && (isSpicy() || isAdmin())) {
+    try {
+        $proxyRows = getDBConnection()
+            ->query("SELECT url FROM proxies WHERE activo = 1")
+            ->fetch_all(MYSQLI_ASSOC);
+
+        if (!empty($proxyRows)) {
+            $proxyBase = $proxyRows[array_rand($proxyRows)]['url'];
+            $fuenteData['url'] = $proxyBase . $fuenteData['url'];
+            // Aplicar también a la URL iOS si es HLS (no iframe)
+            if (!empty($fuenteData['url_ios']) && ($fuenteData['tipo_ios'] ?? 'hls') !== 'iframe') {
+                $fuenteData['url_ios'] = $proxyBase . $fuenteData['url_ios'];
+            }
+        }
+    } catch (Throwable $e) { /* proxy best-effort; continuar sin él */ }
 }
 
 // ── Incluir reproductor específico con salida ofuscada ───────────────────────

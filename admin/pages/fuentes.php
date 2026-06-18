@@ -13,6 +13,7 @@ $_migcols = [
     'reproductor' => "ALTER TABLE fuentes ADD COLUMN reproductor VARCHAR(20) NOT NULL DEFAULT 'bitmovin'",
     'url_ios'     => "ALTER TABLE fuentes ADD COLUMN url_ios     VARCHAR(2000) DEFAULT NULL",
     'tipo_ios'    => "ALTER TABLE fuentes ADD COLUMN tipo_ios    VARCHAR(20) NOT NULL DEFAULT 'hls'",
+    'usar_proxy'  => "ALTER TABLE fuentes ADD COLUMN usar_proxy  TINYINT(1)  NOT NULL DEFAULT 0",
 ];
 foreach ($_migcols as $_col => $_sql) {
     $_r = $_conn_mig->query("SHOW COLUMNS FROM fuentes LIKE '{$_col}'");
@@ -34,7 +35,7 @@ try {
 try {
     $conn    = getDBConnection();
     $fuentes = $conn->query("
-        SELECT f.id, f.nombre, f.url, f.url_ios, f.tipo_ios, f.ck_key, f.ck_keyid, f.epg, f.activo, f.sandbox, f.mostrar_tv, f.reproductor,
+        SELECT f.id, f.nombre, f.url, f.url_ios, f.tipo_ios, f.ck_key, f.ck_keyid, f.epg, f.activo, f.sandbox, f.mostrar_tv, f.reproductor, f.usar_proxy,
                c.nombre  AS canal_nombre,  f.canal  AS canal_id,
                p.paisNombre AS pais_nombre, f.pais  AS pais_id,
                t.nombre  AS tipo_nombre,   f.tipo   AS tipo_id
@@ -104,7 +105,7 @@ try {
             <?php endif; ?>
           </td>
           <td style="font-size:0.78rem; color:var(--text-muted);"><?= htmlspecialchars($f['pais_nombre'] ?? '—') ?></td>
-          <!-- Indicador DRM / iOS -->
+          <!-- Indicadores: DRM / iOS / Proxy -->
           <td>
             <?php if ($f['ck_key']): ?>
               <span style="font-size:0.68rem; background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.3); padding:1px 6px; border-radius:4px; font-weight:700;">
@@ -116,7 +117,12 @@ try {
                 <i class="fab fa-apple me-1"></i>iOS
               </span>
             <?php endif; ?>
-            <?php if (!$f['ck_key'] && empty($f['url_ios'])): ?>
+            <?php if (!empty($f['usar_proxy'])): ?>
+              <span style="font-size:0.68rem; background:rgba(139,92,246,0.12); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); padding:1px 6px; border-radius:4px; font-weight:700; margin-left:2px;">
+                <i class="fas fa-shield-alt me-1"></i>PROXY
+              </span>
+            <?php endif; ?>
+            <?php if (!$f['ck_key'] && empty($f['url_ios']) && empty($f['usar_proxy'])): ?>
               <span style="color:var(--text-muted); font-size:0.75rem;">—</span>
             <?php endif; ?>
           </td>
@@ -321,6 +327,25 @@ try {
               </label>
             </div>
           </div>
+
+          <!-- Proxy geo-protección -->
+          <div class="col-12">
+            <div style="background:rgba(139,92,246,0.06); border:1px solid rgba(139,92,246,0.2); border-radius:10px; padding:1rem;">
+              <p style="font-size:0.78rem; font-weight:700; color:#a78bfa; margin:0 0 0.6rem;">
+                <i class="fas fa-shield-alt me-1"></i> Geo-protección via proxy
+              </p>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" id="fuente-usar-proxy" style="width:16px; height:16px; accent-color:#8b5cf6; cursor:pointer;">
+                <label for="fuente-usar-proxy" style="margin:0; cursor:pointer; font-size:0.85rem; color:var(--text-primary);">
+                  Enrutar por proxy aleatorio (solo usuarios Spicy / Admin)
+                </label>
+              </div>
+              <p style="font-size:0.72rem; color:var(--text-muted); margin:0.5rem 0 0; line-height:1.5;">
+                Si está activo, la URL se enruta a través de un proxy de los configurados en la sección <strong style="color:var(--text-secondary);">Proxies</strong>. Para el resto de usuarios la URL se sirve sin proxy.
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
 
