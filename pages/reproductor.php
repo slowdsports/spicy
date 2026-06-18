@@ -73,19 +73,23 @@ if (!$fuenteData) {
     exit();
 }
 
-// ── Token de sesión para api/stream.php ──────────────────────────────────────
-// Vincula sesión + fuente + ventana de 20 min. Los reproductores hacen fetch()
-// con este token; NUNCA reciben URL ni DRM keys en el HTML fuente.
-$streamFuenteId = (int)$fuenteData['id'];
-$streamTs       = time();
-$streamToken    = hash_hmac('sha256', $streamFuenteId . '|' . $streamTs . '|' . session_id(), APP_SECRET);
+// ── Proxy geo-protección: solo para usuarios Spicy / Admin ────────────────
+if (!empty($fuenteData['usar_proxy']) && (isSpicy() || isAdmin())) {
+    try {
+        $proxyRows = getDBConnection()
+            ->query("SELECT url FROM proxies WHERE activo = 1")
+            ->fetch_all(MYSQLI_ASSOC);
 
-// Limpiar datos sensibles: hijos no los deben emitir directamente en JS
-$fuenteData['url']      = '';
-$fuenteData['url_ios']  = '';
-$fuenteData['ck_key']   = '';
-$fuenteData['ck_keyid'] = '';
-// El proxy se aplica dentro de api/stream.php en cada request del player.
+        if (!empty($proxyRows)) {
+            $proxyBase = $proxyRows[array_rand($proxyRows)]['url'];
+            $fuenteData['url'] = $proxyBase . $fuenteData['url'];
+            // Aplicar también a la URL iOS si es HLS (no iframe)
+            if (!empty($fuenteData['url_ios']) && ($fuenteData['tipo_ios'] ?? 'hls') !== 'iframe') {
+                $fuenteData['url_ios'] = $proxyBase . $fuenteData['url_ios'];
+            }
+        }
+    } catch (Throwable $e) { /* proxy best-effort; continuar sin él */ }
+}
 
 // ── Incluir reproductor específico con salida ofuscada ───────────────────────
 $tipoId           = (int)$fuenteData['tipo'];
@@ -101,15 +105,11 @@ $ua    = strtolower($_SERVER['HTTP_USER_AGENT'] ?? '');
 $isIOS = (bool)preg_match('/iphone|ipad|ipod/', $ua);
 
 if ($isIOS) {
-    // Verificar si tiene URL iOS consultando la BD (url_ios se limpió por seguridad)
-    try {
-        $iosCheck = getDBConnection()->query(
-            "SELECT 1 FROM fuentes WHERE id = {$streamFuenteId} AND url_ios IS NOT NULL AND url_ios <> '' LIMIT 1"
-        );
-        if ($iosCheck && $iosCheck->num_rows > 0) {
-            $reproducotorFile = __DIR__ . '/reproductor-ios.php';
-        }
-    } catch (Throwable $e) { /* continuar con reproductor normal */ }
+    if (!empty($fuenteData['url_ios'])) {
+        // Tiene alternativa → reproducir con Clappr inline
+        $reproducotorFile = __DIR__ . '/reproductor-ios.php';
+    }
+    // Sin alternativa iOS → reproducir con el player normal (sin distinción de dispositivo)
 }
 
 ob_start('_encodeOutput');

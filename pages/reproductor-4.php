@@ -10,11 +10,9 @@ if (!isset($fuenteData)) {
     die('Acceso denegado');
 }
 
-$nombre  = htmlspecialchars($fuenteData['nombre']);
-$jsBase  = json_encode(BASE_URL);
-$jsFid   = (int)$streamFuenteId;
-$jsTok   = json_encode($streamToken);
-$jsTs    = (int)$streamTs;
+$url = htmlspecialchars($fuenteData['url']);
+$nombre = htmlspecialchars($fuenteData['nombre']);
+$key = $fuenteData['ck_key'];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -124,41 +122,63 @@ $jsTs    = (int)$streamTs;
             });
         })();
 
+        // ============================================================
+        // CONFIGURACIÓN DE REPRODUCCIÓN M3U8
+        // ============================================================
+        const PLAYER_CONFIG = {
+            id: <?= (int)$fuenteData['id'] ?>,
+            nombre: '<?= $nombre ?>',
+            url: '<?= $url ?>',
+            tipo: 1,
+            // OPCIONES PARA AGREGAR REPRODUCTORES:
+            // - useJWPlayer: true  -> Usa JW Player
+            // - useClappr: true    -> Usa Clappr
+            // - useHLS.js: true    -> Usa HLS.js (para navegadores sin soporte nativo)
+        };
+
+        /**
+         * REPRODUCTOR 2: Clappr
+         * Reproductor de código abierto basado en Flash/HTML5
+         * Configuración: https://github.com/clappr/clappr/blob/master/docs/README.md
+         */
         var statusEl = document.getElementById('status');
         function showPlayer() { statusEl.style.display = 'none'; }
-        function showError(msg) {
-            statusEl.innerHTML = '<div class="s-title" style="color:#ef4444;font-size:.95em;">⚠ ' + (msg || 'Error al cargar') + '</div>';
+
+        function initClappr(config) {
+            window.player = new Clappr.Player({
+                source: config.url,
+                parentId: '#player',
+                width: '100%',
+                height: '100%',
+                autoplay: true,
+                mute: false,
+                shakaConfiguration: {
+                    preferredAudioLanguage: "es-MX",
+                    drm: {
+                        clearKeys: {<?= $key ?>},
+                    },
+                },
+                
+                // Plugins disponibles
+                plugins: [LevelSelector, ClapprPip.PipButton, ClapprPip.PipPlugin, DashShakaPlayback, ChromecastPlugin, ClapprPip.PipButton, ClapprPip.PipPlugin],
+                events: {
+                    onReady: function () {
+                        showPlayer();
+                        var plugin = this.getPlugin("click_to_pause");
+                        plugin && plugin.disable();
+                    },
+                },
+                
+                // AGREGAR OPCIONES AQUÍ:
+                // watermark: 'url',
+                // watermarkLink: 'url',
+                // hideMediaControlDelay: 3000,
+            });
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            fetch(<?= $jsBase ?> + 'api/stream.php?id=<?= $jsFid ?>&t=' + encodeURIComponent(<?= $jsTok ?>) + '&ts=<?= $jsTs ?>')
-                .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-                .then(function (d) {
-                    if (!d.url) { showError('Stream no disponible'); return; }
-                    var cfg = {
-                        source: d.url,
-                        parentId: '#player',
-                        width: '100%', height: '100%',
-                        autoplay: true, mute: false,
-                        plugins: [LevelSelector, ClapprPip.PipButton, ClapprPip.PipPlugin, DashShakaPlayback, ChromecastPlugin],
-                        events: {
-                            onReady: function () {
-                                showPlayer();
-                                var p = this.getPlugin('click_to_pause');
-                                if (p) p.disable();
-                            }
-                        }
-                    };
-                    if (d.keyId && d.key) {
-                        var ck = {}; ck[d.keyId] = d.key;
-                        cfg.shakaConfiguration = {
-                            preferredAudioLanguage: 'es-MX',
-                            drm: { clearKeys: ck }
-                        };
-                    }
-                    window.player = new Clappr.Player(cfg);
-                })
-                .catch(function () { showError('Error de conexión'); });
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            initClappr(PLAYER_CONFIG);
         });
     </script>
 </body>

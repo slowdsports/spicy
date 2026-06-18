@@ -15,11 +15,8 @@ if (!isset($fuenteData)) {
     die('Acceso denegado');
 }
 
-$nombre  = htmlspecialchars($fuenteData['nombre']);
-$jsBase  = json_encode(BASE_URL);
-$jsFid   = (int)$streamFuenteId;
-$jsTok   = json_encode($streamToken);
-$jsTs    = (int)$streamTs;
+$url = htmlspecialchars($fuenteData['url']);
+$nombre = htmlspecialchars($fuenteData['nombre']);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -127,28 +124,104 @@ $jsTs    = (int)$streamTs;
             });
         })();
 
+        // ============================================================
+        // CONFIGURACIÓN DE REPRODUCCIÓN M3U8
+        // ============================================================
+        const PLAYER_CONFIG = {
+            id: <?= (int)$fuenteData['id'] ?>,
+            nombre: '<?= $nombre ?>',
+            url: '<?= $url ?>',
+            tipo: 1,
+            // OPCIONES PARA AGREGAR REPRODUCTORES:
+            // - useJWPlayer: true  -> Usa JW Player
+            // - useClappr: true    -> Usa Clappr
+            // - useHLS.js: true    -> Usa HLS.js (para navegadores sin soporte nativo)
+        };
+
         var statusEl = document.getElementById('status');
         function showPlayer() { statusEl.style.display = 'none'; }
-        function showError(msg) {
-            statusEl.innerHTML = '<div class="s-title" style="color:#ef4444;font-size:.95em;">⚠ ' + (msg || 'Error al cargar') + '</div>';
+
+        // ============================================================
+        // INICIALIZAR REPRODUCTOR (JW Player por defecto)
+        // ============================================================
+        function initializePlayer() {
+            initJWPlayer(PLAYER_CONFIG);
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            fetch(<?= $jsBase ?> + 'api/stream.php?id=<?= $jsFid ?>&t=' + encodeURIComponent(<?= $jsTok ?>) + '&ts=<?= $jsTs ?>')
-                .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-                .then(function (d) {
-                    if (!d.url) { showError('Stream no disponible'); return; }
-                    var container = document.getElementById('player-container');
-                    jwplayer(container).setup({
-                        file: d.url, type: 'hls',
-                        autostart: true, controls: true,
-                        width: '100%', height: '100%',
-                        playback: { autostart: true, muted: true, dvrSeekLimit: 0 },
-                        hlsVariantSelection: 'auto'
-                    }).on('ready', showPlayer);
-                })
-                .catch(function () { showError('Error de conexión'); });
-        });
+        /**
+         * REPRODUCTOR 1: JW Player
+         * Recomendado para la mayoría de casos
+         * Soporta: M3U8, DASH, VP9, MP4
+         * Configuración completa en: https://docs.jwplayer.com/players/reference/setup-options
+         */
+        function initJWPlayer(config) {
+            const playerContainer = document.getElementById('player-container');
+            
+            jwplayer(playerContainer).setup({
+                // Archivo multimedia
+                file: config.url,
+                type: 'hls',
+                
+                // Comportamiento
+                autostart: true,
+                controls: true,
+                width: '100%',
+                height: '100%',
+                
+                // Reproducción
+                playback: {
+                    autostart: true,
+                    muted: true,
+                    dvrSeekLimit: 0  // Permitir DVR completo
+                },
+                
+                // Interfaz
+                ui: {
+                    controlbar: {
+                        settings: true
+                    }
+                },
+                
+                // Calidad adaptativa (HLS nativo)
+                hlsVariantSelection: 'auto',  // O 'manual' para selector
+                
+                // AGREGAR OPCIONES AQUÍ:
+                // captions: [{...}],  -> Para subtítulos
+                // poster: 'url',      -> Para poster/thumbnail
+                // logo: {file: '', link: ''}, -> Para logo watermark
+                // analytics: {...}   -> Para tracking
+            }).on('ready', showPlayer);
+        }
+
+        /**
+         * REPRODUCTOR 2: Clappr (Alternativa)
+         * Reproductor de código abierto basado en Flash/HTML5
+         * Configuración: https://github.com/clappr/clappr/blob/master/docs/README.md
+         */
+        function initClappr(config) {
+            window.player = new Clappr.Player({
+                source: config.url,
+                parentId: '#player-container',
+                width: '100%',
+                height: '100%',
+                autoplay: true,
+                mute: true,
+                
+                // Plugins disponibles
+                plugins: [
+                    // Clappr.MediaControlPlugin,
+                    // Clappr.PosterPlugin,
+                ],
+                
+                // AGREGAR OPCIONES AQUÍ:
+                // watermark: 'url',
+                // watermarkLink: 'url',
+                // hideMediaControlDelay: 3000,
+            });
+        }
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', initializePlayer);
     </script>
 </body>
 </html>
