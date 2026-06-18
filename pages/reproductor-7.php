@@ -10,9 +10,12 @@ if (!isset($fuenteData)) {
     die('Acceso denegado');
 }
 
-$nombre    = htmlspecialchars($fuenteData['nombre']);
-$jsChannel = json_encode($fuenteData['url'] ?? '');
-$jsNombre  = json_encode($nombre);
+$nombre   = htmlspecialchars($fuenteData['nombre']);
+$jsNombre = json_encode($nombre);
+$jsBase   = json_encode(BASE_URL);
+$jsFid    = (int)$streamFuenteId;
+$jsTok    = json_encode($streamToken);
+$jsTs     = (int)$streamTs;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -129,8 +132,11 @@ $jsNombre  = json_encode($nombre);
     <script src="//cdn.jsdelivr.net/npm/clappr-chromecast-plugin@latest/dist/clappr-chromecast-plugin.min.js"></script>
 
     <script>
-        var CHANNEL = <?= $jsChannel ?>;
         var NOMBRE  = <?= $jsNombre ?>;
+        var _BASE   = <?= $jsBase ?>;
+        var _FID    = <?= $jsFid ?>;
+        var _TOK    = <?= $jsTok ?>;
+        var _TS     = <?= $jsTs ?>;
         var EXT_ID  = 'opmeopcambhfimffbomjgemehjkbbmji';
         var EXT_STORE = 'https://chromewebstore.google.com/detail/videoplayer-mpdm3u8iptvep/' + EXT_ID;
 
@@ -258,6 +264,30 @@ $jsNombre  = json_encode($nombre);
         document.addEventListener('DOMContentLoaded', function() {
             loading('Cargando canal...');
 
+            // Primero obtener el identificador de canal desde el endpoint seguro
+            fetch(_BASE + 'api/stream.php?id=' + _FID + '&t=' + encodeURIComponent(_TOK) + '&ts=' + _TS)
+                .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(function(sd) {
+                    if (!sd.url) {
+                        setStatus(function(el) {
+                            var icon = document.createElement('div'); icon.className = 's-icon'; icon.textContent = '⚠️';
+                            var title = document.createElement('div'); title.className = 's-title'; title.textContent = 'Canal no disponible';
+                            el.appendChild(icon); el.appendChild(title);
+                        });
+                        return;
+                    }
+                    startWBC(sd.url);
+                })
+                .catch(function() {
+                    setStatus(function(el) {
+                        var icon = document.createElement('div'); icon.className = 's-icon'; icon.textContent = '⚠️';
+                        var title = document.createElement('div'); title.className = 's-title'; title.textContent = 'Error de conexión';
+                        el.appendChild(icon); el.appendChild(title);
+                    });
+                });
+        });
+
+        function startWBC(CHANNEL) {
             fetch('wbc.php?ch=' + encodeURIComponent(CHANNEL))
                 .then(function(r) {
                     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -319,7 +349,7 @@ $jsNombre  = json_encode($nombre);
                     });
                     console.error(err);
                 });
-        });
+        }
 
         // ── DevTools detection (pasivo) ───────────────────────────────────────────
         (function() {

@@ -15,9 +15,12 @@ if (!isset($fuenteData)) {
     die('Acceso denegado');
 }
 
-$url     = htmlspecialchars($fuenteData['url']);
 $nombre  = htmlspecialchars($fuenteData['nombre']);
 $sandbox = (int)($fuenteData['sandbox'] ?? 1);
+$jsBase  = json_encode(BASE_URL);
+$jsFid   = (int)$streamFuenteId;
+$jsTok   = json_encode($streamToken);
+$jsTs    = (int)$streamTs;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -124,42 +127,32 @@ $sandbox = (int)($fuenteData['sandbox'] ?? 1);
             });
         })();
 
-        // ============================================================
-        // CONFIGURACIÓN DE IFRAME DIRECTO
-        // ============================================================
-        const PLAYER_CONFIG = {
-            id: <?= (int)$fuenteData['id'] ?>,
-            nombre: '<?= $nombre ?>',
-            url: '<?= $url ?>',
-            tipo: 5,
-            sandbox: <?= $sandbox ?>
-        };
-
-        // ============================================================
-        // INICIALIZAR REPRODUCTOR IFRAME
-        // ============================================================
         var statusEl = document.getElementById('status');
         function showPlayer() { statusEl.style.display = 'none'; }
-
-        function initializePlayer() {
-            const container = document.getElementById('player-container');
-
-            const iframe = document.createElement('iframe');
-            iframe.src = PLAYER_CONFIG.url;
-            iframe.allowFullscreen = true;
-            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-            if (PLAYER_CONFIG.sandbox) {
-                iframe.sandbox.add('allow-same-origin');
-                iframe.sandbox.add('allow-scripts');
-            }
-            iframe.onload = showPlayer;
-
-            container.innerHTML = '';
-            container.appendChild(iframe);
+        function showError(msg) {
+            statusEl.innerHTML = '<div class="s-title" style="color:#ef4444;font-size:.95em;">⚠ ' + (msg || 'Error al cargar') + '</div>';
         }
 
-        // Inicializar cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', initializePlayer);
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch(<?= $jsBase ?> + 'api/stream.php?id=<?= $jsFid ?>&t=' + encodeURIComponent(<?= $jsTok ?>) + '&ts=<?= $jsTs ?>')
+                .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(function (d) {
+                    if (!d.url) { showError('Stream no disponible'); return; }
+                    var container = document.getElementById('player-container');
+                    var iframe = document.createElement('iframe');
+                    iframe.src = d.url;
+                    iframe.allowFullscreen = true;
+                    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                    if (<?= $sandbox ?>) {
+                        iframe.sandbox.add('allow-same-origin');
+                        iframe.sandbox.add('allow-scripts');
+                    }
+                    iframe.onload = showPlayer;
+                    container.innerHTML = '';
+                    container.appendChild(iframe);
+                })
+                .catch(function () { showError('Error de conexión'); });
+        });
     </script>
 </body>
 </html>

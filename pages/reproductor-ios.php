@@ -12,10 +12,12 @@ if (!isset($fuenteData)) {
 }
 
 $nombre   = htmlspecialchars($fuenteData['nombre']);
-$urlIos   = $fuenteData['url_ios'] ?? '';
 $tipoIos  = $fuenteData['tipo_ios'] ?? 'hls';
-$jsURL    = json_encode($urlIos);
 $jsNombre = json_encode($nombre);
+$jsBase   = json_encode(BASE_URL);
+$jsFid    = (int)$streamFuenteId;
+$jsTok    = json_encode($streamToken);
+$jsTs     = (int)$streamTs;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -99,7 +101,6 @@ $jsNombre = json_encode($nombre);
     </div>
 
     <script>
-        var URL_IOS  = <?= $jsURL ?>;
         var TIPO_IOS = <?= json_encode($tipoIos) ?>;
 
         var statusEl = document.getElementById('status');
@@ -114,12 +115,17 @@ $jsNombre = json_encode($nombre);
             statusEl.innerHTML =
                 '<div style="font-size:2.5rem;">⚠️</div>' +
                 '<div class="s-title">Error al cargar</div>' +
-                '<div class="s-subtitle">' + msg + '</div>';
+                '<div class="s-subtitle">' + (msg || '') + '</div>';
             statusEl.style.display = 'flex';
             playerEl.style.display = 'none';
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            fetch(<?= $jsBase ?> + 'api/stream.php?id=<?= $jsFid ?>&t=' + encodeURIComponent(<?= $jsTok ?>) + '&ts=<?= $jsTs ?>')
+                .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(function (d) {
+                    var URL_IOS = d.url_ios || d.url;
+                    if (!URL_IOS) { showError('Stream iOS no disponible'); return; }
 
             if (TIPO_IOS === 'iframe') {
                 // ── iFrame ─────────────────────────────────────────────────
@@ -159,6 +165,8 @@ $jsNombre = json_encode($nombre);
                     }
                 });
             }
+                }) // .then(d)
+                .catch(function () { showError('Error de conexión'); });
         });
 
         document.addEventListener('contextmenu', function (e) { e.preventDefault(); });

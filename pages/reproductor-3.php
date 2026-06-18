@@ -21,10 +21,11 @@ if (!isset($fuenteData)) {
 }
 
 $nombre      = htmlspecialchars($fuenteData['nombre']);
-$jsURL       = json_encode($fuenteData['url']);
-$jsKEYID     = json_encode($fuenteData['ck_keyid'] ?? '');
-$jsKEY       = json_encode($fuenteData['ck_key']   ?? '');
-$jsTIPO      = (int) $fuenteData['tipo'];
+$jsTIPO      = (int)$fuenteData['tipo'];
+$jsBase      = json_encode(BASE_URL);
+$jsFid       = (int)$streamFuenteId;
+$jsTok       = json_encode($streamToken);
+$jsTs        = (int)$streamTs;
 
 $allowed     = ['bitmovin', 'clappr', 'jwplayer'];
 $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
@@ -122,11 +123,6 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
 </div>
 
 <script>
-// ── Variables desde PHP ─────────────────────────────────────────
-var url        = <?= $jsURL ?>;
-var ck_keyid   = <?= $jsKEYID ?>;
-var ck_key     = <?= $jsKEY ?>;
-
 // ── Protección básica ───────────────────────────────────────────
 (function () {
     document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -140,13 +136,11 @@ var ck_key     = <?= $jsKEY ?>;
 
 var statusEl = document.getElementById('status');
 function showPlayer() { statusEl.style.display = 'none'; }
+function showError(msg) {
+    statusEl.innerHTML = '<div class="s-title" style="color:#ef4444;font-size:.95em;">⚠ ' + (msg || 'Error al cargar el canal') + '</div>';
+}
 
 <?php if ($reproductor === 'bitmovin'): ?>
-// ════════════════════════════════════════════════════════════════
-// BITMOVIN
-// ════════════════════════════════════════════════════════════════
-
-// Interceptar peticiones de licencia para omitir validación
 (function () {
     var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
     function override(u) {
@@ -157,101 +151,62 @@ function showPlayer() { statusEl.style.display = 'none'; }
         return u;
     }
     var _open = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function () {
-        arguments[1] = override(arguments[1]);
-        return _open.apply(this, arguments);
-    };
+    XMLHttpRequest.prototype.open = function () { arguments[1] = override(arguments[1]); return _open.apply(this, arguments); };
 })();
+<?php endif; ?>
 
 document.addEventListener('DOMContentLoaded', function () {
-    var player = new bitmovin.player.Player(document.getElementById('player'), {
-        key:      '11d3698c-efdf-42f1-8769-54663995de2b',
-        analytics: false,
-        cast:     { enable: true },
-        playback: { autoplay: true, muted: true },
-        style:    { width: '100%', height: '100%' }
-    });
+    fetch(<?= $jsBase ?> + 'api/stream.php?id=<?= $jsFid ?>&t=' + encodeURIComponent(<?= $jsTok ?>) + '&ts=<?= $jsTs ?>')
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (d) {
+            if (!d.url) { showError('Stream no disponible'); return; }
 
-    var source = { dash: url };
-    // Añadir ClearKey DRM solo si vienen los campos
-    if (ck_keyid && ck_key) {
-        source.drm = { clearkey: [{ keyId: ck_keyid, key: ck_key }] };
-    }
-
-    player.load(source).then(showPlayer).catch(function (err) {
-        console.error('Bitmovin error:', err);
-    });
-});
+<?php if ($reproductor === 'bitmovin'): ?>
+            var player = new bitmovin.player.Player(document.getElementById('player'), {
+                key:      '11d3698c-efdf-42f1-8769-54663995de2b',
+                analytics: false,
+                cast:     { enable: true },
+                playback: { autoplay: true, muted: true },
+                style:    { width: '100%', height: '100%' }
+            });
+            var source = { dash: d.url };
+            if (d.keyId && d.key) {
+                source.drm = { clearkey: [{ keyId: d.keyId, key: d.key }] };
+            }
+            player.load(source).then(showPlayer).catch(function () { showError(); });
 
 <?php elseif ($reproductor === 'clappr'): ?>
-// ════════════════════════════════════════════════════════════════
-// CLAPPR
-// Docs: https://github.com/clappr/clappr
-// Plugin DASH: https://github.com/clappr/clappr-dash-shaka-playback
-// ════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function () {
-    var config = {
-        source:   url,
-        parentId: '#player',
-        width:    '100%',
-        height:   '100%',
-        autoPlay: true,
-        mute:     true,
-        playback: { playInline: true }
-    };
-
-    // ClearKey DRM: ck_keyid y ck_key en hex vienen directo de la BD.
-    // Shaka Player espera { drm: { clearKeys: { '<keyId_hex>': '<key_hex>' } } }
-    if (ck_keyid && ck_key) {
-        var clearKeys = {};
-        clearKeys[ck_keyid] = ck_key;
-        config.shakaConfiguration = { drm: { clearKeys: clearKeys } };
-    }
-
-    var clapprPlayer = new Clappr.Player(config);
-    showPlayer();
-
-    clapprPlayer.on(Clappr.Events.PLAYER_ERROR, function (err) {
-        console.error('Clappr error:', err);
-    });
-});
+            var cfg = {
+                source:   d.url,
+                parentId: '#player',
+                width: '100%', height: '100%',
+                autoPlay: true, mute: true,
+                playback: { playInline: true }
+            };
+            if (d.keyId && d.key) {
+                var ck = {}; ck[d.keyId] = d.key;
+                cfg.shakaConfiguration = { drm: { clearKeys: ck } };
+            }
+            var cp = new Clappr.Player(cfg);
+            showPlayer();
+            cp.on(Clappr.Events.PLAYER_ERROR, function () { showError(); });
 
 <?php elseif ($reproductor === 'jwplayer'): ?>
-// ════════════════════════════════════════════════════════════════
-// JW PLAYER
-// Docs: https://developer.jwplayer.com/jwplayer/
-// TODO: Asegúrate de tener una licencia válida y de haber actualizado
-//       el script src del <head> con tu clave de biblioteca.
-// ════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function () {
-    var setup = {
-        file:      url,
-        type:      'dash',
-        width:     '100%',
-        height:    '100%',
-        autostart: true,
-        mute:      true,
-        // TODO: ajusta hlshtml5 / qualityLabels según necesites
-    };
-
-    // ClearKey DRM para JW Player (requiere licencia Enterprise o superior)
-    if (ck_keyid && ck_key) {
-        setup.drm = {
-            clearkey: {
-                keyId: ck_keyid,
-                key:   ck_key
+            var setup = {
+                file: d.url, type: 'dash',
+                width: '100%', height: '100%',
+                autostart: true, mute: true
+            };
+            if (d.keyId && d.key) {
+                setup.drm = { clearkey: { keyId: d.keyId, key: d.key } };
             }
-        };
-    }
-
-    jwplayer('player').setup(setup);
-    jwplayer('player').on('ready', showPlayer);
-    jwplayer('player').on('error', function (err) {
-        console.error('JWPlayer error:', err);
-    });
-});
-
+            jwplayer('player').setup(setup);
+            jwplayer('player').on('ready', showPlayer);
+            jwplayer('player').on('error', function () { showError(); });
 <?php endif; ?>
+        })
+        .catch(function () { showError('Error de conexión'); });
+});
 </script>
 </body>
 </html>
