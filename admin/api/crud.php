@@ -247,6 +247,34 @@ try {
         resp($ok, $ok ? 'Estado actualizado' : 'Error al actualizar');
     }
 
+    // ── BORRAR PARTIDOS ANTIGUOS (fecha_hora a más de N días) ─
+    if ($action === 'delete_old_partidos') {
+        $dias = max(1, (int)($input['dias'] ?? 5));
+
+        // Primero los destacados que apunten a esos partidos (sin FK, hay que limpiarlos a mano)
+        $stmt = $conn->prepare("
+            DELETE FROM partidos_destacados
+            WHERE partido_id IN (
+                SELECT id FROM partidos
+                WHERE fecha_hora IS NOT NULL AND fecha_hora < (NOW() - INTERVAL ? DAY)
+            )
+        ");
+        $stmt->bind_param('i', $dias);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $conn->prepare("
+            DELETE FROM partidos
+            WHERE fecha_hora IS NOT NULL AND fecha_hora < (NOW() - INTERVAL ? DAY)
+        ");
+        $stmt->bind_param('i', $dias);
+        $ok       = $stmt->execute();
+        $borrados = $stmt->affected_rows;
+        $stmt->close();
+
+        resp($ok, $ok ? "Se eliminaron {$borrados} partidos con más de {$dias} días" : 'Error al eliminar');
+    }
+
     // ── GUARDAR CANALES DE UN PARTIDO ─────────────────────────
     if ($action === 'save' && $entity === 'partido') {
         $d   = $input['data'] ?? [];

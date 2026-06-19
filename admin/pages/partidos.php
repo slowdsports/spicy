@@ -226,6 +226,12 @@ try {
             Importar liga
         </button>
 
+        <!-- borrar partidos antiguos -->
+        <button class="btn-admin-delete" id="btn-borrar-antiguos" onclick="borrarPartidosAntiguos()">
+            <i class="fas fa-broom"></i>
+            Borrar partidos &gt; 5 días
+        </button>
+
     </div>
 </div>
 
@@ -445,6 +451,35 @@ function importarPartidos() {
     .finally(()=>{
         btn.disabled = false;
         btn.innerHTML = 'Importar';
+    });
+}
+
+function borrarPartidosAntiguos() {
+
+    if (!confirm('¿Borrar todos los partidos con más de 5 días de antigüedad?\nEsta acción no se puede deshacer.')) return;
+
+    const btn = document.getElementById('btn-borrar-antiguos');
+    btn.disabled = true;
+    btn.innerHTML = 'Borrando...';
+
+    fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_old_partidos', dias: 5 })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            adminToast(res.message, 'success');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            adminToast(res.message, 'error');
+        }
+    })
+    .catch(() => adminToast('Error de conexión', 'error'))
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-broom"></i> Borrar partidos &gt; 5 días';
     });
 }
 
