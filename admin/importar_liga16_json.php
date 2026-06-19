@@ -1,9 +1,15 @@
 <?php
 /**
- * StreamHub Admin - Importador de Sofascore (CORREGIDO)
+ * StreamHub Admin - Importador de partidos de la Liga 16 (FIFA World Cup)
+ * desde un archivo JSON local (16.json), sin llamar a la API de Sofascore.
  *
- * Uso:
- * admin/sofa.php?filtrarLiga=17
+ * Caso de uso: cuando el servidor no puede alcanzar api.sofascore.com
+ * (bloqueo/rate-limit), se sube manualmente el JSON exportado
+ * (respuesta de /unique-tournament/16/season/{id}/events/next/0)
+ * junto a este script, y este se encarga de insertarlo en la BD.
+ *
+ * Uso: admin/importar_liga16_json.php
+ * Requiere que 16.json esté en la raíz del proyecto (junto a index.php).
  */
 
 require_once __DIR__ . '/../includes/config.php';
@@ -17,22 +23,14 @@ if (!isLoggedIn() || !isAdmin()) {
     exit('Sin permisos.');
 }
 
-/* ─────────────────────────────────────────────
-   Liga recibida
-───────────────────────────────────────────── */
-$apiLeague = isset($_POST['filtrarLiga'])
-    ? (int)$_POST['filtrarLiga']
-    : (int)($_GET['filtrarLiga'] ?? 0);
-
-if (!$apiLeague) {
-    exit('Error: no se especificó liga.');
-}
+const LIGA_ID_FIJA = 16;
+$jsonPath = __DIR__ . '/../16.json';
 
 /* ─────────────────────────────────────────────
    Carpetas imágenes
 ───────────────────────────────────────────── */
-$ligaImgDir  = __DIR__ . '/../assets/img/ligas/sf/';
-$ligaDarkDir = __DIR__ . '/../assets/img/ligas/sf/dark/';
+$ligaImgDir   = __DIR__ . '/../assets/img/ligas/sf/';
+$ligaDarkDir  = __DIR__ . '/../assets/img/ligas/sf/dark/';
 $equipoImgDir = __DIR__ . '/../assets/img/equipos/sf/';
 
 foreach ([$ligaImgDir, $ligaDarkDir, $equipoImgDir] as $dir) {
@@ -44,49 +42,6 @@ foreach ([$ligaImgDir, $ligaDarkDir, $equipoImgDir] as $dir) {
 /* ─────────────────────────────────────────────
    Helpers
 ───────────────────────────────────────────── */
-$sofaLastError = '';
-
-function sofaFetch(string $url): ?array
-{
-    global $sofaLastError;
-    $sofaLastError = '';
-
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 15,
-        CURLOPT_USERAGENT      => 'Mozilla/5.0',
-        CURLOPT_HTTPHEADER     => [
-            'Accept: application/json',
-            'Referer: https://www.sofascore.com/',
-        ],
-    ]);
-
-    $body      = curl_exec($ch);
-    $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlError = curl_error($ch);
-    curl_close($ch);
-
-    if ($body === false) {
-        $sofaLastError = "error de conexión: {$curlError}";
-        return null;
-    }
-
-    if ($httpCode !== 200) {
-        $detalle = is_string($body) ? trim(substr($body, 0, 200)) : '';
-        $sofaLastError = "Sofascore respondió HTTP {$httpCode}" . ($detalle !== '' ? " — {$detalle}" : '');
-        return null;
-    }
-
-    $data = json_decode($body, true);
-    if ($data === null) {
-        $sofaLastError = 'la respuesta no es JSON válido';
-        return null;
-    }
-
-    return $data;
-}
-
 function downloadFile(string $url, string $dest): void
 {
     if (file_exists($dest)) return;
@@ -164,56 +119,52 @@ function asignarCanalesDefecto(int $ligaId, string $sport): array
 }
 
 /* ─────────────────────────────────────────────
+   Cargar JSON local
+───────────────────────────────────────────── */
+if (!is_file($jsonPath)) {
+    exit("Error: no se encontró el archivo 16.json en la raíz del proyecto ({$jsonPath}).");
+}
+
+$raw  = file_get_contents($jsonPath);
+$data = json_decode($raw, true);
+
+if ($data === null) {
+    exit("Error: 16.json no es un JSON válido (" . json_last_error_msg() . ").");
+}
+
+if (empty($data['events'])) {
+    exit("Error: 16.json no contiene eventos (clave 'events' vacía o ausente).");
+}
+
+/* ─────────────────────────────────────────────
    DB
 ───────────────────────────────────────────── */
 $conn = getDBConnection();
 $conn->set_charset("utf8mb4");
 
-// IDs de fuentes que realmente existen (para evitar FK violations al insertar)
 $fuentesValidas = array_flip(array_column(
     $conn->query("SELECT id FROM fuentes")->fetch_all(MYSQLI_ASSOC),
     'id'
 ));
 
 $agregados = 0;
+$omitidos  = 0;
 $ligaNombreGlobal = '';
 
-/* ─────────────────────────────────────────────
-   Temporada
-───────────────────────────────────────────── */
-$seasonData = sofaFetch("https://api.sofascore.com/api/v1/unique-tournament/{$apiLeague}/seasons");
-
-if (!$seasonData || empty($seasonData['seasons'])) {
-    $motivo = $sofaLastError !== '' ? $sofaLastError : 'la liga no tiene temporadas registradas en Sofascore';
-    exit("No se encontró temporada ({$motivo}).");
-}
-
-$seasonId = (int)$seasonData['seasons'][0]['id'];
-
-/* ─────────────────────────────────────────────
-   Próximos partidos
-───────────────────────────────────────────── */
-$eventsData = sofaFetch(
-    "https://api.sofascore.com/api/v1/unique-tournament/{$apiLeague}/season/{$seasonId}/events/next/0"
-);
-
-if (!$eventsData || empty($eventsData['events'])) {
-    $eventsData = sofaFetch(
-        "https://api.sofascore.com/api/v1/unique-tournament/{$apiLeague}/season/{$seasonId}/events/last/0"
-    );
-}
-
-if (!$eventsData || empty($eventsData['events'])) {
-    $motivo = $sofaLastError !== '' ? $sofaLastError : 'no hay partidos próximos ni recientes para esta liga';
-    exit("No hay partidos ({$motivo}).");
-}
+date_default_timezone_set('America/Tegucigalpa');
 
 /* ─────────────────────────────────────────────
    Procesar eventos
 ───────────────────────────────────────────── */
-date_default_timezone_set('America/Tegucigalpa');
+foreach ($data['events'] as $event) {
 
-foreach ($eventsData['events'] as $event) {
+    $ligaId = (int)($event['tournament']['uniqueTournament']['id'] ?? 0);
+
+    // Por seguridad, este script solo inserta partidos de la liga 16
+    if ($ligaId !== LIGA_ID_FIJA) {
+        $omitidos++;
+        continue;
+    }
 
     /* País */
     $countryCode = $event['tournament']['uniqueTournament']['category']['slug'] ?? 'international';
@@ -228,12 +179,12 @@ foreach ($eventsData['events'] as $event) {
     $stmt->close();
 
     /* Liga */
-    $ligaId   = (int)$event['tournament']['uniqueTournament']['id'];
     $ligaName = $event['tournament']['name'] ?? '';
     $ligaSlug = $event['tournament']['slug'] ?? '';
     $sport    = $event['tournament']['uniqueTournament']['category']['sport']['slug'] ?? 'football';
+    $seasonId = (int)($event['season']['id'] ?? 0);
 
-    $ligaNombreGlobal = $ligaName;
+    $ligaNombreGlobal = $event['tournament']['uniqueTournament']['name'] ?? $ligaName;
 
     $stmt = $conn->prepare("SELECT id FROM ligas WHERE id=?");
     $stmt->bind_param("i", $ligaId);
@@ -242,7 +193,6 @@ foreach ($eventsData['events'] as $event) {
     $stmt->close();
 
     if (!$existeLiga) {
-
         $stmt = $conn->prepare("
             INSERT INTO ligas
             (id, ligaNombre, ligaImg, ligaPais, tipo, season)
@@ -251,7 +201,7 @@ foreach ($eventsData['events'] as $event) {
         $stmt->bind_param(
             "issssi",
             $ligaId,
-            $ligaName,
+            $ligaNombreGlobal,
             $ligaSlug,
             $countryCode,
             $sport,
@@ -340,7 +290,6 @@ foreach ($eventsData['events'] as $event) {
 
         $canales = asignarCanalesDefecto($ligaId, $sport);
 
-        // Nullificar cualquier canal cuyo ID no exista en fuentes
         foreach ($canales as &$v) {
             if ($v !== null && !isset($fuentesValidas[$v])) $v = null;
         }
@@ -386,6 +335,12 @@ foreach ($eventsData['events'] as $event) {
 ───────────────────────────────────────────── */
 if ($agregados > 0) {
     echo "✓ Se agregaron {$agregados} partidos de {$ligaNombreGlobal}.";
+    if ($omitidos > 0) {
+        echo " ({$omitidos} eventos del JSON fueron omitidos por no ser de la liga " . LIGA_ID_FIJA . ".)";
+    }
 } else {
     echo "No se agregaron partidos nuevos.";
+    if ($omitidos > 0) {
+        echo " ({$omitidos} eventos del JSON fueron omitidos por no ser de la liga " . LIGA_ID_FIJA . ".)";
+    }
 }
