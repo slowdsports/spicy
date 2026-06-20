@@ -332,6 +332,56 @@
   background: rgba(34,197,94,0.2);
 }
 
+.btn-sofa:disabled,
+.btn-admin-json:disabled,
+.btn-sofa-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Botón JSON (mismo box-model que btn-sofa, tono neutro) ── */
+.btn-admin-json {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-admin-json:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Botón sofascore, variante destructiva (mismo box-model) ─ */
+.btn-sofa-danger {
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 10px;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-sofa-danger:hover {
+  background: rgba(239,68,68,0.2);
+}
+
 /* ── Modales con tema ─────────────────────────────────────── */
 .admin-modal .modal-content {
   background: var(--bg-card);

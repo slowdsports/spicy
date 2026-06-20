@@ -177,7 +177,7 @@ try {
 
     <div class="d-flex gap-2 align-items-center flex-wrap">
 
-        <button class="btn-interact" onclick="generarJSON('partidos')" id="btn-json-partidos">
+        <button class="btn-admin-json" onclick="generarJSON('partidos')" id="btn-json-partidos">
             <i class="fas fa-file-export"></i> Actualizar JSON
         </button>
 
@@ -233,7 +233,7 @@ try {
         </button>
 
         <!-- borrar partidos antiguos -->
-        <button class="btn-admin-delete" id="btn-borrar-antiguos" onclick="borrarPartidosAntiguos()">
+        <button class="btn-sofa-danger" id="btn-borrar-antiguos" onclick="borrarPartidosAntiguos()">
             <i class="fas fa-broom"></i>
             Borrar partidos &gt; 5 días
         </button>
@@ -285,6 +285,7 @@ try {
                 <option value="">-- Selecciona liga --</option>
                 <?php foreach ($ligas as $lig): ?>
                 <option value="<?= $lig['id'] ?>">
+                    [<?= $lig['id'] ?>]
                     <?= htmlspecialchars($lig['ligaNombre']) ?>
                     (<?= htmlspecialchars($lig['tipo']) ?>)
                 </option>
@@ -480,6 +481,7 @@ function importarPartidos() {
         const box = document.getElementById('sofa-partidos-resultado');
         box.style.display = 'block';
         box.innerHTML = t;
+        if (t.startsWith('✓')) generarJSON('partidos');
         setTimeout(()=>location.reload(),1200);
     })
     .catch(e => alert(e))
@@ -519,6 +521,7 @@ function importarJSONPegado() {
         box.textContent = res.message;
         if (res.success) {
             document.getElementById('json-pegado').value = '';
+            if (res.message.startsWith('Se agregaron')) generarJSON('partidos');
             setTimeout(() => location.reload(), 1200);
         }
     })
