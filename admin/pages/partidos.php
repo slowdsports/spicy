@@ -226,11 +226,46 @@ try {
             Importar liga
         </button>
 
+        <!-- pegar JSON manual -->
+        <button class="btn-sofa" onclick="mostrarPegarJSON()">
+            <i class="fas fa-paste"></i>
+            Pegar JSON
+        </button>
+
         <!-- borrar partidos antiguos -->
         <button class="btn-admin-delete" id="btn-borrar-antiguos" onclick="borrarPartidosAntiguos()">
             <i class="fas fa-broom"></i>
             Borrar partidos &gt; 5 días
         </button>
+
+    </div>
+</div>
+
+<!-- panel pegar JSON manual (mientras Sofascore bloquea al servidor) -->
+<div id="panel-pegar-json" style="display:none;margin-bottom:1rem;">
+
+    <div class="card p-3">
+
+        <div class="mb-2 fw-bold">
+            Importar partidos pegando el JSON de Sofascore
+        </div>
+
+        <div class="mb-2" style="opacity:.8;font-size:.9em;">
+            Abre en tu navegador, por ejemplo,
+            <code>api.sofascore.com/api/v1/unique-tournament/{LIGA}/season/{TEMPORADA}/events/next/0</code>,
+            copia todo el JSON de la respuesta y pégalo aquí.
+        </div>
+
+        <textarea id="json-pegado" class="form-control" rows="6"
+            placeholder='{"events":[ ... ]}'></textarea>
+
+        <div class="d-flex gap-2 mt-2">
+            <button class="btn-sofa" id="btn-importar-json-pegado" onclick="importarJSONPegado()">
+                Importar
+            </button>
+        </div>
+
+        <div id="json-pegado-resultado" style="display:none;margin-top:10px;"></div>
 
     </div>
 </div>
@@ -449,6 +484,46 @@ function importarPartidos() {
     })
     .catch(e => alert(e))
     .finally(()=>{
+        btn.disabled = false;
+        btn.innerHTML = 'Importar';
+    });
+}
+
+function mostrarPegarJSON() {
+    const panel = document.getElementById('panel-pegar-json');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function importarJSONPegado() {
+
+    const json = document.getElementById('json-pegado').value.trim();
+
+    if (!json) {
+        alert('Pega el JSON primero.');
+        return;
+    }
+
+    const btn = document.getElementById('btn-importar-json-pegado');
+    btn.disabled = true;
+    btn.innerHTML = 'Importando...';
+
+    fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'importar_json_partidos', json })
+    })
+    .then(r => r.json())
+    .then(res => {
+        const box = document.getElementById('json-pegado-resultado');
+        box.style.display = 'block';
+        box.textContent = res.message;
+        if (res.success) {
+            document.getElementById('json-pegado').value = '';
+            setTimeout(() => location.reload(), 1200);
+        }
+    })
+    .catch(() => adminToast('Error de conexión', 'error'))
+    .finally(() => {
         btn.disabled = false;
         btn.innerHTML = 'Importar';
     });
