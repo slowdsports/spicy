@@ -92,8 +92,8 @@ try {
           <td style="font-family:'Space Mono',monospace; font-size:0.75rem; color:var(--text-muted);"><?= $l['id'] ?></td>
           <td>
             <?php
-            // Las imágenes las guarda sofa.php en assets/img/ligas/sf/{id}.png
-            $imgPath = BASE_URL . "assets/img/ligas/sf/{$l['id']}.png";
+            // sofa.php las guarda en assets/img/ligas/sf/, fotmob.php en assets/img/ligas/fm/
+            $imgPath = BASE_URL . 'assets/img/ligas/' . logoFolder($l['id']) . "/{$l['id']}.png";
             ?>
             <img src="<?= $imgPath ?>" alt="" class="table-logo"
                  onerror="this.src=''; this.style.opacity='0.2';">

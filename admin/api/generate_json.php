@@ -146,7 +146,7 @@ try {
                     'id'         => (int)$p['id'],
                     'league'     => $p['liga'] ?? '',
                     'leagueName' => $p['nombre_liga'] ?? '',
-                    'leagueLogo' => 'assets/img/ligas/sf/' . ($p['liga'] ?? '') . '.png',
+                    'leagueLogo' => 'assets/img/ligas/' . logoFolder($p['liga'] ?? 0) . '/' . ($p['liga'] ?? '') . '.png',
                     'status'     => $status,
                     'time'       => $timeTxt,
                     'fecha_hora' => $p['fecha_hora'] ?? '',

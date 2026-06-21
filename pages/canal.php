@@ -422,12 +422,12 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
       <?php if ($partidoData):
         $pLocal     = htmlspecialchars($partidoData['homeTeam']['name'] ?? '');
         $pVisit     = htmlspecialchars($partidoData['awayTeam']['name'] ?? '');
-        $pLocalLogo = BASE_URL . 'assets/img/equipos/sf/' . ($partidoData['homeTeam']['logo'] ?? '') . '.png';
-        $pVisitLogo = BASE_URL . 'assets/img/equipos/sf/' . ($partidoData['awayTeam']['logo'] ?? '') . '.png';
+        $pLocalLogo = BASE_URL . 'assets/img/equipos/' . logoFolder($partidoData['homeTeam']['logo'] ?? 0) . '/' . ($partidoData['homeTeam']['logo'] ?? '') . '.png';
+        $pVisitLogo = BASE_URL . 'assets/img/equipos/' . logoFolder($partidoData['awayTeam']['logo'] ?? 0) . '/' . ($partidoData['awayTeam']['logo'] ?? '') . '.png';
         $pStatus    = $partidoData['status'] ?? 'upcoming';
         $pTime      = htmlspecialchars($partidoData['time'] ?? '--:--');
         $pLeague    = (string)($partidoData['league'] ?? '');
-        $pLeagueLogo = BASE_URL . "assets/img/ligas/sf/{$pLeague}.png";
+        $pLeagueLogo = BASE_URL . 'assets/img/ligas/' . logoFolder($pLeague) . "/{$pLeague}.png";
       ?>
       <div class="partido-header<?= ($isMundial && ($pStatus === 'live')) ? ' is-live' : '' ?>">
         <div class="partido-meta">

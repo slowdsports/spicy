@@ -76,7 +76,8 @@ function getTeamLogoPath(logo) {
   if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) {
     return value;
   }
-  return `assets/img/equipos/sf/${encodeURIComponent(value)}.png`;
+  const folder = Number(value) >= 900000000 ? 'fm' : 'sf';
+  return `assets/img/equipos/${folder}/${encodeURIComponent(value)}.png`;
 }
 
 function updateCountdown(el) {

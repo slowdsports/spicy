@@ -94,7 +94,7 @@ usort($partidos, function($a, $b){
    META
 ========================================================== */
 $ligaNombre = $partidos[0]['leagueName'] ?? "Liga {$ligaId}";
-$ligaLogo   = BASE_URL . "assets/img/ligas/sf/{$ligaId}.png";
+$ligaLogo   = BASE_URL . 'assets/img/ligas/' . logoFolder($ligaId) . "/{$ligaId}.png";
 
 $sportsMeta = [
     'soccer'     => ['label'=>'Fútbol','icon'=>'fa-futbol'],
@@ -109,7 +109,7 @@ $meta = $sportsMeta[$type] ?? $sportsMeta['soccer'];
    HELPERS
 ========================================================== */
 function teamLogo($id){
-    return BASE_URL . "assets/img/equipos/sf/{$id}.png";
+    return BASE_URL . 'assets/img/equipos/' . logoFolder($id) . "/{$id}.png";
 }
 
 function canalLogo($id){

@@ -4,16 +4,17 @@
  */
 
 /**
- * Convierte una ruta base de logo sofascore a su versión dark o normal.
+ * Convierte una ruta base de logo de liga (Sofascore o FotMob) a su versión dark o normal.
  * Ej: "assets/img/ligas/sf/384.png"  →  "assets/img/ligas/sf/dark/384.png"
+ * Ej: "assets/img/ligas/fm/77.png"   →  "assets/img/ligas/fm/dark/77.png"
  * La regex inserta /dark/ antes del nombre de archivo; no se aplica si la ruta
  * ya contiene /dark/ (el patrón [^/]+ no cruza barras).
  */
 function sfLogoSrc(baseSrc, theme) {
   if (!baseSrc) return baseSrc;
   if (theme !== 'dark') return baseSrc;
-  if (!baseSrc.includes('/ligas/sf/')) return baseSrc;
-  return baseSrc.replace(/(\/sf\/)([^/]+\.png)$/, '$1dark/$2');
+  if (!/\/ligas\/(sf|fm)\//.test(baseSrc)) return baseSrc;
+  return baseSrc.replace(/\/(sf|fm)\/([^/]+\.png)$/, '/$1/dark/$2');
 }
 
 /** Actualiza el src de todos los logos sofascore al tema activo. */

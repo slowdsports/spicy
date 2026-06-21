@@ -73,7 +73,7 @@ try {
             'id'         => $pid,
             'league'     => $p['liga'] ?? '',
             'leagueName' => $p['leagueName'] ?? '',
-            'leagueLogo' => BASE_URL . 'assets/img/ligas/sf/' . ($p['liga'] ?? '') . '.png',
+            'leagueLogo' => BASE_URL . 'assets/img/ligas/' . logoFolder($p['liga'] ?? 0) . '/' . ($p['liga'] ?? '') . '.png',
             'status'     => $status,
             'time'       => $time,
             'fecha_hora' => $p['fecha_hora'] ?? '',

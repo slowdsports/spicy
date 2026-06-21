@@ -28,6 +28,15 @@ try {
     ")->fetch_all(MYSQLI_ASSOC);
 
     /* ─────────────────────────────
+       Proveedor de datos configurado (sofascore | fotmob)
+    ───────────────────────────── */
+    $stmt = $conn->prepare("SELECT valor FROM config_sitio WHERE clave = 'api_partidos'");
+    $stmt->execute();
+    $apiPartidos = $stmt->get_result()->fetch_assoc()['valor'] ?? 'sofascore';
+    $stmt->close();
+    if ($apiPartidos !== 'fotmob') $apiPartidos = 'sofascore';
+
+    /* ─────────────────────────────
        WHERE dinámico
     ───────────────────────────── */
     $where  = [];
@@ -276,8 +285,30 @@ try {
     <div class="card p-3">
 
         <div class="mb-2 fw-bold">
-            Importar partidos desde Sofascore
+            Importar partidos desde <?= $apiPartidos === 'fotmob' ? 'FotMob' : 'Sofascore' ?>
         </div>
+
+        <?php if ($apiPartidos === 'fotmob'): ?>
+
+        <div class="mb-2" style="opacity:.8;font-size:.9em;">
+            Escribe el ID de la liga en FotMob (lo ves en la URL, ej.
+            <code>fotmob.com/leagues/<b>77</b>/overview/world-cup</code> → 77).
+        </div>
+
+        <div class="d-flex gap-2">
+
+            <input type="number" id="fotmob-liga-id" class="form-control"
+                style="width:auto" placeholder="ID de liga en FotMob, ej. 77">
+
+            <button class="btn-sofa"
+                id="btn-importar-partidos"
+                onclick="importarPartidos()">
+                Importar
+            </button>
+
+        </div>
+
+        <?php else: ?>
 
         <div class="d-flex gap-2">
 
@@ -299,6 +330,8 @@ try {
             </button>
 
         </div>
+
+        <?php endif; ?>
 
         <div id="sofa-partidos-resultado"
             style="display:none;margin-top:10px;"></div>
@@ -439,6 +472,8 @@ Guardar
 </div>
 
 <script>
+const apiPartidos = '<?= $apiPartidos ?>'; // 'sofascore' | 'fotmob' — definido en Configuración
+
 function aplicarFiltros() {
     const tipo = document.getElementById('filtro-tipo').value;
     const liga = document.getElementById('filtro-liga').value;
@@ -464,10 +499,12 @@ function mostrarImportarPartidos() {
 
 function importarPartidos() {
 
-    const ligaId = document.getElementById('sofa-partidos-id').value;
+    const ligaId = apiPartidos === 'fotmob'
+        ? document.getElementById('fotmob-liga-id').value
+        : document.getElementById('sofa-partidos-id').value;
 
     if (!ligaId) {
-        alert('Selecciona una liga primero.');
+        alert(apiPartidos === 'fotmob' ? 'Escribe el ID de la liga en FotMob primero.' : 'Selecciona una liga primero.');
         return;
     }
 
@@ -475,7 +512,9 @@ function importarPartidos() {
     btn.disabled = true;
     btn.innerHTML = 'Importando...';
 
-    fetch(`<?= BASE_URL ?>admin/sofa.php?filtrarLiga=${ligaId}`)
+    const endpoint = apiPartidos === 'fotmob' ? 'fotmob.php' : 'sofa.php';
+
+    fetch(`<?= BASE_URL ?>admin/${endpoint}?filtrarLiga=${ligaId}`)
     .then(r => r.text())
     .then(t => {
         const box = document.getElementById('sofa-partidos-resultado');
