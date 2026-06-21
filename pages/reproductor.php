@@ -73,8 +73,12 @@ if (!$fuenteData) {
     exit();
 }
 
-// ── Proxy geo-protección: solo para usuarios Spicy / Admin ────────────────
-if (!empty($fuenteData['usar_proxy']) && (isSpicy() || isAdmin())) {
+// ── Tipo de reproductor ───────────────────────────────────────────────────────
+$tipoId = (int)$fuenteData['tipo'];
+
+// ── Proxy geo-protección: solo para usuarios Spicy / Admin ───────────────────
+// DASH (tipo 3) se salta aquí — api/stream.php aplica el proxy al entregar los datos
+if ($tipoId !== 3 && !empty($fuenteData['usar_proxy']) && (isSpicy() || isAdmin())) {
     try {
         $proxyRows = getDBConnection()
             ->query("SELECT url FROM proxies WHERE activo = 1")
@@ -83,7 +87,6 @@ if (!empty($fuenteData['usar_proxy']) && (isSpicy() || isAdmin())) {
         if (!empty($proxyRows)) {
             $proxyBase = $proxyRows[array_rand($proxyRows)]['url'];
             $fuenteData['url'] = $proxyBase . $fuenteData['url'];
-            // Aplicar también a la URL iOS si es HLS (no iframe)
             if (!empty($fuenteData['url_ios']) && ($fuenteData['tipo_ios'] ?? 'hls') !== 'iframe') {
                 $fuenteData['url_ios'] = $proxyBase . $fuenteData['url_ios'];
             }
@@ -91,8 +94,19 @@ if (!empty($fuenteData['usar_proxy']) && (isSpicy() || isAdmin())) {
     } catch (Throwable $e) { /* proxy best-effort; continuar sin él */ }
 }
 
+// ── Token de stream (DASH tipo 3) — firmado con session_id + APP_SECRET ──────
+$streamFuenteId = (int)$fuenteData['id'];
+$streamTs       = time();
+$streamToken    = hash_hmac('sha256', $streamFuenteId . '|' . $streamTs . '|' . session_id(), APP_SECRET);
+
+// Para DASH: limpiar campos sensibles — api/stream.php los sirve bajo token
+if ($tipoId === 3) {
+    $fuenteData['url']      = '';
+    $fuenteData['ck_key']   = '';
+    $fuenteData['ck_keyid'] = '';
+}
+
 // ── Incluir reproductor específico con salida ofuscada ───────────────────────
-$tipoId           = (int)$fuenteData['tipo'];
 $reproducotorFile = __DIR__ . "/reproductor-{$tipoId}.php";
 
 if (!file_exists($reproducotorFile)) {

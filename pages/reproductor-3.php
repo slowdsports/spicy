@@ -20,11 +20,20 @@ if (!isset($fuenteData)) {
     die('Acceso denegado');
 }
 
+// El check de Referer en reproductor.php no detecta cuando todo canal.php se
+// incrusta en un iframe de OTRO sitio (este request sigue llegando con referer
+// same-host, porque viene de nuestro propio canal.php). Eso lo cubre el guard
+// JS de más abajo; estos headers son la versión sin JS, exigida por el navegador.
+header('X-Frame-Options: SAMEORIGIN');
+header("Content-Security-Policy: frame-ancestors 'self'");
+
 $nombre      = htmlspecialchars($fuenteData['nombre']);
-$jsURL       = json_encode($fuenteData['url']);
-$jsKEYID     = json_encode($fuenteData['ck_keyid'] ?? '');
-$jsKEY       = json_encode($fuenteData['ck_key']   ?? '');
-$jsTIPO      = (int) $fuenteData['tipo'];
+// URL y DRM keys NO se pasan al cliente — las sirve api/stream.php bajo token firmado
+$jsBase      = json_encode(BASE_URL);
+$jsFid       = (int)$streamFuenteId;
+$jsTok       = json_encode($streamToken);
+$jsTs        = (int)$streamTs;
+$jsBlockUrl  = json_encode(BASE_URL . 'block.html');
 
 $allowed     = ['bitmovin', 'clappr', 'jwplayer'];
 $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
@@ -42,6 +51,32 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
     <meta name="robots" content="noindex">
     <meta name="referrer" content="none">
     <title><?= $nombre ?> - Tele Deportes</title>
+
+    <script>
+    // ── Bloqueo de incrustación cross-origin (iframe en otro sitio) ─────────
+    // Corre antes de cargar cualquier librería del reproductor: si nos están
+    // incrustando desde otro dominio, ni siquiera pedimos el stream.
+    //
+    // canal.php mete este reproductor en un iframe propio (mismo origen), así
+    // que no basta con mirar el padre inmediato: hay que mirar window.top, el
+    // frame raíz de toda la cadena. Si alguien incrusta canal.php entero en
+    // OTRO sitio, window.top pasa a ser la ventana de ese otro sitio y leerla
+    // lanza SecurityError por same-origin policy — eso es justo lo que
+    // detectamos. Esto también cubre el truco de meternos en un iframe
+    // sandbox: un documento sandbox sin allow-same-origin tiene origen opaco,
+    // así que tocar window.top también falla ahí.
+    (function () {
+        if (window.top === window) return; // no estamos en ningún iframe
+
+        try {
+            void window.top.location.href; // same-origin → no hace nada más
+        } catch (e) {
+            setTimeout(function () {
+                location.href = <?= $jsBlockUrl ?>;
+            }, 400);
+        }
+    })();
+    </script>
 
     <?php if ($reproductor === 'bitmovin'): ?>
     <!-- ── BITMOVIN ─────────────────────────────────────────── -->
@@ -122,12 +157,13 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
 </div>
 
 <script>
-// ── Variables desde PHP ─────────────────────────────────────────
-var url        = <?= $jsURL ?>;
-var ck_keyid   = <?= $jsKEYID ?>;
-var ck_key     = <?= $jsKEY ?>;
+// ── Token de sesión (URL y keys nunca aparecen en el source) ────────────────
+var _BASE = <?= $jsBase ?>;
+var _FID  = <?= $jsFid ?>;
+var _TOK  = <?= $jsTok ?>;
+var _TS   = <?= $jsTs ?>;
 
-// ── Protección básica ───────────────────────────────────────────
+// ── Protección básica ────────────────────────────────────────────────────────
 (function () {
     document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
     document.addEventListener('keydown', function (e) {
@@ -140,13 +176,15 @@ var ck_key     = <?= $jsKEY ?>;
 
 var statusEl = document.getElementById('status');
 function showPlayer() { statusEl.style.display = 'none'; }
+function showError(msg) {
+    statusEl.innerHTML =
+        '<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>' +
+        '<div class="s-title">' + msg + '</div>';
+    statusEl.style.display = 'flex';
+}
 
 <?php if ($reproductor === 'bitmovin'): ?>
-// ════════════════════════════════════════════════════════════════
-// BITMOVIN
-// ════════════════════════════════════════════════════════════════
-
-// Interceptar peticiones de licencia para omitir validación
+// Interceptar licencias Bitmovin ANTES de que el player emita la primera petición
 (function () {
     var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
     function override(u) {
@@ -157,101 +195,97 @@ function showPlayer() { statusEl.style.display = 'none'; }
         return u;
     }
     var _open = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function () {
-        arguments[1] = override(arguments[1]);
-        return _open.apply(this, arguments);
-    };
+    XMLHttpRequest.prototype.open = function () { arguments[1] = override(arguments[1]); return _open.apply(this, arguments); };
 })();
+<?php endif; ?>
 
 document.addEventListener('DOMContentLoaded', function () {
-    var player = new bitmovin.player.Player(document.getElementById('player'), {
-        key:      '11d3698c-efdf-42f1-8769-54663995de2b',
-        analytics: false,
-        cast:     { enable: true },
-        playback: { autoplay: true, muted: true },
-        style:    { width: '100%', height: '100%' }
-    });
 
-    var source = { dash: url };
-    // Añadir ClearKey DRM solo si vienen los campos
-    if (ck_keyid && ck_key) {
-        source.drm = { clearkey: [{ keyId: ck_keyid, key: ck_key }] };
-    }
+    // Solicitar datos al servidor — token HMAC vinculado a la sesión del usuario
+    fetch(_BASE + 'api/stream.php?id=' + _FID + '&ts=' + _TS + '&t=' + encodeURIComponent(_TOK), {
+        credentials: 'same-origin'
+    })
+    .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    })
+    .then(function (sd) {
+        if (!sd.url) { showError('Stream no disponible'); return; }
 
-    player.load(source).then(showPlayer).catch(function (err) {
-        console.error('Bitmovin error:', err);
-    });
-});
+        var url      = sd.url;
+        var ck_keyid = sd.keyId || '';
+        var ck_key   = sd.key   || '';
+
+<?php if ($reproductor === 'bitmovin'): ?>
+        // ── BITMOVIN ─────────────────────────────────────────────────────────
+        var player = new bitmovin.player.Player(document.getElementById('player'), {
+            key:      '11d3698c-efdf-42f1-8769-54663995de2b',
+            analytics: false,
+            cast:     { enable: true },
+            playback: { autoplay: true, muted: true },
+            style:    { width: '100%', height: '100%' }
+        });
+
+        var source = { dash: url };
+        if (ck_keyid && ck_key) {
+            source.drm = { clearkey: [{ keyId: ck_keyid, key: ck_key }] };
+        }
+        player.load(source).then(showPlayer).catch(function (err) {
+            showError('Error al cargar el stream.');
+            console.error('Bitmovin error:', err);
+        });
 
 <?php elseif ($reproductor === 'clappr'): ?>
-// ════════════════════════════════════════════════════════════════
-// CLAPPR
-// Docs: https://github.com/clappr/clappr
-// Plugin DASH: https://github.com/clappr/clappr-dash-shaka-playback
-// ════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function () {
-    var config = {
-        source:   url,
-        parentId: '#player',
-        width:    '100%',
-        height:   '100%',
-        autoPlay: true,
-        mute:     true,
-        playback: { playInline: true }
-    };
-
-    // ClearKey DRM: ck_keyid y ck_key en hex vienen directo de la BD.
-    // Shaka Player espera { drm: { clearKeys: { '<keyId_hex>': '<key_hex>' } } }
-    if (ck_keyid && ck_key) {
-        var clearKeys = {};
-        clearKeys[ck_keyid] = ck_key;
-        config.shakaConfiguration = { drm: { clearKeys: clearKeys } };
-    }
-
-    var clapprPlayer = new Clappr.Player(config);
-    showPlayer();
-
-    clapprPlayer.on(Clappr.Events.PLAYER_ERROR, function (err) {
-        console.error('Clappr error:', err);
-    });
-});
+        // ── CLAPPR ───────────────────────────────────────────────────────────
+        var cfg = {
+            source:   url,
+            parentId: '#player',
+            width:    '100%',
+            height:   '100%',
+            autoPlay: true,
+            mute:     true,
+            playback: { playInline: true }
+        };
+        if (ck_keyid && ck_key) {
+            var ck = {};
+            ck[ck_keyid] = ck_key;
+            cfg.shakaConfiguration = { drm: { clearKeys: ck } };
+        }
+        var clapprPlayer = new Clappr.Player(cfg);
+        showPlayer();
+        clapprPlayer.on(Clappr.Events.PLAYER_ERROR, function (err) {
+            showError('Error al cargar el stream.');
+            console.error('Clappr error:', err);
+        });
 
 <?php elseif ($reproductor === 'jwplayer'): ?>
-// ════════════════════════════════════════════════════════════════
-// JW PLAYER
-// Docs: https://developer.jwplayer.com/jwplayer/
-// TODO: Asegúrate de tener una licencia válida y de haber actualizado
-//       el script src del <head> con tu clave de biblioteca.
-// ════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function () {
-    var setup = {
-        file:      url,
-        type:      'dash',
-        width:     '100%',
-        height:    '100%',
-        autostart: true,
-        mute:      true,
-        // TODO: ajusta hlshtml5 / qualityLabels según necesites
-    };
-
-    // ClearKey DRM para JW Player (requiere licencia Enterprise o superior)
-    if (ck_keyid && ck_key) {
-        setup.drm = {
-            clearkey: {
-                keyId: ck_keyid,
-                key:   ck_key
-            }
+        // ── JW PLAYER ────────────────────────────────────────────────────────
+        var setup = {
+            file:      url,
+            type:      'dash',
+            width:     '100%',
+            height:    '100%',
+            autostart: true,
+            mute:      true,
         };
-    }
-
-    jwplayer('player').setup(setup);
-    jwplayer('player').on('ready', showPlayer);
-    jwplayer('player').on('error', function (err) {
-        console.error('JWPlayer error:', err);
-    });
-});
+        if (ck_keyid && ck_key) {
+            setup.drm = { clearkey: { keyId: ck_keyid, key: ck_key } };
+        }
+        jwplayer('player').setup(setup);
+        jwplayer('player').on('ready', showPlayer);
+        jwplayer('player').on('error', function (err) {
+            showError('Error al cargar el stream.');
+            console.error('JWPlayer error:', err);
+        });
 
 <?php endif; ?>
+    })
+    .catch(function (err) {
+        showError('No se pudo conectar con el servidor.');
+        console.error(err);
+    });
+
+});
 </script>
 </body>
 </html>
