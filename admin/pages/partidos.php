@@ -6,6 +6,44 @@
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+/* ─────────────────────────────
+   Mensajes para Telegram (próximos partidos y en vivo)
+───────────────────────────── */
+function emojiDeporte(string $tipo): string {
+    return match ($tipo) {
+        'football', 'soccer' => '⚽️',
+        'basketball'         => '🏀',
+        'tennis'             => '🎾',
+        'baseball'           => '⚾',
+        default              => '📺',
+    };
+}
+
+function primerCanalPartido(array $m): int {
+    for ($i = 1; $i <= 10; $i++) {
+        $cid = trim((string)($m["cnl{$i}"] ?? ''));
+        if ($cid !== '') return (int)$cid;
+    }
+    return 0;
+}
+
+function generarMensajeTelegram(array $m, int $canalId, string $sitioNombre): string {
+    $liga  = $m['leagueName'] ?? 'Evento';
+    $emoji = emojiDeporte($m['tipo'] ?? '');
+    $local = $m['homeTeam']['name'] ?? '';
+    $visit = $m['awayTeam']['name'] ?? '';
+    $link  = url('canal', ['id' => $canalId, 'partido' => (int)$m['id']]);
+
+    return "✅ {$liga}\n\n"
+         . "{$emoji} {$local} vs {$visit}\n\n"
+         . "{$link}\n\n"
+         . "------ Nota 👇\n\n"
+         . "✅ Copia los links y ábrelos en el navegador de tu dispositivo. No presiones directamente desde Telegram.\n\n"
+         . "✅ Debajo del reproductor encontraran mas opciones con regulador de calidad y para ios.\n\n"
+         . "----- By 👇👇\n\n"
+         . "☆*:.｡. {$sitioNombre} .｡.:*☆";
+}
+
 try {
 
     $conn = getDBConnection();
@@ -35,6 +73,36 @@ try {
     $apiPartidos = $stmt->get_result()->fetch_assoc()['valor'] ?? 'sofascore';
     $stmt->close();
     if ($apiPartidos !== 'fotmob') $apiPartidos = 'sofascore';
+
+    /* ─────────────────────────────
+       Mensajes para Telegram (próximos + en vivo, desde matches.json)
+    ───────────────────────────── */
+    $stmt = $conn->prepare("SELECT valor FROM config_sitio WHERE clave = 'sitio_nombre'");
+    $stmt->execute();
+    $sitioNombre = $stmt->get_result()->fetch_assoc()['valor'] ?? 'Tele Deportes';
+    $stmt->close();
+
+    $mensajesPartidos = [];
+    $matchesJsonPath  = __DIR__ . '/../../data/matches.json';
+
+    if (is_file($matchesJsonPath)) {
+        $allMatches = json_decode(file_get_contents($matchesJsonPath), true) ?? [];
+
+        foreach ($allMatches as $m) {
+            if (!in_array($m['status'] ?? '', ['upcoming', 'live'], true)) continue;
+
+            $canalId = primerCanalPartido($m);
+            if (!$canalId) continue; // sin fuente asignada, no hay link que dar
+
+            $mensajesPartidos[] = [
+                'id'      => (int)($m['id'] ?? 0),
+                'label'   => ($m['homeTeam']['name'] ?? '') . ' vs ' . ($m['awayTeam']['name'] ?? ''),
+                'liga'    => $m['leagueName'] ?? '',
+                'status'  => $m['status'],
+                'mensaje' => generarMensajeTelegram($m, $canalId, $sitioNombre),
+            ];
+        }
+    }
 
     /* ─────────────────────────────
        WHERE dinámico
@@ -246,6 +314,60 @@ try {
             <i class="fas fa-broom"></i>
             Borrar partidos &gt; 5 días
         </button>
+
+        <!-- mensajes para telegram -->
+        <button class="btn-admin-json" onclick="mostrarMensajesTelegram()">
+            <i class="fab fa-telegram"></i>
+            Generar mensajes
+        </button>
+
+    </div>
+</div>
+
+<!-- panel mensajes telegram (próximos + en vivo) -->
+<div id="panel-mensajes-telegram" style="display:none;margin-bottom:1rem;">
+
+    <div class="card p-3">
+
+        <div class="mb-2 fw-bold">
+            Mensajes para Telegram — próximos partidos y en vivo
+            (<?= count($mensajesPartidos) ?>)
+        </div>
+
+        <?php if (empty($mensajesPartidos)): ?>
+
+        <div style="opacity:.8;font-size:.9em;">
+            No hay partidos próximos o en vivo con una fuente asignada.
+            Verifica que <code>matches.json</code> esté actualizado
+            (botón "Actualizar JSON").
+        </div>
+
+        <?php else: ?>
+
+        <div class="d-flex flex-column gap-3">
+            <?php foreach ($mensajesPartidos as $mp): ?>
+            <div class="card p-2" style="background:var(--bg-secondary);">
+
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span style="font-size:.85em;">
+                        <?= $mp['status'] === 'live' ? '🔴 EN VIVO' : '🕒 Próximo' ?>
+                        — <?= htmlspecialchars($mp['liga']) ?>
+                        — <?= htmlspecialchars($mp['label']) ?>
+                    </span>
+                    <button class="btn-admin-json" style="padding:.3rem .8rem;font-size:.8em;"
+                        onclick="copiarMensajeTelegram(this)">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
+
+                <textarea class="form-control" rows="4" readonly
+                    style="font-size:.8em;"><?= htmlspecialchars($mp['mensaje']) ?></textarea>
+
+            </div>
+            <?php endforeach; ?>
+        </div>
+
+        <?php endif; ?>
 
     </div>
 </div>
@@ -533,6 +655,20 @@ function importarPartidos() {
 function mostrarPegarJSON() {
     const panel = document.getElementById('panel-pegar-json');
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function mostrarMensajesTelegram() {
+    const panel = document.getElementById('panel-mensajes-telegram');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function copiarMensajeTelegram(btn) {
+    const textarea = btn.closest('.card').querySelector('textarea');
+    navigator.clipboard.writeText(textarea.value).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copiado';
+        setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    }).catch(() => adminToast('No se pudo copiar', 'error'));
 }
 
 function importarJSONPegado() {
