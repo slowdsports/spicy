@@ -12,6 +12,9 @@ define('BASE_URL', $_env['BASE_URL'] ?? '/');
 
 unset($_env);
 
+// Secreto para firmar tokens de stream — derivado de credenciales de BD (nunca cambia entre requests)
+define('APP_SECRET', hash('sha256', DB_HOST . DB_USER . DB_PASS . DB_NAME . 'sh_stream_v1'));
+
 // Sesiones persistentes: cookie dura 1 año en el navegador
 // (el remember-me token en BD cubre el caso de que la sesión
 //  del servidor expire por inactividad, igual que Facebook/Twitter)
@@ -53,6 +56,15 @@ function url(string $page, array $params = []): string {
  */
 function get(string $key, string $default = ''): string {
     return isset($_GET[$key]) ? htmlspecialchars(trim($_GET[$key])) : $default;
+}
+
+/**
+ * Carpeta de logos (ligas/equipos) según el proveedor que originó el ID.
+ * Los IDs de FotMob se guardan con un offset de +900000000 para no
+ * colisionar con los IDs de Sofascore en las mismas tablas (ver admin/fotmob.php).
+ */
+function logoFolder($id): string {
+    return ((int)$id >= 900000000) ? 'fm' : 'sf';
 }
 
 // ============================================================
