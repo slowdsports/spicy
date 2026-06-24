@@ -1,8 +1,8 @@
 <?php
 /**
- * StreamHub - Página de donaciones (Buy Me a Coffee)
+ * StreamHub - Página de donaciones (Ko-fi)
  */
-$bmcUser = 'slowdsports'; // ← Reemplaza con tu usuario de buymeacoffee.com
+$kofiId = 'N6R52203OC'; // ← Tu ID de página de Ko-fi (storage.ko-fi.com/.../widget)
 ?>
 
 <style>
@@ -92,28 +92,27 @@ $bmcUser = 'slowdsports'; // ← Reemplaza con tu usuario de buymeacoffee.com
   color: var(--text-muted);
   margin: 0 0 1.5rem;
 }
-.btn-bmc {
+.btn-kofi {
   display: inline-flex;
   align-items: center;
   gap: .6rem;
-  background: #FFDD00;
-  color: #000;
+  background: #72a4f2;
+  color: #fff;
   font-weight: 800;
   font-size: .95rem;
   padding: .8rem 2rem;
   border-radius: 10px;
   text-decoration: none;
   transition: transform .15s, box-shadow .15s;
-  box-shadow: 0 4px 14px rgba(255,221,0,.3);
+  box-shadow: 0 4px 14px rgba(114,164,242,.35);
 }
-.btn-bmc:hover {
+.btn-kofi:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255,221,0,.45);
-  color: #000;
+  box-shadow: 0 6px 20px rgba(114,164,242,.5);
+  color: #fff;
 }
-.btn-bmc img {
-  height: 22px;
-  width: auto;
+.btn-kofi i {
+  font-size: 1.2rem;
 }
 .donate-note {
   font-size: .75rem;
@@ -162,26 +161,16 @@ $bmcUser = 'slowdsports'; // ← Reemplaza con tu usuario de buymeacoffee.com
     <div class="donate-cta-box">
       <h2>Invítanos un café ☕</h2>
       <p>Cada contribución, sin importar el monto, hace una gran diferencia para nosotros. Y te liberarás de los anuncios.</p>
-      <a href="https://buymeacoffee.com/<?= htmlspecialchars($bmcUser) ?>" target="_blank" rel="noopener noreferrer" class="btn-bmc">
-        <img src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg" alt="Buy Me a Coffee">
-        Donar con Buy Me a Coffee
+      <a href="https://ko-fi.com/<?= htmlspecialchars($kofiId) ?>" target="_blank" rel="noopener noreferrer" class="btn-kofi">
+        <i class="fas fa-mug-hot"></i>
+        Donar con Ko-fi
       </a>
       <hr>
-      <p class="donate-note">Serás redirigido a buymeacoffee.com · Pago seguro</p>
+      <p class="donate-note">Serás redirigido a ko-fi.com · Pago seguro</p>
     </div>
 
   </div>
 </section>
 
-<!-- Widget flotante de Buy Me a Coffee -->
-<script data-name="BMC-Widget"
-        data-cfasync="false"
-        src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
-        data-id="<?= htmlspecialchars($bmcUser) ?>"
-        data-description="Apoya Tele Deportes"
-        data-message="¿Disfrutas el contenido? ¡Invítanos un café!"
-        data-color="#8b5cf6"
-        data-position="Right"
-        data-x_margin="18"
-        data-y_margin="18">
-</script>
+<!-- El widget flotante de Ko-fi ya se carga globalmente desde index.php -->
+

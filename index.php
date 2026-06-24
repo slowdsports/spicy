@@ -341,16 +341,113 @@ if (isset($scripts[$page])) {
 <script id="_wauh8l">var _wau = _wau || []; _wau.push(["small", "j9isfwldlg", "h8l"]);</script><script async src="//waust.at/s.js"></script>
 </div>
 <?php if (!isSpicy() && $page !== 'login'): ?>
-<script data-name="BMC-Widget"
-        data-cfasync="false"
-        src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
-        data-id="slowdsports"
-        data-description="Apoya Tele Deportes"
-        data-message="¿Disfrutas el contenido? ¡Invítanos un café!"
-        data-color="#8b5cf6"
-        data-position="Right"
-        data-x_margin="18"
-        data-y_margin="18">
+<div class="kofi-float-wrap">
+  <div class="kofi-float-popup" id="kofiPopup">
+    ¿Disfrutas el contenido? ¡Invítanos un café!
+    <button type="button" class="kofi-popup-close" id="kofiPopupClose" aria-label="Cerrar">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <a href="https://ko-fi.com/N6R52203OC" target="_blank" rel="noopener noreferrer"
+     class="kofi-float-btn" title="¿Disfrutas el contenido? ¡Invítanos un café!">
+    <img src="https://cdn.buymeacoffee.com/widget/assets/coffee%20cup.svg" width="36" height="36" alt="" aria-hidden="true">
+  </a>
+</div>
+<style>
+.kofi-float-wrap {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* Bubble del mensaje: mismas medidas, tipografía y botón de cerrar que usaba BMC */
+.kofi-float-popup {
+  position: relative;
+  background: #fff;
+  color: #111;
+  max-width: 260px;
+  padding: 16px 32px 16px 16px;
+  border-radius: 4px;
+  font-family: "Avenir Book", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: 0px 2px 5px rgba(0,0,0,.05), 0px 8px 40px rgba(0,0,0,.04), 0px 0px 2px rgba(0,0,0,.15);
+  transform-origin: bottom right;
+  transform: scale(1);
+  opacity: 1;
+  transition: .25s ease all;
+}
+.kofi-float-popup.kofi-popup-hidden {
+  opacity: 0;
+  transform: scale(0.7);
+  pointer-events: none;
+}
+.kofi-popup-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: #111;
+  opacity: .5;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kofi-popup-close:hover { opacity: 1; }
+/* Botón: mismo diámetro, radio, sombra y curva de animación que BMC (64px, hover/active a escala) */
+.kofi-float-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #8b5cf6;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 4px 8px rgba(0,0,0,.15);
+  transition: .25s ease all;
+}
+.kofi-float-btn:hover {
+  transform: scale(1.1);
+  color: #fff;
+}
+.kofi-float-btn:active {
+  transform: scale(0.90);
+}
+.kofi-float-btn img {
+  width: 36px;
+  height: 36px;
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var popup = document.getElementById('kofiPopup');
+  var closeBtn = document.getElementById('kofiPopupClose');
+
+  var timer = setTimeout(function () {
+    if (popup) popup.classList.add('kofi-popup-hidden');
+  }, 3000);
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function () {
+      clearTimeout(timer);
+      if (popup) popup.classList.add('kofi-popup-hidden');
+    });
+  }
+});
 </script>
 <?php endif; ?>
 </body>
