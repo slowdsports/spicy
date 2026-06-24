@@ -6,9 +6,15 @@
 // ============================================================
 // SLIDER DE PARTIDOS
 // ============================================================
+// Cambia una vez por minuto: evita servir una copia vieja desde algún
+// caché intermedio (navegador, Nginx) sin renunciar del todo a cachear.
+function cacheBustedUrl(url) {
+  return url + '?v=' + Math.floor(Date.now() / 60000);
+}
+
 async function loadMatches() {
   try {
-    const res = await fetch('data/matches.json');
+    const res = await fetch(cacheBustedUrl('data/matches.json'));
     const matches = await res.json();
     const slider = document.getElementById('matches-slider');
     if (!slider) return;
@@ -197,7 +203,7 @@ let allChannels = [];
 
 async function loadChannels() {
   try {
-    const res  = await fetch('data/fuentes.json');
+    const res  = await fetch(cacheBustedUrl('data/fuentes.json'));
     const data = await res.json();
     allChannels = data.filter(ch => ch.activo === 1);
 
@@ -356,7 +362,7 @@ async function loadPrograms() {
   const container = document.getElementById('programs-list');
   if (!container) return;
   try {
-    const res = await fetch('data/programas/all.json');
+    const res = await fetch(cacheBustedUrl('data/programas/all.json'));
     if (!res.ok) return;
     const canales = await res.json();
 

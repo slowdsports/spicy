@@ -5,11 +5,17 @@
 
 let allItems = []; // fuentes enriquecidas
 
+// Cambia una vez por minuto: evita servir una copia vieja desde algún
+// caché intermedio (navegador, Nginx) sin renunciar del todo a cachear.
+function cacheBustedUrl(url) {
+  return url + '?v=' + Math.floor(Date.now() / 60000);
+}
+
 async function loadChannels() {
   try {
     const [fuentesRes, channelsRes] = await Promise.all([
-      fetch('data/fuentes.json'),
-      fetch('data/channels.json')
+      fetch(cacheBustedUrl('data/fuentes.json')),
+      fetch(cacheBustedUrl('data/channels.json'))
     ]);
     const fuentes  = await fuentesRes.json();
     const channels = await channelsRes.json();
