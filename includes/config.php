@@ -52,6 +52,19 @@ function url(string $page, array $params = []): string {
 }
 
 /**
+ * Igual que url(), pero con esquema + dominio. url() es correcta para los
+ * <a href> internos del sitio (el navegador la resuelve contra la página
+ * actual), pero no sirve para links que se comparten fuera del sitio
+ * (mensajes de Telegram/WhatsApp, etc.): ahí una ruta relativa como
+ * "/?p=canal&id=1" no es un link funcional, hace falta el dominio.
+ */
+function urlAbsolute(string $page, array $params = []): string {
+    $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host  = $_SERVER['HTTP_HOST'] ?? 'teledeportes.online';
+    return $proto . '://' . $host . url($page, $params);
+}
+
+/**
  * Lee un parámetro GET sanitizado
  */
 function get(string $key, string $default = ''): string {

@@ -32,7 +32,7 @@ function generarMensajeTelegram(array $m, int $canalId, string $sitioNombre): st
     $emoji = emojiDeporte($m['tipo'] ?? '');
     $local = $m['homeTeam']['name'] ?? '';
     $visit = $m['awayTeam']['name'] ?? '';
-    $link  = url('canal', ['id' => $canalId, 'partido' => (int)$m['id']]);
+    $link  = urlAbsolute('canal', ['id' => $canalId, 'partido' => (int)$m['id']]);
 
     return "✅ {$liga}\n\n"
          . "{$emoji} {$local} vs {$visit}\n\n"
