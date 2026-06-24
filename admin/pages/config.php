@@ -4,6 +4,8 @@
  * Muestra y permite editar los valores de la tabla config_sitio.
  */
 
+require_once __DIR__ . '/../../includes/cache.php';
+
 $saved = false;
 $error = '';
 
@@ -19,6 +21,7 @@ try {
             $stmt->execute();
             $stmt->close();
         }
+        regenerateSiteConfigCache(); // el sitio público lee data/config.json, nunca la BD
         $saved = true;
     }
 

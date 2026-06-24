@@ -10,9 +10,14 @@ if (!isset($fuenteData)) {
     die('Acceso denegado');
 }
 
-$nombre    = htmlspecialchars($fuenteData['nombre']);
-$jsChannel = json_encode($fuenteData['url'] ?? '');
-$jsNombre  = json_encode($nombre);
+$nombre   = htmlspecialchars($fuenteData['nombre']);
+$jsNombre = json_encode($nombre);
+
+// El canal NO se pasa al cliente — lo sirve api/stream.php bajo token firmado
+$jsBase = json_encode(BASE_URL);
+$jsFid  = (int)$streamFuenteId;
+$jsTok  = json_encode($streamToken);
+$jsTs   = (int)$streamTs;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -129,9 +134,14 @@ $jsNombre  = json_encode($nombre);
     <script src="//cdn.jsdelivr.net/npm/clappr-chromecast-plugin@latest/dist/clappr-chromecast-plugin.min.js"></script>
 
     <script>
-        var CHANNEL = <?= $jsChannel ?>;
         var NOMBRE  = <?= $jsNombre ?>;
         var EXT_ID  = 'opmeopcambhfimffbomjgemehjkbbmji';
+
+        // ── Token de sesión (el canal nunca aparece en el source) ──────────────────
+        var _BASE = <?= $jsBase ?>;
+        var _FID  = <?= $jsFid ?>;
+        var _TOK  = <?= $jsTok ?>;
+        var _TS   = <?= $jsTs ?>;
         var EXT_STORE = 'https://chromewebstore.google.com/detail/videoplayer-mpdm3u8iptvep/' + EXT_ID;
 
         // ── Detección de dispositivo ──────────────────────────────────────────────
@@ -258,7 +268,19 @@ $jsNombre  = json_encode($nombre);
         document.addEventListener('DOMContentLoaded', function() {
             loading('Cargando canal...');
 
-            fetch('wbc.php?ch=' + encodeURIComponent(CHANNEL))
+            // 1) Resolver el canal — token HMAC vinculado a la sesión del usuario
+            fetch(_BASE + 'api/stream.php?id=' + _FID + '&ts=' + _TS + '&t=' + encodeURIComponent(_TOK), {
+                credentials: 'same-origin'
+            })
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(sd) {
+                    if (!sd.url) { throw new Error('Canal no disponible'); }
+                    // 2) Resolver el stream final a partir del canal
+                    return fetch('wbc.php?ch=' + encodeURIComponent(sd.url));
+                })
                 .then(function(r) {
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     return r.json();

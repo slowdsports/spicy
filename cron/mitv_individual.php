@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/scraper.php';
+require_once __DIR__ . '/scraper.php';
 
 $canales = [
     'hbo-2',

@@ -11,6 +11,7 @@
 
 require_once __DIR__ . '/../../includes/config.php';
 require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/cache.php';
 
 // ── Guardia: solo admins ──────────────────────────────────────
 if (!isLoggedIn() || !isAdmin()) {
@@ -178,6 +179,16 @@ try {
         $ok = $stmt->execute();
         $stmt->close();
 
+        if ($ok) {
+            match ($entity) {
+                'canal'     => regenerateCanalesCache(),
+                'fuente'    => regenerateFuentesCache(),
+                'partido'   => regenerateMatchesCache() && regenerateDestacadosCache(),
+                'destacado' => regenerateDestacadosCache(),
+                default     => null,
+            };
+        }
+
         resp($ok, $ok ? 'Eliminado correctamente' : 'Error al eliminar');
     }
 
@@ -203,6 +214,7 @@ try {
 
         $ok = $stmt->execute();
         $stmt->close();
+        if ($ok) regenerateCanalesCache();
         resp($ok, $ok ? 'Canal guardado' : 'Error al guardar');
     }
 
@@ -242,6 +254,7 @@ try {
 
         $ok = $stmt->execute();
         $stmt->close();
+        if ($ok) regenerateFuentesCache();
         resp($ok, $ok ? 'Fuente guardada' : 'Error al guardar');
     }
 
@@ -285,6 +298,7 @@ try {
         $stmt->bind_param('ii', $partido_id, $posicion);
         $ok = $stmt->execute();
         $stmt->close();
+        if ($ok) regenerateDestacadosCache();
         resp($ok, $ok ? 'Partido destacado guardado' : 'Error al guardar');
     }
 
@@ -297,6 +311,7 @@ try {
         $stmt->bind_param('i', $id);
         $ok = $stmt->execute();
         $stmt->close();
+        if ($ok) regenerateDestacadosCache();
         resp($ok, $ok ? 'Estado actualizado' : 'Error al actualizar');
     }
 
@@ -446,6 +461,8 @@ try {
             }
         }
 
+        if ($agregados > 0) regenerateMatchesCache();
+
         $nombres = implode(', ', array_filter($ligasVistas));
         $msg = $agregados > 0
             ? "Se agregaron {$agregados} partidos" . ($nombres ? " ({$nombres})" : '')
@@ -480,6 +497,11 @@ try {
         $borrados = $stmt->affected_rows;
         $stmt->close();
 
+        if ($ok && $borrados > 0) {
+            regenerateMatchesCache();
+            regenerateDestacadosCache();
+        }
+
         resp($ok, $ok ? "Se eliminaron {$borrados} partidos con más de {$dias} días" : 'Error al eliminar');
     }
 
@@ -509,6 +531,7 @@ try {
         $stmt->bind_param($types, ...$params);
         $ok = $stmt->execute();
         $stmt->close();
+        if ($ok) regenerateMatchesCache();
         resp($ok, $ok ? 'Partido actualizado' : 'Error al actualizar');
     }
 

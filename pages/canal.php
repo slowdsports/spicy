@@ -10,56 +10,74 @@ $canalViews = 0;
 $canalLogo  = '';
 
 if ($channelId > 0) {
-    try {
-        $conn = getDBConnection();
-        $stmt = $conn->prepare("SELECT id, nombre, canal, tipo FROM fuentes WHERE id = ? LIMIT 1");
-        $stmt->bind_param('i', $channelId);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $fuenteData = $result->fetch_assoc();
-        $stmt->close();
+    // Metadata de fuentes desde el caché JSON — nunca toca la BD (ver
+    // includes/cache.php, regenerado al guardar/borrar una fuente en el admin)
+    $_fuentesPath = __DIR__ . '/../data/fuentes.json';
+    $_allFuentes  = file_exists($_fuentesPath) ? (json_decode(file_get_contents($_fuentesPath), true) ?: []) : [];
 
-        if ($fuenteData) {
-            $iframeUrl = 'pages/reproductor.php?' . http_build_query([
-                'id' => $fuenteData['id'],
-                'canal' => $fuenteData['canal'],
-                'tipo' => $fuenteData['tipo']
-            ]);
+    $_fuenteRaw = null;
+    foreach ($_allFuentes as $_f) {
+        if ((int)$_f['id'] === $channelId) { $_fuenteRaw = $_f; break; }
+    }
 
-            // Intentar incluir ios; fallback a query simple si url_ios no existe aún
-            $stmt2 = $conn->prepare("SELECT id, nombre, tipo, (url_ios IS NOT NULL AND url_ios <> '') AS ios FROM fuentes WHERE canal = ? ORDER BY id");
-            if (!$stmt2) {
-                $stmt2 = $conn->prepare("SELECT id, nombre, tipo FROM fuentes WHERE canal = ? ORDER BY id");
+    if ($_fuenteRaw) {
+        $fuenteData = [
+            'id'     => $_fuenteRaw['id'],
+            'nombre' => $_fuenteRaw['nombre'],
+            'canal'  => $_fuenteRaw['canal'],
+            'tipo'   => $_fuenteRaw['tipo'],
+        ];
+
+        $iframeUrl = 'pages/reproductor.php?' . http_build_query([
+            'id' => $fuenteData['id'],
+            'canal' => $fuenteData['canal'],
+            'tipo' => $fuenteData['tipo']
+        ]);
+
+        foreach ($_allFuentes as $_f) {
+            if ((int)($_f['canal'] ?? 0) === (int)$fuenteData['canal']) {
+                $fuentes[] = [
+                    'id'     => $_f['id'],
+                    'nombre' => $_f['nombre'],
+                    'tipo'   => $_f['tipo'],
+                    'ios'    => !empty($_f['ios']),
+                    'noIos'  => empty($_f['ios']) && ((int)$_f['tipo'] === 3),
+                ];
             }
-            $stmt2->bind_param('s', $fuenteData['canal']);
-            $stmt2->execute();
-            $fuentes = $stmt2->get_result()->fetch_all(MYSQLI_ASSOC);
-            $stmt2->close();
+        }
+        usort($fuentes, fn($a, $b) => $a['id'] <=> $b['id']);
 
-            // Normalizar ios y calcular noIos desde los datos de DB
-            foreach ($fuentes as &$_frow) {
-                $_frow['ios']   = !empty($_frow['ios']);
-                $_frow['noIos'] = !$_frow['ios'] && ((int)$_frow['tipo'] === 3);
-            }
-            unset($_frow);
-
-            // Logo + vistas del canal padre
-            $canalId = (int)$fuenteData['canal'];
-            if ($canalId > 0) {
+        // Vistas: el único contador que sigue siendo lectura/escritura en vivo
+        $canalId = (int)$fuenteData['canal'];
+        if ($canalId > 0) {
+            try {
+                $conn  = getDBConnection();
                 $stmtV = $conn->prepare("UPDATE canales SET views = views + 1 WHERE id = ?");
                 $stmtV->bind_param('i', $canalId);
                 $stmtV->execute();
                 $stmtV->close();
-                $rowV = $conn->query("SELECT views, logo FROM canales WHERE id = {$canalId} LIMIT 1")->fetch_assoc();
+                $rowV = $conn->query("SELECT views FROM canales WHERE id = {$canalId} LIMIT 1")->fetch_assoc();
                 $canalViews = (int)($rowV['views'] ?? 0);
-                $canalLogo  = !empty($rowV['logo'])
-                    ? $rowV['logo']
-                    : BASE_URL . "assets/img/canales/{$channelId}.png";
+            } catch (Throwable $e) {
+                // Error de BD: el contador de vistas queda en 0, el resto de la página sigue funcionando
             }
+
+            // Logo del canal desde el caché JSON
+            $_channelsPath = __DIR__ . '/../data/channels.json';
+            $_allChannels  = file_exists($_channelsPath) ? (json_decode(file_get_contents($_channelsPath), true) ?: []) : [];
+            foreach ($_allChannels as $_c) {
+                if ((int)($_c['id'] ?? 0) === $canalId) {
+                    $canalLogo = $_c['logo'] ?? '';
+                    break;
+                }
+            }
+            if (empty($canalLogo)) {
+                $canalLogo = BASE_URL . "assets/img/canales/{$channelId}.png";
+            }
+            unset($_channelsPath, $_allChannels, $_c);
         }
-    } catch (Throwable $e) {
-        // Error de BD, el iframe quedará vacío
     }
+    unset($_fuentesPath, $_allFuentes, $_fuenteRaw, $_f);
 }
 $jsCanal = json_encode($fuenteData['canal'] ?? '');
 

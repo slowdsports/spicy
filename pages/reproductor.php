@@ -76,9 +76,14 @@ if (!$fuenteData) {
 // ── Tipo de reproductor ───────────────────────────────────────────────────────
 $tipoId = (int)$fuenteData['tipo'];
 
+// Hay que mirar si existe alternativa iOS ANTES de limpiar los campos sensibles
+// (url_ios se vacía más abajo junto con el resto de campos protegidos por token).
+$hasUrlIos = !empty($fuenteData['url_ios']);
+
 // ── Proxy geo-protección: solo para usuarios Spicy / Admin ───────────────────
-// DASH (tipo 3) se salta aquí — api/stream.php aplica el proxy al entregar los datos
-if ($tipoId !== 3 && !empty($fuenteData['usar_proxy']) && (isSpicy() || isAdmin())) {
+// Sólo se resuelve aquí para YouTube (tipo 6): los demás tipos reciben el mismo
+// tratamiento dentro de api/stream.php, que es quien entrega la URL bajo token.
+if ($tipoId === 6 && !empty($fuenteData['usar_proxy']) && (isSpicy() || isAdmin())) {
     try {
         $proxyRows = getDBConnection()
             ->query("SELECT url FROM proxies WHERE activo = 1")
@@ -87,21 +92,20 @@ if ($tipoId !== 3 && !empty($fuenteData['usar_proxy']) && (isSpicy() || isAdmin(
         if (!empty($proxyRows)) {
             $proxyBase = $proxyRows[array_rand($proxyRows)]['url'];
             $fuenteData['url'] = $proxyBase . $fuenteData['url'];
-            if (!empty($fuenteData['url_ios']) && ($fuenteData['tipo_ios'] ?? 'hls') !== 'iframe') {
-                $fuenteData['url_ios'] = $proxyBase . $fuenteData['url_ios'];
-            }
         }
     } catch (Throwable $e) { /* proxy best-effort; continuar sin él */ }
 }
 
-// ── Token de stream (DASH tipo 3) — firmado con session_id + APP_SECRET ──────
+// ── Token de stream — firmado con session_id + APP_SECRET ────────────────────
 $streamFuenteId = (int)$fuenteData['id'];
 $streamTs       = time();
 $streamToken    = hash_hmac('sha256', $streamFuenteId . '|' . $streamTs . '|' . session_id(), APP_SECRET);
 
-// Para DASH: limpiar campos sensibles — api/stream.php los sirve bajo token
-if ($tipoId === 3) {
+// Limpiar campos sensibles — api/stream.php los sirve bajo token firmado.
+// YouTube (tipo 6) queda fuera: su URL ya es pública por naturaleza.
+if ($tipoId !== 6) {
     $fuenteData['url']      = '';
+    $fuenteData['url_ios']  = '';
     $fuenteData['ck_key']   = '';
     $fuenteData['ck_keyid'] = '';
 }
@@ -119,7 +123,7 @@ $ua    = strtolower($_SERVER['HTTP_USER_AGENT'] ?? '');
 $isIOS = (bool)preg_match('/iphone|ipad|ipod/', $ua);
 
 if ($isIOS) {
-    if (!empty($fuenteData['url_ios'])) {
+    if ($hasUrlIos) {
         // Tiene alternativa → reproducir con Clappr inline
         $reproducotorFile = __DIR__ . '/reproductor-ios.php';
     }

@@ -8,12 +8,23 @@
  *   - Array de canales:  [{canal, programas}, ...]
  *
  * Archivos excluidos: all.json, tdt.json, tdt_epg.json
+ *
+ * Protección contra datos obsoletos: si un scraper individual deja de
+ * ejecutarse (sitio fuente caído, bloqueo, etc.), su JSON se queda congelado
+ * con el último "en_vivo" que vio. Sin esta protección, ese canal seguiría
+ * mostrando como "en vivo" en el home un programa que terminó hace horas o
+ * días. Por eso, si el archivo es más viejo que STALE_THRESHOLD, se anula su
+ * bandera en_vivo (el canal deja de aparecer en "Programas en vivo ahora"
+ * hasta que el scraper vuelva a generar datos frescos).
  */
+
+const STALE_THRESHOLD = 3 * 3600; // 3 horas
 
 $dir  = __DIR__ . '/../data/programas';
 $out  = "$dir/all.json";
 $skip = ['all.json', 'tdt.json', 'tdt_epg.json'];
 $all  = [];
+$stale = [];
 
 /**
  * Convierte una hora HH:MM desde un timezone fuente a Honduras (UTC-6).
@@ -47,16 +58,27 @@ function normalizeCanal(array $canal): array {
     return $canal;
 }
 
+/** Anula en_vivo en todos los programas: usado cuando el archivo fuente está obsoleto */
+function suppressEnVivo(array &$canal): void {
+    foreach ($canal['programas'] as &$prog) {
+        $prog['en_vivo'] = false;
+    }
+    unset($prog);
+}
+
 foreach (glob("$dir/*.json") as $file) {
     if (in_array(basename($file), $skip)) continue;
 
     $data = json_decode(file_get_contents($file), true);
     if (!$data) continue;
 
+    $isStale = (time() - filemtime($file)) > STALE_THRESHOLD;
+
     // Array de canales (ej. tdt_epg.json — reservado para futura reintegración)
     if (isset($data[0]) && is_array($data[0])) {
         foreach ($data as $item) {
             if (isset($item['canal'], $item['programas'])) {
+                if ($isStale) { $stale[] = $item['canal']; suppressEnVivo($item); }
                 $all[] = normalizeCanal($item);
             }
         }
@@ -65,8 +87,13 @@ foreach (glob("$dir/*.json") as $file) {
 
     // Objeto canal individual
     if (isset($data['canal'], $data['programas'])) {
+        if ($isStale) { $stale[] = $data['canal']; suppressEnVivo($data); }
         $all[] = normalizeCanal($data);
     }
+}
+
+if (!empty($stale)) {
+    echo '⚠ Datos obsoletos (>' . (STALE_THRESHOLD / 3600) . 'h), en_vivo suprimido: ' . implode(', ', $stale) . PHP_EOL;
 }
 
 file_put_contents($out, json_encode($all, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));

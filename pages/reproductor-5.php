@@ -15,9 +15,14 @@ if (!isset($fuenteData)) {
     die('Acceso denegado');
 }
 
-$url     = htmlspecialchars($fuenteData['url']);
 $nombre  = htmlspecialchars($fuenteData['nombre']);
 $sandbox = (int)($fuenteData['sandbox'] ?? 1);
+
+// URL NO se pasa al cliente — la sirve api/stream.php bajo token firmado
+$jsBase = json_encode(BASE_URL);
+$jsFid  = (int)$streamFuenteId;
+$jsTok  = json_encode($streamToken);
+$jsTs   = (int)$streamTs;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -130,22 +135,33 @@ $sandbox = (int)($fuenteData['sandbox'] ?? 1);
         const PLAYER_CONFIG = {
             id: <?= (int)$fuenteData['id'] ?>,
             nombre: '<?= $nombre ?>',
-            url: '<?= $url ?>',
             tipo: 5,
             sandbox: <?= $sandbox ?>
         };
+
+        // ── Token de sesión (la URL nunca aparece en el source) ─────────────
+        var _BASE = <?= $jsBase ?>;
+        var _FID  = <?= $jsFid ?>;
+        var _TOK  = <?= $jsTok ?>;
+        var _TS   = <?= $jsTs ?>;
 
         // ============================================================
         // INICIALIZAR REPRODUCTOR IFRAME
         // ============================================================
         var statusEl = document.getElementById('status');
         function showPlayer() { statusEl.style.display = 'none'; }
+        function showError(msg) {
+            statusEl.innerHTML =
+                '<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>' +
+                '<div class="s-title">' + msg + '</div>';
+            statusEl.style.display = 'flex';
+        }
 
-        function initializePlayer() {
+        function initializePlayer(url) {
             const container = document.getElementById('player-container');
 
             const iframe = document.createElement('iframe');
-            iframe.src = PLAYER_CONFIG.url;
+            iframe.src = url;
             iframe.allowFullscreen = true;
             iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
             if (PLAYER_CONFIG.sandbox) {
@@ -158,8 +174,25 @@ $sandbox = (int)($fuenteData['sandbox'] ?? 1);
             container.appendChild(iframe);
         }
 
-        // Inicializar cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', initializePlayer);
+        // Inicializar cuando el DOM esté listo — solicitar la URL al servidor
+        // (token HMAC vinculado a la sesión) antes de montar el iframe.
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch(_BASE + 'api/stream.php?id=' + _FID + '&ts=' + _TS + '&t=' + encodeURIComponent(_TOK), {
+                credentials: 'same-origin'
+            })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (sd) {
+                if (!sd.url) { showError('Stream no disponible'); return; }
+                initializePlayer(sd.url);
+            })
+            .catch(function (err) {
+                showError('No se pudo conectar con el servidor.');
+                console.error(err);
+            });
+        });
     </script>
 </body>
 </html>

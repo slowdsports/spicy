@@ -13,17 +13,9 @@ if (isLoggedIn()) {
     }
 }
 
-$maintenance = 0;
+$maintenance = isMaintenanceMode() ? 1 : 0;
 $maintenanceLabel = 'Sistema operativo';
 $maintenanceStyle = 'background: var(--accent-soft); border: 1px solid var(--border-accent); color: var(--text-secondary);';
-
-if (function_exists('getDBConnection')) {
-    $conn = getDBConnection();
-    $result = $conn->query("SELECT valor FROM config_sitio WHERE clave = 'mantenimiento' LIMIT 1");
-    if ($result && ($row = $result->fetch_assoc())) {
-        $maintenance = (int) $row['valor'];
-    }
-}
 
 if ($maintenance === 1) {
     $maintenanceLabel = 'Sistema en mantenimiento';

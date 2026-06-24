@@ -12,10 +12,14 @@ if (!isset($fuenteData)) {
 }
 
 $nombre   = htmlspecialchars($fuenteData['nombre']);
-$urlIos   = $fuenteData['url_ios'] ?? '';
 $tipoIos  = $fuenteData['tipo_ios'] ?? 'hls';
-$jsURL    = json_encode($urlIos);
 $jsNombre = json_encode($nombre);
+
+// La URL iOS NO se pasa al cliente — la sirve api/stream.php bajo token firmado
+$jsBase = json_encode(BASE_URL);
+$jsFid  = (int)$streamFuenteId;
+$jsTok  = json_encode($streamToken);
+$jsTs   = (int)$streamTs;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -99,8 +103,13 @@ $jsNombre = json_encode($nombre);
     </div>
 
     <script>
-        var URL_IOS  = <?= $jsURL ?>;
         var TIPO_IOS = <?= json_encode($tipoIos) ?>;
+
+        // ── Token de sesión (la URL nunca aparece en el source) ─────────────
+        var _BASE = <?= $jsBase ?>;
+        var _FID  = <?= $jsFid ?>;
+        var _TOK  = <?= $jsTok ?>;
+        var _TS   = <?= $jsTs ?>;
 
         var statusEl = document.getElementById('status');
         var playerEl = document.getElementById('player');
@@ -119,12 +128,11 @@ $jsNombre = json_encode($nombre);
             playerEl.style.display = 'none';
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-
+        function initPlayer(urlIos) {
             if (TIPO_IOS === 'iframe') {
                 // ── iFrame ─────────────────────────────────────────────────
                 var iframe = document.createElement('iframe');
-                iframe.src             = URL_IOS;
+                iframe.src             = urlIos;
                 iframe.style.cssText   = 'width:100%;height:100%;border:none;background:#000;';
                 iframe.allowFullscreen = true;
                 iframe.setAttribute('allow', 'autoplay; fullscreen');
@@ -139,7 +147,7 @@ $jsNombre = json_encode($nombre);
                 }
 
                 window.player = new Clappr.Player({
-                    source:   URL_IOS,
+                    source:   urlIos,
                     parentId: '#player',
                     width:    '100%',
                     height:   '100%',
@@ -159,6 +167,25 @@ $jsNombre = json_encode($nombre);
                     }
                 });
             }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Solicitar la URL al servidor — token HMAC vinculado a la sesión
+            fetch(_BASE + 'api/stream.php?id=' + _FID + '&ts=' + _TS + '&t=' + encodeURIComponent(_TOK), {
+                credentials: 'same-origin'
+            })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (sd) {
+                if (!sd.url_ios) { showError('Stream no disponible.'); return; }
+                initPlayer(sd.url_ios);
+            })
+            .catch(function (err) {
+                showError('No se pudo conectar con el servidor.');
+                console.error(err);
+            });
         });
 
         document.addEventListener('contextmenu', function (e) { e.preventDefault(); });

@@ -14,9 +14,10 @@ $sports = [
     'baseball'   => ['icon' => 'fa-baseball',                 'label' => 'Béisbol'],
 ];
 
-$loggedIn = isLoggedIn();
-$admin    = isAdmin();
-$uName    = userName();
+$loggedIn      = isLoggedIn();
+$admin         = isAdmin();
+$uName         = userName();
+$maintenanceOn = isMaintenanceMode();
 ?>
 <nav class="streamhub-navbar navbar navbar-expand-lg">
   <div class="container">
@@ -87,6 +88,12 @@ $uName    = userName();
       </ul>
 
       <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
+        <span class="status-pill <?= $maintenanceOn ? 'status-pill-maint' : 'status-pill-ok' ?>"
+              title="<?= $maintenanceOn ? 'Sistema en mantenimiento' : 'Sistema operativo' ?>">
+          <span class="status-dot"></span>
+          <span class="status-pill-label"><?= $maintenanceOn ? 'Mantenimiento' : 'Operativo' ?></span>
+        </span>
+
         <button class="btn-theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
           <i class="fas fa-sun" id="theme-icon"></i>
         </button>
@@ -167,5 +174,42 @@ $uName    = userName();
 .nav-mundial.active-mundial {
   color: #f59e0b !important;
   background: rgba(245,158,11,.15) !important;
+}
+
+/* Indicador de estado del sitio (normal / mantenimiento) */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.8rem;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+}
+.status-pill-ok {
+  background: var(--accent-soft);
+  border: 1px solid var(--border-accent);
+  color: var(--text-secondary);
+}
+.status-pill-maint {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #22c55e;
+  animation: pulse-badge 2s infinite;
+}
+.status-pill-maint .status-dot { background: #d97706; }
+
+@media (max-width: 420px) {
+  .status-pill-label { display: none; }
+  .status-pill { padding: 0.4rem 0.55rem; }
 }
 </style>

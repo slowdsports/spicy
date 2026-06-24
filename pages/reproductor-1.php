@@ -15,8 +15,13 @@ if (!isset($fuenteData)) {
     die('Acceso denegado');
 }
 
-$url = htmlspecialchars($fuenteData['url']);
 $nombre = htmlspecialchars($fuenteData['nombre']);
+
+// URL NO se pasa al cliente — la sirve api/stream.php bajo token firmado
+$jsBase = json_encode(BASE_URL);
+$jsFid  = (int)$streamFuenteId;
+$jsTok  = json_encode($streamToken);
+$jsTs   = (int)$streamTs;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -130,7 +135,6 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
         const PLAYER_CONFIG = {
             id: <?= (int)$fuenteData['id'] ?>,
             nombre: '<?= $nombre ?>',
-            url: '<?= $url ?>',
             tipo: 1,
             // OPCIONES PARA AGREGAR REPRODUCTORES:
             // - useJWPlayer: true  -> Usa JW Player
@@ -138,14 +142,42 @@ $nombre = htmlspecialchars($fuenteData['nombre']);
             // - useHLS.js: true    -> Usa HLS.js (para navegadores sin soporte nativo)
         };
 
+        // ── Token de sesión (la URL nunca aparece en el source) ─────────────
+        var _BASE = <?= $jsBase ?>;
+        var _FID  = <?= $jsFid ?>;
+        var _TOK  = <?= $jsTok ?>;
+        var _TS   = <?= $jsTs ?>;
+
         var statusEl = document.getElementById('status');
         function showPlayer() { statusEl.style.display = 'none'; }
+        function showError(msg) {
+            statusEl.innerHTML =
+                '<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>' +
+                '<div class="s-title">' + msg + '</div>';
+            statusEl.style.display = 'flex';
+        }
 
         // ============================================================
         // INICIALIZAR REPRODUCTOR (JW Player por defecto)
         // ============================================================
         function initializePlayer() {
-            initJWPlayer(PLAYER_CONFIG);
+            // Solicitar la URL al servidor — token HMAC vinculado a la sesión
+            fetch(_BASE + 'api/stream.php?id=' + _FID + '&ts=' + _TS + '&t=' + encodeURIComponent(_TOK), {
+                credentials: 'same-origin'
+            })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (sd) {
+                if (!sd.url) { showError('Stream no disponible'); return; }
+                PLAYER_CONFIG.url = sd.url;
+                initJWPlayer(PLAYER_CONFIG);
+            })
+            .catch(function (err) {
+                showError('No se pudo conectar con el servidor.');
+                console.error(err);
+            });
         }
 
         /**

@@ -81,7 +81,11 @@ function isAdmin(): bool {
     return isset($_SESSION['user_rol']) && $_SESSION['user_rol'] === 'admin';
 }
 
-/** Devuelve true si el usuario es spicy (premium) y su acceso no ha expirado */
+/**
+ * Devuelve true si el usuario es spicy (premium) y su acceso no ha expirado.
+ * El resultado se cachea en $_SESSION durante SPICY_CHECK_TTL: evita repetir
+ * la consulta a `usuarios` en cada página vista por el mismo usuario.
+ */
 function isSpicy(): bool {
     static $checked = false, $result = false;
     if ($checked) return $result;
@@ -89,6 +93,14 @@ function isSpicy(): bool {
 
     if (!isset($_SESSION['user_rol']) || $_SESSION['user_rol'] !== 'spicy') {
         return $result = false;
+    }
+
+    $spicyCheckTtl = 3600; // revalidar contra la BD como máximo 1 vez por hora
+    if (
+        isset($_SESSION['spicy_valid'], $_SESSION['spicy_checked_at'])
+        && (time() - $_SESSION['spicy_checked_at']) < $spicyCheckTtl
+    ) {
+        return $result = $_SESSION['spicy_valid'];
     }
 
     // Verificar expiración en BD (solo si db.php ya fue incluido)
@@ -106,7 +118,9 @@ function isSpicy(): bool {
         $stmt->close();
 
         if (!$row) {
-            $_SESSION['user_rol'] = 'usuario';
+            $_SESSION['user_rol']       = 'usuario';
+            $_SESSION['spicy_valid']      = false;
+            $_SESSION['spicy_checked_at'] = time();
             return $result = false;
         }
 
@@ -116,10 +130,14 @@ function isSpicy(): bool {
             $u->bind_param('i', $id);
             $u->execute();
             $u->close();
-            $_SESSION['user_rol'] = 'usuario';
+            $_SESSION['user_rol']        = 'usuario';
+            $_SESSION['spicy_valid']      = false;
+            $_SESSION['spicy_checked_at'] = time();
             return $result = false;
         }
 
+        $_SESSION['spicy_valid']      = true;
+        $_SESSION['spicy_checked_at'] = time();
         return $result = true;
     } catch (Throwable $e) {
         return $result = true; // no penalizar al usuario si la BD falla
@@ -139,4 +157,27 @@ function userName(): string {
 /** Devuelve el ID del usuario o 0 */
 function userId(): int {
     return (int)($_SESSION['user_id'] ?? 0);
+}
+
+// ============================================================
+// HELPERS DE ESTADO DEL SITIO
+// ============================================================
+
+/**
+ * Lee data/config.json (caché de la tabla config_sitio). Nunca consulta la
+ * base de datos: ese archivo solo lo regenera includes/cache.php cuando un
+ * admin guarda cambios en admin/pages/config.php.
+ */
+function siteConfig(): array {
+    static $cfg = null;
+    if ($cfg !== null) return $cfg;
+
+    $path = __DIR__ . '/../data/config.json';
+    $cfg  = file_exists($path) ? (json_decode(file_get_contents($path), true) ?: []) : [];
+    return $cfg;
+}
+
+/** Devuelve true si el sitio está en modo mantenimiento (config_sitio.mantenimiento cacheado) */
+function isMaintenanceMode(): bool {
+    return (int)(siteConfig()['mantenimiento'] ?? 0) === 1;
 }

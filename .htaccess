@@ -1,0 +1,57 @@
+# ============================================================
+# StreamHub - Caché HTTP y compresión de assets estáticos
+#
+# Los bloques <IfModule> no hacen nada si el módulo no está cargado
+# (en este XAMPP local mod_expires/mod_deflate vienen desactivados por
+# defecto; en hosting compartido normal sí suelen venir activos).
+#
+# CSS/JS se sirven SIN versionado en la URL (style.css, main.js, etc.),
+# por eso se cachean solo 7 días en vez de 1 año: si se edita el archivo,
+# los visitantes recurrentes lo verán reflejado en como máximo una semana
+# en vez de esperar hasta que el navegador decida revalidar.
+#
+# Las páginas PHP (?p=home, admin/, api/) no quedan afectadas: las reglas
+# de abajo solo aplican por extensión de archivo estático.
+# ============================================================
+
+Options -Indexes
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+  AddOutputFilterByType DEFLATE application/javascript application/json application/xml
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+
+  ExpiresByType text/css              "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresByType text/javascript        "access plus 7 days"
+
+  ExpiresByType image/png    "access plus 1 year"
+  ExpiresByType image/jpeg   "access plus 1 year"
+  ExpiresByType image/gif    "access plus 1 year"
+  ExpiresByType image/webp   "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+
+  ExpiresByType font/woff               "access plus 1 year"
+  ExpiresByType font/woff2              "access plus 1 year"
+  ExpiresByType font/ttf                "access plus 1 year"
+  ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+
+  ExpiresByType application/json "access plus 60 seconds"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+  <FilesMatch "\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|eot)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.json$">
+    Header set Cache-Control "public, max-age=60"
+  </FilesMatch>
+</IfModule>
