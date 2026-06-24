@@ -136,27 +136,30 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
         /* Aviso de estabilidad en iOS 26 */
         .ios-notice {
             position: absolute;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            box-sizing: border-box;
             z-index: 200;
             display: flex;
             align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
             gap: 10px;
             background: rgba(20, 20, 24, 0.92);
-            border: 1px solid rgba(139, 92, 246, 0.4);
+            border-bottom: 1px solid rgba(139, 92, 246, 0.4);
             color: #fff;
-            padding: 10px 14px;
-            border-radius: 10px;
+            padding: 10px 40px;
             font-size: 0.82em;
             font-weight: 500;
-            max-width: 88%;
+            text-align: center;
             box-shadow: 0 6px 24px rgba(0,0,0,.35);
             transition: opacity .4s ease, transform .4s ease;
         }
         .ios-notice.ios-notice-hidden {
             opacity: 0;
-            transform: translateX(-50%) translateY(-10px);
+            transform: translateY(-10px);
             pointer-events: none;
         }
         .ios-notice-dot {
@@ -164,8 +167,12 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
             background: #22c55e; flex-shrink: 0;
         }
         .ios-notice-close {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
             background: none; border: none; color: rgba(255,255,255,.55);
-            font-size: 1.05em; line-height: 1; cursor: pointer; padding: 0 0 0 4px;
+            font-size: 1.2em; line-height: 1; cursor: pointer; padding: 4px;
         }
         .ios-notice-close:hover { color: #fff; }
 
