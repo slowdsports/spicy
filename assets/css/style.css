@@ -364,6 +364,26 @@ body {
   50% { opacity: 0.7; }
 }
 
+/* ============================================================
+   LAZY-LOAD DE IMÁGENES: shimmer mientras carga el logo/miniatura
+   Se aplica directamente sobre el <img> (ya tiene su tamaño final
+   por CSS, así que no hay salto de layout). assets/js/lazyload.js
+   quita la clase en el evento load/error de cada imagen.
+   ============================================================ */
+.lazy-img {
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--border) 37%, var(--bg-secondary) 63%);
+  background-size: 400% 100%;
+  animation: img-shimmer 1.4s ease infinite;
+}
+.lazy-img.lazy-img-loaded {
+  animation: none;
+  background: none;
+}
+@keyframes img-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* Contenido del partido: equipos */
 .match-teams {
   display: flex;

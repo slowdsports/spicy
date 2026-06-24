@@ -172,7 +172,8 @@ $logo   = $liga['logo'];
 <img src="<?= htmlspecialchars($logo) ?>"
      data-logo-base="<?= htmlspecialchars($logo) ?>"
      alt="<?= htmlspecialchars($nombre) ?>"
-     class="channel-logo">
+     class="channel-logo lazy-img"
+     loading="lazy">
 <?php else: ?>
 <i class="fas <?= $meta['icon'] ?>"
    style="font-size:1.8rem; color:var(--accent); opacity:.7;"></i>

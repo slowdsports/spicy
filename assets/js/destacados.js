@@ -60,19 +60,19 @@
     card.innerHTML =
       '<div class="fc-header">' +
         (leagueLogo
-          ? '<img src="' + esc(leagueLogo) + '" alt="' + esc(leagueName) + '" class="fc-league-logo" onerror="this.style.display=\'none\'">'
+          ? '<img src="' + esc(leagueLogo) + '" alt="' + esc(leagueName) + '" class="fc-league-logo lazy-img" loading="lazy" onerror="this.style.display=\'none\'">'
           : '') +
         '<span class="fc-league-name">' + esc(leagueName) + '</span>' +
         '<span class="fc-time">' + esc(timeLabel) + '</span>' +
       '</div>' +
       '<div class="fc-teams">' +
         '<div class="fc-team">' +
-          (homeLogo ? '<img src="' + esc(homeLogo) + '" alt="' + esc(homeName) + '" class="fc-team-logo" onerror="this.style.opacity=\'0\'">' : '') +
+          (homeLogo ? '<img src="' + esc(homeLogo) + '" alt="' + esc(homeName) + '" class="fc-team-logo lazy-img" loading="lazy" onerror="this.style.opacity=\'0\'">' : '') +
           '<span class="fc-team-name">' + esc(homeName) + '</span>' +
         '</div>' +
         '<div class="fc-vs">VS</div>' +
         '<div class="fc-team">' +
-          (awayLogo ? '<img src="' + esc(awayLogo) + '" alt="' + esc(awayName) + '" class="fc-team-logo" onerror="this.style.opacity=\'0\'">' : '') +
+          (awayLogo ? '<img src="' + esc(awayLogo) + '" alt="' + esc(awayName) + '" class="fc-team-logo lazy-img" loading="lazy" onerror="this.style.opacity=\'0\'">' : '') +
           '<span class="fc-team-name">' + esc(awayName) + '</span>' +
         '</div>' +
       '</div>' +

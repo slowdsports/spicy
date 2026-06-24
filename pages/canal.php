@@ -449,7 +449,7 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
       ?>
       <div class="partido-header<?= ($isMundial && ($pStatus === 'live')) ? ' is-live' : '' ?>">
         <div class="partido-meta">
-          <img src="<?= $pLeagueLogo ?>" data-logo-base="<?= $pLeagueLogo ?>" class="partido-league-img" onerror="this.style.opacity='.2'">
+          <img src="<?= $pLeagueLogo ?>" data-logo-base="<?= $pLeagueLogo ?>" class="partido-league-img lazy-img" loading="lazy" onerror="this.style.opacity='.2'">
           <?php if (!empty($partidoData['fecha_hora'])): ?>
             <span class="badge-time"><i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($partidoData['fecha_hora']) ?>" data-ts="<?= (int)($partidoData['timestamp'] ?? 0) ?>"><?= $pTime ?></span></span>
           <?php elseif ($pStatus === 'live'): ?>
@@ -460,12 +460,12 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
         </div>
         <div class="partido-teams">
           <div class="partido-team">
-            <img src="<?= $pLocalLogo ?>" data-logo-base="<?= $pLocalLogo ?>" onerror="this.style.opacity='.2'">
+            <img src="<?= $pLocalLogo ?>" data-logo-base="<?= $pLocalLogo ?>" class="lazy-img" loading="lazy" onerror="this.style.opacity='.2'">
             <span><?= $pLocal ?></span>
           </div>
           <div class="partido-vs">vs</div>
           <div class="partido-team">
-            <img src="<?= $pVisitLogo ?>" data-logo-base="<?= $pVisitLogo ?>" onerror="this.style.opacity='.2'">
+            <img src="<?= $pVisitLogo ?>" data-logo-base="<?= $pVisitLogo ?>" class="lazy-img" loading="lazy" onerror="this.style.opacity='.2'">
             <span><?= $pVisit ?></span>
           </div>
         </div>
@@ -537,7 +537,7 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
       <div class="channel-info-bar">
         <div class="channel-info-left">
           <div class="channel-avatar">
-            <img src="<?= htmlspecialchars($canalLogo) ?>" alt="Canal" id="channel-avatar-img" onerror="this.style.opacity='.15'">
+            <img src="<?= htmlspecialchars($canalLogo) ?>" alt="Canal" id="channel-avatar-img" class="lazy-img" loading="lazy" onerror="this.style.opacity='.15'">
           </div>
           <div class="channel-title-group">
             <h2 id="channel-title">Canal</h2>
@@ -714,7 +714,7 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
           $favName = htmlspecialchars($fav['nombre'] ?? '');
           $favLogo = !empty($fav['logo']) ? htmlspecialchars($fav['logo']) : '';
           $logoHtml = $favLogo
-            ? "<img src=\"{$favLogo}\" alt=\"{$favName}\" style=\"width:44px;height:44px;object-fit:contain;\" onerror=\"this.style.opacity='0'\">"
+            ? "<img src=\"{$favLogo}\" alt=\"{$favName}\" class=\"lazy-img\" style=\"width:44px;height:44px;object-fit:contain;\" loading=\"lazy\" onerror=\"this.style.opacity='0'\">"
             : '<i class="fas fa-broadcast-tower" style="font-size:1.5rem;color:var(--accent);"></i>';
         ?>
         <a href="<?= url('canal', ['id' => $favId]) ?>" class="match-card"

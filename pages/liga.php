@@ -146,7 +146,7 @@ function canalNombre($id){
 <div class="d-flex align-items-center gap-3">
 
 <div class="league-box">
-<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>" alt="">
+<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>" alt="" class="lazy-img" loading="lazy">
 </div>
 
 <div>
@@ -227,7 +227,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 <div class="match-left">
 
 <div class="mini-league">
-<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>">
+<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>" class="lazy-img" loading="lazy">
 </div>
 
 <?php if($status==='live'): ?>
@@ -246,7 +246,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 <div class="match-center">
 
 <div class="team-box">
-<img src="<?= $localLogo ?>" data-logo-base="<?= $localLogo ?>" class="team-logo">
+<img src="<?= $localLogo ?>" data-logo-base="<?= $localLogo ?>" class="team-logo lazy-img" loading="lazy">
 <span><?= htmlspecialchars($local) ?></span>
 </div>
 
@@ -256,7 +256,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 </div>
 
 <div class="team-box">
-<img src="<?= $visitLogo ?>" data-logo-base="<?= $visitLogo ?>" class="team-logo">
+<img src="<?= $visitLogo ?>" data-logo-base="<?= $visitLogo ?>" class="team-logo lazy-img" loading="lazy">
 <span><?= htmlspecialchars($visit) ?></span>
 </div>
 
@@ -267,7 +267,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 
 <?php if($primerCanal): ?>
 <div class="first-channel">
-<img src="<?= $primerCanal['logo'] ?>">
+<img src="<?= $primerCanal['logo'] ?>" class="lazy-img" loading="lazy">
 <small><?= htmlspecialchars($primerCanal['nombre']) ?></small>
 </div>
 <?php else: ?>
@@ -307,7 +307,7 @@ No hay canales disponibles.
 
 <a href="<?= url('canal',['id'=>$canal['id'],'partido'=>$p['id']]) ?>" class="channel-row">
 
-<img src="<?= $canal['logo'] ?>" class="channel-row-logo">
+<img src="<?= $canal['logo'] ?>" class="channel-row-logo lazy-img" loading="lazy">
 
 <div class="channel-row-name">
 <?= htmlspecialchars($canal['nombre']) ?>
@@ -508,8 +508,8 @@ min-width:90px;
 }
 
 .first-channel img{
+width:80px;
 height:30px;
-max-width:80px;
 object-fit:contain;
 }
 
@@ -556,8 +556,7 @@ color:var(--accent);
 
 .channel-row-logo{
 height:26px;
-width:auto;
-max-width:60px;
+width:60px;
 object-fit:contain;
 }
 

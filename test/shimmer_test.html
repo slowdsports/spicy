@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<title>Shimmer test</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  body { padding: 40px; display: flex; gap: 24px; }
+  .box { width: 120px; height: 120px; background: var(--bg-card); display:flex; align-items:center; justify-content:center; border-radius: 12px; }
+  .box img { width: 100px; height: 100px; object-fit: contain; }
+  #status { position: fixed; top: 10px; left: 10px; font-family: monospace; font-size: 20px; color: #0f0; background:#000; padding: 6px 10px; }
+</style>
+</head>
+<body>
+  <div id="status">esperando...</div>
+  <div class="box"><img class="lazy-img" loading="lazy" id="slowimg" src="slow_image.php?x=1" alt="test"></div>
+  <script src="../assets/js/lazyload.js"></script>
+  <script>
+    var img = document.getElementById('slowimg');
+    var statusEl = document.getElementById('status');
+    function refresh() {
+      var loaded = img.classList.contains('lazy-img-loaded');
+      var shimmer = img.classList.contains('lazy-img');
+      statusEl.textContent = 'lazy-img=' + shimmer + ' loaded=' + loaded;
+      statusEl.style.color = loaded ? '#0f0' : '#ff0';
+    }
+    var iv = setInterval(refresh, 200);
+    refresh();
+  </script>
+</body>
+</html>

@@ -163,6 +163,8 @@ function mCanalLogo($id) {
       <img src="<?= $ligaLogo ?>"
            data-logo-base="<?= $ligaLogo ?>"
            alt="FIFA World Cup 2026"
+           class="lazy-img"
+           loading="lazy"
            onerror="this.style.display='none'">
     </div>
 
@@ -264,7 +266,9 @@ function mCanalLogo($id) {
               <div class="mini-league mundial-mini-league">
                 <img src="<?= $ligaLogo ?>"
                      data-logo-base="<?= $ligaLogo ?>"
-                     alt="FIFA WC">
+                     alt="FIFA WC"
+                     class="lazy-img"
+                     loading="lazy">
               </div>
 
               <?php if($isLive): ?>
@@ -289,7 +293,8 @@ function mCanalLogo($id) {
               <div class="team-box">
                 <img src="<?= $localLogo ?>"
                      data-logo-base="<?= $localLogo ?>"
-                     class="team-logo mundial-team-logo">
+                     class="team-logo mundial-team-logo lazy-img"
+                     loading="lazy">
                 <span><?= htmlspecialchars($local) ?></span>
               </div>
 
@@ -312,7 +317,8 @@ function mCanalLogo($id) {
               <div class="team-box">
                 <img src="<?= $visitLogo ?>"
                      data-logo-base="<?= $visitLogo ?>"
-                     class="team-logo mundial-team-logo">
+                     class="team-logo mundial-team-logo lazy-img"
+                     loading="lazy">
                 <span><?= htmlspecialchars($visit) ?></span>
               </div>
 
@@ -322,7 +328,7 @@ function mCanalLogo($id) {
             <div class="match-right">
               <?php if($primerCanal): ?>
               <div class="first-channel mundial-first-channel">
-                <img src="<?= $primerCanal['logo'] ?>" alt="">
+                <img src="<?= $primerCanal['logo'] ?>" alt="" class="lazy-img" loading="lazy">
                 <small><?= htmlspecialchars($primerCanal['nombre']) ?></small>
               </div>
               <?php else: ?>
@@ -356,7 +362,7 @@ function mCanalLogo($id) {
             <?php foreach($canalesPartido as $canal): ?>
             <a href="<?= url('canal', ['id' => $canal['id'], 'partido' => $p['id']]) ?>"
                class="channel-row mundial-channel-row">
-              <img src="<?= $canal['logo'] ?>" class="channel-row-logo" alt="">
+              <img src="<?= $canal['logo'] ?>" class="channel-row-logo lazy-img" loading="lazy" alt="">
               <div class="channel-row-name"><?= htmlspecialchars($canal['nombre']) ?></div>
               <i class="fas fa-play-circle ms-auto"></i>
             </a>
@@ -980,7 +986,7 @@ function mCanalLogo($id) {
   padding: .6rem; border-radius: 10px;
   min-width: 90px;
 }
-.first-channel img { height: 30px; max-width: 80px; object-fit: contain; }
+.first-channel img { width: 80px; height: 30px; object-fit: contain; }
 
 .no-channel { color: var(--text-muted); text-align: center; }
 
@@ -1015,7 +1021,7 @@ function mCanalLogo($id) {
 }
 .channel-row:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 
-.channel-row-logo { height: 26px; width: auto; max-width: 60px; object-fit: contain; }
+.channel-row-logo { height: 26px; width: 60px; object-fit: contain; }
 .channel-row-name { font-weight: 600; font-size: .85rem; }
 
 .no-list-channel { color: var(--text-muted); font-size: .85rem; }
