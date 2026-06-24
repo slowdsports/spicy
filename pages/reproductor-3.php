@@ -133,6 +133,42 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
         @keyframes spin { to { transform: rotate(360deg); } }
         .s-title { font-size: 1.15em; font-weight: 600; color: #fff; }
 
+        /* Aviso de estabilidad en iOS 26 */
+        .ios-notice {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(20, 20, 24, 0.92);
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.82em;
+            font-weight: 500;
+            max-width: 88%;
+            box-shadow: 0 6px 24px rgba(0,0,0,.35);
+            transition: opacity .4s ease, transform .4s ease;
+        }
+        .ios-notice.ios-notice-hidden {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px);
+            pointer-events: none;
+        }
+        .ios-notice-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #22c55e; flex-shrink: 0;
+        }
+        .ios-notice-close {
+            background: none; border: none; color: rgba(255,255,255,.55);
+            font-size: 1.05em; line-height: 1; cursor: pointer; padding: 0 0 0 4px;
+        }
+        .ios-notice-close:hover { color: #fff; }
+
         /* Estilos de marca para Bitmovin */
         .bmpui-ui-watermark {
             background-image: url("https://eduveel1.github.io/baleada/img/iRTVW_PLAYER.png");
@@ -154,6 +190,13 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
         <div class="s-title">Cargando canal...</div>
     </div>
     <div id="player"></div>
+    <?php if ($isIOS): ?>
+    <div id="ios-notice" class="ios-notice">
+        <span class="ios-notice-dot"></span>
+        <span>Los canales de este sitio son estables en iOS 26.</span>
+        <button id="ios-notice-close" type="button" class="ios-notice-close" aria-label="Cerrar">&times;</button>
+    </div>
+    <?php endif; ?>
 </div>
 
 <script>
@@ -182,6 +225,22 @@ function showError(msg) {
         '<div class="s-title">' + msg + '</div>';
     statusEl.style.display = 'flex';
 }
+
+<?php if ($isIOS): ?>
+// ── Aviso de estabilidad en iOS 26: se oculta solo a los 30s o al cerrarlo ──
+(function () {
+    var notice = document.getElementById('ios-notice');
+    var closeBtn = document.getElementById('ios-notice-close');
+    if (!notice) return;
+    var hideTimer = setTimeout(function () { notice.classList.add('ios-notice-hidden'); }, 30000);
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+            clearTimeout(hideTimer);
+            notice.classList.add('ios-notice-hidden');
+        });
+    }
+})();
+<?php endif; ?>
 
 <?php if ($reproductor === 'bitmovin'): ?>
 // Interceptar licencias Bitmovin ANTES de que el player emita la primera petición
