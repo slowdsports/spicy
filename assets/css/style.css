@@ -747,8 +747,10 @@ img[data-logo-base] {
   box-shadow: -8px 0 32px rgba(0,0,0,.5);
   animation: chat-slide-in .2s ease;
 }
-/* El wrap de mensajes ocupa todo el espacio disponible dentro del panel */
-.channel-page-layout.theater-mode.chat-open .chat-messages-wrap {
+/* El wrap de mensajes (o el panel de Telegram) ocupa todo el espacio
+   disponible dentro del panel flotante */
+.channel-page-layout.theater-mode.chat-open .chat-messages-wrap,
+.channel-page-layout.theater-mode.chat-open .telegram-panel {
   flex: 1;
   height: auto;
   min-height: 0;
@@ -1023,6 +1025,36 @@ img[data-logo-base] {
   gap: 8px;
 }
 
+/* Pestañas Telegram / Chat en la cabecera del panel lateral */
+.chat-tabs {
+  display: flex;
+  gap: 4px;
+}
+.chat-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.chat-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-input);
+}
+.chat-tab.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .chat-users-count {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -1086,6 +1118,67 @@ img[data-logo-base] {
   font-size: 0.82rem;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+/* Panel de acceso a Telegram (pestaña "Telegram" del panel lateral) */
+.telegram-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+/* Variante: muestra el post embebido de Telegram en vez del mensaje genérico */
+.telegram-panel.telegram-panel--post {
+  display: block;
+  align-items: unset;
+  justify-content: unset;
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+.telegram-panel-icon {
+  font-size: 2.75rem;
+  color: #26A5E4;
+}
+.telegram-panel h3 {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.telegram-panel p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 260px;
+}
+.btn-telegram-join {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #26A5E4;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.6rem 1.4rem;
+  border-radius: 100px;
+  text-decoration: none;
+  transition: transform .15s ease, box-shadow .15s ease;
+  box-shadow: 0 4px 14px rgba(38,165,228,.35);
+}
+.btn-telegram-join:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(38,165,228,.5);
+  color: #fff;
 }
 
 /* Placeholder de chat no disponible */
@@ -1332,7 +1425,7 @@ img[data-logo-base] {
     grid-template-columns: 1fr;
   }
 
-  .chat-messages, .chat-unavailable {
+  .chat-messages, .chat-unavailable, .telegram-panel {
     height: 280px;
   }
 
@@ -1365,7 +1458,8 @@ img[data-logo-base] {
     box-shadow: -8px 0 32px rgba(0,0,0,.5);
     animation: chat-slide-in .2s ease;
   }
-  .channel-page-layout.chat-open .chat-messages-wrap {
+  .channel-page-layout.chat-open .chat-messages-wrap,
+  .channel-page-layout.chat-open .telegram-panel {
     flex: 1;
     height: auto;
     min-height: 0;

@@ -79,11 +79,9 @@
     var chatCol = document.querySelector('.chat-column');
     if (!chatCol) return;
 
-    // Actualizar cabecera
-    var header = chatCol.querySelector('.chat-title');
-    if (header) {
-      header.innerHTML = '<i class="fab fa-twitch" style="color:#9147ff;"></i> Chat de Twitch';
-    }
+    // Actualizar el ícono de la pestaña "Chat" al de Twitch (la etiqueta se mantiene "Chat")
+    var tabIcon = document.getElementById('chat-tab-icon');
+    if (tabIcon) { tabIcon.className = 'fab fa-twitch'; tabIcon.style.color = '#9147ff'; }
 
     // Ocultar contador de usuarios y área de input
     if ($usersEl) $usersEl.style.display = 'none';

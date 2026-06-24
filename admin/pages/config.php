@@ -41,6 +41,7 @@ $grupos = [
     'Zona horaria'=> ['timezone', 'sofascore_timezone'],
     'Limits'      => ['max_fuentes_canal'],
     'Partidos'    => ['api_partidos'],
+    'Telegram'    => ['telegram_canal', 'telegram_post_id'],
 ];
 
 // Indexar configs por clave para fácil acceso

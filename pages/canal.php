@@ -581,8 +581,13 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
     <!-- CHAT -->
     <div class="chat-column">
       <div class="chat-header">
-        <div class="chat-title">
-          <i class="fas fa-comments" style="color:var(--accent);"></i> Chat en vivo
+        <div class="chat-tabs" role="tablist">
+          <button type="button" class="chat-tab active" data-tab="telegram" role="tab" aria-selected="true">
+            <i class="fab fa-telegram"></i> Telegram
+          </button>
+          <button type="button" class="chat-tab" data-tab="chat" role="tab" aria-selected="false">
+            <i class="fas fa-comments" id="chat-tab-icon"></i> <span id="chat-tab-label">Chat</span>
+          </button>
         </div>
         <span class="chat-users-count" id="chat-users">
           <i class="fas fa-circle" style="font-size:0.45rem;color:#22c55e;margin-right:4px;"></i> 0 viendo
@@ -591,13 +596,37 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="chat-messages-wrap">
+
+      <!-- Panel: acceso al canal de Telegram (pestaña activa por defecto) -->
+      <?php
+        $tgCanal = trim((string)(siteConfig()['telegram_canal'] ?? ''));
+        $tgPost  = trim((string)(siteConfig()['telegram_post_id'] ?? ''));
+      ?>
+      <?php if ($tgCanal !== '' && $tgPost !== ''): ?>
+      <div class="telegram-panel telegram-panel--post" id="telegram-panel">
+        <script async src="https://telegram.org/js/telegram-widget.js?23"
+                data-telegram-post="<?= htmlspecialchars($tgCanal . '/' . $tgPost) ?>"
+                data-width="100%" data-userpic="true" data-dark="1"></script>
+      </div>
+      <?php else: ?>
+      <div class="telegram-panel" id="telegram-panel">
+        <i class="fab fa-telegram telegram-panel-icon"></i>
+        <h3>Únete a nuestro canal de Telegram</h3>
+        <p>Avisos de canales en vivo, novedades del sitio y soporte directo.</p>
+        <a href="https://t.me/iraffle_tv" target="_blank" rel="noopener noreferrer" class="btn-telegram-join">
+          <i class="fab fa-telegram"></i> Abrir en Telegram
+        </a>
+      </div>
+      <?php endif; ?>
+
+      <!-- Panel: chat (custom o Twitch, según config del admin) -->
+      <div class="chat-messages-wrap" id="chat-messages-wrap" style="display:none;">
         <div class="chat-messages" id="chat-messages"></div>
         <button class="chat-scroll-btn" id="chat-scroll-btn" aria-label="Ir a los últimos mensajes">
           <i class="fas fa-arrow-down"></i> Mensajes nuevos
         </button>
       </div>
-      <div class="chat-input-area">
+      <div class="chat-input-area" id="chat-input-area" style="display:none;">
         <?php if ($isLoggedIn): ?>
         <div class="chat-input-wrapper">
           <input type="text" class="chat-input" id="chat-input-field"
@@ -964,8 +993,8 @@ document.addEventListener('DOMContentLoaded', function () {
     layout.classList.toggle('chat-open', open);
     if (backdrop) backdrop.classList.toggle('visible', open);
     if (floatBtn) floatBtn.classList.toggle('active', open);
-    const bmcBtn = document.getElementById('bmc-wbtn');
-    if (bmcBtn) bmcBtn.style.visibility = open ? 'hidden' : '';
+    const kofiBtn = document.querySelector('.kofi-float-wrap');
+    if (kofiBtn) kofiBtn.style.visibility = open ? 'hidden' : '';
     if (open) {
       unread = 0;
       if (badge) { badge.textContent = ''; badge.classList.remove('show'); }
@@ -1018,5 +1047,63 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   if (backdrop) backdrop.addEventListener('click', function () { setChatOpen(false); });
   if (closeBtn) closeBtn.addEventListener('click', function () { setChatOpen(false); });
+});
+
+// Pestañas del panel lateral: Telegram / Chat
+document.addEventListener('DOMContentLoaded', function () {
+  const tabs          = document.querySelectorAll('.chat-tab');
+  const telegramPanel = document.getElementById('telegram-panel');
+  const chatWrap       = document.getElementById('chat-messages-wrap');
+  const chatInputArea  = document.getElementById('chat-input-area');
+  const usersEl        = document.getElementById('chat-users');
+  if (!tabs.length || !telegramPanel || !chatWrap) return;
+
+  // Recuerda la pestaña elegida por el usuario entre visitas/canales
+  const TAB_STORAGE_KEY = 'sh_chat_tab';
+  function getSavedTab() {
+    try {
+      const saved = localStorage.getItem(TAB_STORAGE_KEY);
+      return (saved === 'telegram' || saved === 'chat') ? saved : 'telegram';
+    } catch (e) { return 'telegram'; }
+  }
+  function saveTab(name) {
+    try { localStorage.setItem(TAB_STORAGE_KEY, name); } catch (e) {}
+  }
+
+  // En modo Twitch, chat.js oculta el área de input y el contador de
+  // usuarios de forma permanente (los sustituye el propio iframe de
+  // Twitch), así que esta pestaña no debe revertir esa decisión.
+  function isTwitchMode() {
+    return typeof CHAT_MODE !== 'undefined' && CHAT_MODE === 'twitch';
+  }
+
+  function activateTab(name) {
+    tabs.forEach(function (btn) {
+      const isActive = btn.dataset.tab === name;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    if (name === 'telegram') {
+      telegramPanel.style.display = 'flex';
+      chatWrap.style.display      = 'none';
+      if (chatInputArea) chatInputArea.style.display = 'none';
+      if (usersEl)        usersEl.style.display       = 'none';
+    } else {
+      telegramPanel.style.display = 'none';
+      chatWrap.style.display      = 'flex';
+      if (chatInputArea && !isTwitchMode()) chatInputArea.style.display = 'block';
+      if (usersEl        && !isTwitchMode()) usersEl.style.display       = '';
+    }
+  }
+
+  tabs.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      activateTab(btn.dataset.tab);
+      saveTab(btn.dataset.tab);
+    });
+  });
+
+  activateTab(getSavedTab());
 });
 </script>
