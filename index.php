@@ -356,6 +356,9 @@ if (isset($scripts[$page])) {
     <img src="https://cdn.buymeacoffee.com/widget/assets/coffee%20cup.svg" width="36" height="36" alt="" aria-hidden="true">
   </a>
 </div>
+<button type="button" class="back-to-top-btn" id="backToTopBtn" title="Volver arriba" aria-label="Volver arriba">
+  <i class="fas fa-arrow-up"></i>
+</button>
 <style>
 .kofi-float-wrap {
   position: fixed;
@@ -365,6 +368,17 @@ if (isset($scripts[$page])) {
   display: flex;
   align-items: center;
   gap: 14px;
+  opacity: 1;
+  transition: opacity .25s ease, visibility .25s ease;
+}
+/* Oculto mientras el usuario scrollea más allá del 30% de la página
+   (ver script más abajo). Usa una clase en vez de inline style para que
+   el toggle de canal.php (modo teatro con chat abierto) siga pudiendo
+   forzar visibility vía style="" sin que ambos se peleen. */
+.kofi-float-wrap.kofi-scroll-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 /* Bubble del mensaje: mismas medidas, tipografía y botón de cerrar que usaba BMC */
 .kofi-float-popup {
@@ -432,6 +446,38 @@ if (isset($scripts[$page])) {
   width: 36px;
   height: 36px;
 }
+
+/* Botón "volver arriba": mismo lugar/tamaño que el de Ko-fi, se muestran
+   de forma excluyente según el % de scroll (ver script más abajo) */
+.back-to-top-btn {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9999;
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #8b5cf6;
+  color: #fff;
+  font-size: 1.3rem;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,.15);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .25s ease, visibility .25s ease, transform .25s ease;
+}
+.back-to-top-btn.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.back-to-top-btn:hover { transform: scale(1.1); }
+.back-to-top-btn:active { transform: scale(0.90); }
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -446,6 +492,39 @@ document.addEventListener('DOMContentLoaded', function () {
     closeBtn.addEventListener('click', function () {
       clearTimeout(timer);
       if (popup) popup.classList.add('kofi-popup-hidden');
+    });
+  }
+
+  // Pasado el 30% de scroll de la página, sustituye el botón de Ko-fi por
+  // uno de "volver arriba" en el mismo lugar. Por debajo del 30%, vuelve a
+  // mostrarse el de Ko-fi.
+  var kofiWrap   = document.querySelector('.kofi-float-wrap');
+  var topBtn     = document.getElementById('backToTopBtn');
+  if (kofiWrap || topBtn) {
+    var ticking = false;
+    function scrollPercent() {
+      var doc = document.documentElement;
+      var scrollable = doc.scrollHeight - doc.clientHeight;
+      return scrollable > 0 ? (window.scrollY / scrollable) * 100 : 0;
+    }
+    function updateFloatButtons() {
+      var pastThreshold = scrollPercent() >= 30;
+      if (kofiWrap) kofiWrap.classList.toggle('kofi-scroll-hidden', pastThreshold);
+      if (topBtn)   topBtn.classList.toggle('show', pastThreshold);
+      ticking = false;
+    }
+    window.addEventListener('scroll', function () {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(updateFloatButtons);
+      }
+    }, { passive: true });
+    updateFloatButtons(); // estado inicial, por si la página carga ya scrolleada
+  }
+
+  if (topBtn) {
+    topBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 });

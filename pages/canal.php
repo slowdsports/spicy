@@ -1195,6 +1195,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (floatBtn) floatBtn.classList.toggle('active', open);
     const kofiBtn = document.querySelector('.kofi-float-wrap');
     if (kofiBtn) kofiBtn.style.visibility = open ? 'hidden' : '';
+    const topBtn = document.getElementById('backToTopBtn');
+    if (topBtn) topBtn.style.visibility = open ? 'hidden' : '';
     if (open) {
       unread = 0;
       if (badge) { badge.textContent = ''; badge.classList.remove('show'); }
