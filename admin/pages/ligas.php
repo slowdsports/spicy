@@ -96,7 +96,7 @@ try {
             $imgPath = BASE_URL . 'assets/img/ligas/' . logoFolder($l['id']) . "/{$l['id']}.png";
             ?>
             <img src="<?= $imgPath ?>" alt="" class="table-logo"
-                 onerror="this.src=''; this.style.opacity='0.2';">
+                 onerror="imgFallback(this, 32, 'league')">
           </td>
           <td style="font-weight:600; color:var(--text-primary);"><?= htmlspecialchars($l['ligaNombre']) ?></td>
           <td style="font-size:0.78rem; color:var(--text-muted);"><?= htmlspecialchars($l['ligaPais'] ?? '—') ?></td>

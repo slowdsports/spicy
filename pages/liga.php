@@ -146,7 +146,7 @@ function canalNombre($id){
 <div class="d-flex align-items-center gap-3">
 
 <div class="league-box">
-<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>" alt="" class="lazy-img" loading="lazy">
+<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>" data-fallback-icon="league" alt="" class="lazy-img" loading="lazy">
 </div>
 
 <div>
@@ -227,7 +227,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 <div class="match-left">
 
 <div class="mini-league">
-<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>" class="lazy-img" loading="lazy">
+<img src="<?= $ligaLogo ?>" data-logo-base="<?= $ligaLogo ?>" data-fallback-icon="league" class="lazy-img" loading="lazy">
 </div>
 
 <?php if($status==='live'): ?>
@@ -246,7 +246,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 <div class="match-center">
 
 <div class="team-box">
-<img src="<?= $localLogo ?>" data-logo-base="<?= $localLogo ?>" class="team-logo lazy-img" loading="lazy">
+<img src="<?= $localLogo ?>" data-logo-base="<?= $localLogo ?>" data-fallback-icon="team" class="team-logo lazy-img" loading="lazy">
 <span><?= htmlspecialchars($local) ?></span>
 </div>
 
@@ -256,7 +256,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 </div>
 
 <div class="team-box">
-<img src="<?= $visitLogo ?>" data-logo-base="<?= $visitLogo ?>" class="team-logo lazy-img" loading="lazy">
+<img src="<?= $visitLogo ?>" data-logo-base="<?= $visitLogo ?>" data-fallback-icon="team" class="team-logo lazy-img" loading="lazy">
 <span><?= htmlspecialchars($visit) ?></span>
 </div>
 

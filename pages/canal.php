@@ -527,7 +527,7 @@ if ($partidoId === 0 && !empty($fuenteData['epg'])) {
       ?>
       <div class="partido-header<?= ($isMundial && ($pStatus === 'live')) ? ' is-live' : '' ?>">
         <div class="partido-meta">
-          <img src="<?= $pLeagueLogo ?>" data-logo-base="<?= $pLeagueLogo ?>" class="partido-league-img lazy-img" loading="lazy" onerror="this.style.opacity='.2'">
+          <img src="<?= $pLeagueLogo ?>" data-logo-base="<?= $pLeagueLogo ?>" data-fallback-icon="league" class="partido-league-img lazy-img" loading="lazy">
           <?php if (!empty($partidoData['fecha_hora'])): ?>
             <span class="badge-time"><i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($partidoData['fecha_hora']) ?>" data-ts="<?= (int)($partidoData['timestamp'] ?? 0) ?>"><?= $pTime ?></span></span>
           <?php elseif ($pStatus === 'live'): ?>
@@ -538,12 +538,12 @@ if ($partidoId === 0 && !empty($fuenteData['epg'])) {
         </div>
         <div class="partido-teams">
           <div class="partido-team">
-            <img src="<?= $pLocalLogo ?>" data-logo-base="<?= $pLocalLogo ?>" class="lazy-img" loading="lazy" onerror="this.style.opacity='.2'">
+            <img src="<?= $pLocalLogo ?>" data-logo-base="<?= $pLocalLogo ?>" data-fallback-icon="team" class="lazy-img" loading="lazy">
             <span><?= $pLocal ?></span>
           </div>
           <div class="partido-vs">vs</div>
           <div class="partido-team">
-            <img src="<?= $pVisitLogo ?>" data-logo-base="<?= $pVisitLogo ?>" class="lazy-img" loading="lazy" onerror="this.style.opacity='.2'">
+            <img src="<?= $pVisitLogo ?>" data-logo-base="<?= $pVisitLogo ?>" data-fallback-icon="team" class="lazy-img" loading="lazy">
             <span><?= $pVisit ?></span>
           </div>
         </div>
@@ -569,7 +569,7 @@ if ($partidoId === 0 && !empty($fuenteData['epg'])) {
       <div class="partido-header">
         <div class="partido-meta">
           <?php if (!empty($programaData['imagen'])): ?>
-          <img src="<?= htmlspecialchars($programaData['imagen']) ?>" class="programa-poster lazy-img" loading="lazy" onerror="this.style.display='none'">
+          <img src="<?= htmlspecialchars($programaData['imagen']) ?>" class="programa-poster lazy-img" loading="lazy">
           <?php else: ?>
           <i class="fas fa-tv programa-poster-icon"></i>
           <?php endif; ?>
@@ -652,7 +652,7 @@ if ($partidoId === 0 && !empty($fuenteData['epg'])) {
       <div class="channel-info-bar">
         <div class="channel-info-left">
           <div class="channel-avatar">
-            <img src="<?= htmlspecialchars($canalLogo) ?>" alt="Canal" id="channel-avatar-img" class="lazy-img" loading="lazy" onerror="this.style.opacity='.15'">
+            <img src="<?= htmlspecialchars($canalLogo) ?>" alt="Canal" id="channel-avatar-img" class="lazy-img" loading="lazy">
           </div>
           <div class="channel-title-group">
             <h2 id="channel-title">Canal</h2>
@@ -858,7 +858,7 @@ if ($partidoId === 0 && !empty($fuenteData['epg'])) {
           $favName = htmlspecialchars($fav['nombre'] ?? '');
           $favLogo = !empty($fav['logo']) ? htmlspecialchars($fav['logo']) : '';
           $logoHtml = $favLogo
-            ? "<img src=\"{$favLogo}\" alt=\"{$favName}\" class=\"lazy-img\" style=\"width:44px;height:44px;object-fit:contain;\" loading=\"lazy\" onerror=\"this.style.opacity='0'\">"
+            ? "<img src=\"{$favLogo}\" alt=\"{$favName}\" class=\"lazy-img\" style=\"width:44px;height:44px;object-fit:contain;\" loading=\"lazy\">"
             : '<i class="fas fa-broadcast-tower" style="font-size:1.5rem;color:var(--accent);"></i>';
         ?>
         <a href="<?= url('canal', ['id' => $favId]) ?>" class="match-card"

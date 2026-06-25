@@ -79,7 +79,7 @@ function renderRecommendedChannels(sources, channels) {
     const parent = (channels ?? []).find(c => c.id === ch.canal);
     const logo   = parent?.logo ?? '';
     const logoHtml = logo
-      ? `<img src="${logo}" alt="${ch.nombre}" class="lazy-img" style="width:44px;height:44px;object-fit:contain;" loading="lazy" onerror="this.style.opacity='0'">`
+      ? `<img src="${logo}" alt="${ch.nombre}" class="lazy-img" style="width:44px;height:44px;object-fit:contain;" loading="lazy">`
       : `<i class="fas fa-broadcast-tower" style="font-size:1.5rem;color:var(--accent);"></i>`;
 
     const card = document.createElement('a');

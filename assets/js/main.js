@@ -158,18 +158,18 @@ function createMatchCard(match) {
 
   card.innerHTML = `
     <div class="match-league">
-      <img src="${leagueLogo}" data-logo-base="${leagueBase}" alt="${leagueName}" class="match-league-logo lazy-img" loading="lazy" onerror="this.style.display='none'">
+      <img src="${leagueLogo}" data-logo-base="${leagueBase}" data-fallback-icon="league" alt="${leagueName}" class="match-league-logo lazy-img" loading="lazy">
       <span class="match-league-name">${leagueName}</span>
       <span class="match-status-badge ${badgeClass}">${badgeText}</span>
     </div>
     <div class="match-teams">
       <div class="match-team">
-        <img src="${homeLogo}" data-logo-base="${homeBase}" alt="${match.homeTeam.name}" class="team-logo lazy-img" loading="lazy" onerror="this.style.opacity='0'">
+        <img src="${homeLogo}" data-logo-base="${homeBase}" data-fallback-icon="team" alt="${match.homeTeam.name}" class="team-logo lazy-img" loading="lazy">
         <span class="team-name">${match.homeTeam.name}</span>
       </div>
       <div class="score-vs">vs</div>
       <div class="match-team">
-        <img src="${awayLogo}" data-logo-base="${awayBase}" alt="${match.awayTeam.name}" class="team-logo lazy-img" loading="lazy" onerror="this.style.opacity='0'">
+        <img src="${awayLogo}" data-logo-base="${awayBase}" data-fallback-icon="team" alt="${match.awayTeam.name}" class="team-logo lazy-img" loading="lazy">
         <span class="team-name">${match.awayTeam.name}</span>
       </div>
     </div>
@@ -307,7 +307,7 @@ function createSavedCard(ch, index) {
   card.style.animationDelay = `${index * 0.05}s`;
   card.style.opacity = '0';
   const logoHtml = ch.logo
-    ? `<img src="${ch.logo}" alt="${ch.nombre}" class="channel-logo lazy-img" loading="lazy" onerror="this.style.opacity='0'">`
+    ? `<img src="${ch.logo}" alt="${ch.nombre}" class="channel-logo lazy-img" loading="lazy">`
     : `<i class="fas fa-bookmark" style="color:var(--accent); font-size:2rem;"></i>`;
   card.innerHTML = `
     <div class="channel-logo-wrapper">${logoHtml}</div>
@@ -387,7 +387,7 @@ async function loadPrograms() {
       const link    = `?p=canal&id=${fuente.id}`;
       const pct     = calcProgress(prog.hora_inicio, prog.hora_fin, prog.ts_inicio, prog.ts_fin);
       const thumbHtml = prog.imagen
-        ? `<img src="${escHtml(prog.imagen)}" alt="${escHtml(nombre)}" class="lazy-img" onerror="this.style.display='none'" loading="lazy">`
+        ? `<img src="${escHtml(prog.imagen)}" alt="${escHtml(nombre)}" class="lazy-img" loading="lazy">`
         : `<i class="fas fa-tv" style="color:var(--accent);font-size:1.2rem;"></i>`;
 
       const row = document.createElement('a');

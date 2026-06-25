@@ -87,7 +87,7 @@ function createChannelCard(ch, index) {
   card.style.opacity = '0';
   card.innerHTML = `
     <div class="channel-logo-wrapper">
-      <img src="${ch.logo}" alt="${ch.nombre}" class="channel-logo lazy-img" loading="lazy" onerror="this.style.opacity='0'">
+      <img src="${ch.logo}" alt="${ch.nombre}" class="channel-logo lazy-img" loading="lazy">
     </div>
     <span class="channel-name">${ch.nombre}</span>
     <span class="channel-category-label">${ch.category}</span>

@@ -101,7 +101,7 @@ try {
 <img src="<?= htmlspecialchars($c['logo']) ?>"
      class="table-imagen"
      style="width:36px"
-     onerror="this.style.opacity='.25'">
+     onerror="imgFallback(this, 36)">
 
 <?php else: ?>
 

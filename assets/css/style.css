@@ -384,6 +384,19 @@ body {
   100% { background-position: 0% 50%; }
 }
 
+/* Fallback genérico cuando una imagen (logo/poster/avatar) no carga —
+   assets/js/lazyload.js reemplaza el <img> roto por este ícono */
+.lazy-img-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--accent);
+}
+
 /* Contenido del partido: equipos */
 .match-teams {
   display: flex;

@@ -171,6 +171,7 @@ $logo   = $liga['logo'];
 <?php if (!empty($logo)): ?>
 <img src="<?= htmlspecialchars($logo) ?>"
      data-logo-base="<?= htmlspecialchars($logo) ?>"
+     data-fallback-icon="league"
      alt="<?= htmlspecialchars($nombre) ?>"
      class="channel-logo lazy-img"
      loading="lazy">

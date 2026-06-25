@@ -162,10 +162,10 @@ function mCanalLogo($id) {
     <div class="mundial-logo-float">
       <img src="<?= $ligaLogo ?>"
            data-logo-base="<?= $ligaLogo ?>"
+           data-fallback-icon="league"
            alt="FIFA World Cup 2026"
            class="lazy-img"
-           loading="lazy"
-           onerror="this.style.display='none'">
+           loading="lazy">
     </div>
 
   </div>
@@ -266,6 +266,7 @@ function mCanalLogo($id) {
               <div class="mini-league mundial-mini-league">
                 <img src="<?= $ligaLogo ?>"
                      data-logo-base="<?= $ligaLogo ?>"
+                     data-fallback-icon="league"
                      alt="FIFA WC"
                      class="lazy-img"
                      loading="lazy">
@@ -293,6 +294,7 @@ function mCanalLogo($id) {
               <div class="team-box">
                 <img src="<?= $localLogo ?>"
                      data-logo-base="<?= $localLogo ?>"
+                     data-fallback-icon="team"
                      class="team-logo mundial-team-logo lazy-img"
                      loading="lazy">
                 <span><?= htmlspecialchars($local) ?></span>
@@ -317,6 +319,7 @@ function mCanalLogo($id) {
               <div class="team-box">
                 <img src="<?= $visitLogo ?>"
                      data-logo-base="<?= $visitLogo ?>"
+                     data-fallback-icon="team"
                      class="team-logo mundial-team-logo lazy-img"
                      loading="lazy">
                 <span><?= htmlspecialchars($visit) ?></span>

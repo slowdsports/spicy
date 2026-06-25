@@ -14,6 +14,7 @@
 <body>
   <div id="status">esperando...</div>
   <div class="box"><img class="lazy-img" loading="lazy" id="slowimg" src="slow_image.php?x=1" alt="test"></div>
+  <div class="box" id="brokenbox"><img class="lazy-img" loading="lazy" id="brokenimg" src="no-existe-esta-imagen.png" alt="test roto"></div>
   <script src="../assets/js/lazyload.js"></script>
   <script>
     var img = document.getElementById('slowimg');
@@ -21,7 +22,8 @@
     function refresh() {
       var loaded = img.classList.contains('lazy-img-loaded');
       var shimmer = img.classList.contains('lazy-img');
-      statusEl.textContent = 'lazy-img=' + shimmer + ' loaded=' + loaded;
+      var fallbackOk = !!document.querySelector('#brokenbox .lazy-img-fallback');
+      statusEl.textContent = 'lazy-img=' + shimmer + ' loaded=' + loaded + ' | fallback-roto=' + fallbackOk;
       statusEl.style.color = loaded ? '#0f0' : '#ff0';
     }
     var iv = setInterval(refresh, 200);

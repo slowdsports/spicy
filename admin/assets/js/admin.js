@@ -12,6 +12,22 @@ const API      = '../admin/api/crud.php';         // ruta relativa desde admin/
 const API_JSON = '../admin/api/generate_json.php'; // generación manual de JSON
 
 // ============================================================
+// FALLBACK GENÉRICO PARA LOGOS ROTOS
+// Mismo ícono/clase que assets/js/lazyload.js usa en el sitio público
+// (.lazy-img-fallback, definida en assets/css/style.css).
+// icon: "tv" (canal, por defecto), "league" (trofeo) o "team" (escudo)
+// ============================================================
+function imgFallback(img, size, icon) {
+  const FALLBACK_ICONS = { tv: 'fa-tv', league: 'fa-trophy', team: 'fa-shield-alt' };
+  const el = document.createElement('i');
+  el.className = 'fas ' + (FALLBACK_ICONS[icon] || FALLBACK_ICONS.tv) + ' lazy-img-fallback';
+  el.style.width    = size + 'px';
+  el.style.height   = size + 'px';
+  el.style.fontSize = Math.round(size * 0.42) + 'px';
+  img.replaceWith(el);
+}
+
+// ============================================================
 // TOAST DE NOTIFICACIONES
 // ============================================================
 function adminToast(msg, type = 'success') {
