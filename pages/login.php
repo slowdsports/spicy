@@ -282,7 +282,7 @@ $_tvApiBase  = $BASE_FULL . 'api/tvlogin.php';
         <input type="password" id="login-password" class="form-control-sh" placeholder="••••••••" autocomplete="current-password">
       </div>
       <div style="text-align:right; margin-bottom:1rem;">
-        <a href="#" style="font-size:0.78rem; color:var(--accent); text-decoration:none;">¿Olvidaste tu contraseña?</a>
+        <a href="#" id="link-forgot-password" style="font-size:0.78rem; color:var(--accent); text-decoration:none;">¿Olvidaste tu contraseña?</a>
       </div>
       <button class="btn-auth-submit" id="btn-login-submit" onclick="submitLogin()">
         <i class="fas fa-sign-in-alt me-2"></i> Iniciar sesión
@@ -295,6 +295,28 @@ $_tvApiBase  = $BASE_FULL . 'api/tvlogin.php';
         <p style="font-size:0.75rem; color:var(--text-muted); margin:0; font-family:'Space Mono',monospace;">
           admin@telegratuita.com<br>admin123
         </p>
+      </div>
+    </div>
+
+    <!-- FORMULARIO RECUPERAR CONTRASEÑA -->
+    <div id="form-forgot" style="display:none;">
+      <div class="alert-sh" id="alert-forgot"></div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin:0 0 1rem;">
+        Ingresa tu correo y, si está registrado, te enviaremos un enlace para crear una nueva contraseña.
+      </p>
+      <div class="form-group">
+        <label class="form-label" for="forgot-email">
+          <i class="fas fa-envelope me-1"></i> Correo electrónico
+        </label>
+        <input type="email" id="forgot-email" class="form-control-sh" placeholder="tu@correo.com" autocomplete="email">
+      </div>
+      <button class="btn-auth-submit" id="btn-forgot-submit" onclick="submitForgotPassword()">
+        <i class="fas fa-paper-plane me-2"></i> Enviar enlace
+      </button>
+      <div style="text-align:center; margin-top:1rem;">
+        <a href="#" id="link-back-to-login" style="font-size:0.78rem; color:var(--text-secondary); text-decoration:none;">
+          <i class="fas fa-arrow-left me-1"></i> Volver a iniciar sesión
+        </a>
       </div>
     </div>
 

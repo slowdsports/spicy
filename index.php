@@ -6,10 +6,12 @@
 
 $page = isset($_GET['p']) ? trim($_GET['p']) : 'home';
 
-// Sanitizar: solo letras, números y guiones
-$page = preg_replace('/[^a-z0-9\-]/', '', strtolower($page));
+// Sanitizar: solo letras, números, guiones y guión bajo (ej. "eu_pendiente",
+// "reset_password" — antes este regex no incluía "_" y los rompía a ambos,
+// colapsando silenciosamente a home)
+$page = preg_replace('/[^a-z0-9_\-]/', '', strtolower($page));
 
-$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga', 'donaciones', 'eu_pendiente', 'mundial2026'];
+$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga', 'donaciones', 'eu_pendiente', 'mundial2026', 'reset_password'];
 
 if (!in_array($page, $allowed)) {
     $page = 'home';
@@ -135,6 +137,11 @@ switch ($page) {
         $seoTitle  = 'Iniciar Sesión - Tele Deportes';
         $seoRobots = 'noindex, nofollow';
         break;
+
+    case 'reset_password':
+        $seoTitle  = 'Restablecer Contraseña - Tele Deportes';
+        $seoRobots = 'noindex, nofollow';
+        break;
 }
 // ────────────────────────────────────────────────────────────────────────────
 $pageTitle = $seoTitle;
@@ -145,6 +152,11 @@ $pageTitle = $seoTitle;
   <?php if ($page !== 'login') include __DIR__ . '/includes/ads.php'; ?>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?php if ($page === 'reset_password'): ?>
+  <!-- El token de reseteo va en la URL: evitar que se filtre por el header
+       Referer hacia recursos de terceros (CDNs) cargados en esta página. -->
+  <meta name="referrer" content="same-origin">
+  <?php endif; ?>
   <title><?= htmlspecialchars($seoTitle) ?></title>
 
   <!-- SEO básico -->
@@ -221,7 +233,7 @@ $pageTitle = $seoTitle;
 
 <?php
 // Login y eu_pendiente se muestran sin navbar/footer
-$_noChrome = in_array($page, ['login', 'eu_pendiente']);
+$_noChrome = in_array($page, ['login', 'eu_pendiente', 'reset_password']);
 if (!$_noChrome) {
     $maintenanceOn = isMaintenanceMode();
     ?>
@@ -330,6 +342,7 @@ $scripts = [
     'liga'        => 'assets/js/liga.js',
     'mundial2026' => 'assets/js/liga.js',
     'login'       => 'assets/js/auth.js',
+    'reset_password' => 'assets/js/auth.js',
 ];
 if ($page === 'home') {
     echo '<script src="assets/js/huso.js"></script>';
@@ -341,7 +354,7 @@ if (isset($scripts[$page])) {
 <div<?= (!isLoggedIn() || userId() !== 2) ? ' style="display:none;"' : ' style="text-align:center;"' ?>>
 <script id="_wauh8l">var _wau = _wau || []; _wau.push(["small", "j9isfwldlg", "h8l"]);</script><script async src="//waust.at/s.js"></script>
 </div>
-<?php if (!isSpicy() && $page !== 'login'): ?>
+<?php if (!isSpicy() && !in_array($page, ['login', 'reset_password'], true)): ?>
 <div class="kofi-float-wrap">
   <div class="kofi-float-popup" id="kofiPopup">
     ¿Disfrutas el contenido? ¡Invítanos un café!

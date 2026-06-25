@@ -61,11 +61,13 @@ try {
     if (!$input || !isset($input['action'])) { send(false, 'Petición inválida', null, 400); }
 
     switch ($input['action']) {
-        case 'login':    handleLogin($input);    break;
-        case 'register': handleRegister($input); break;
-        case 'logout':   handleLogout();         break;
-        case 'check':    handleCheck();          break;
-        default:         send(false, 'Acción no reconocida', null, 400);
+        case 'login':           handleLogin($input);          break;
+        case 'register':        handleRegister($input);       break;
+        case 'logout':           handleLogout();               break;
+        case 'check':            handleCheck();                break;
+        case 'forgot_password':  handleForgotPassword($input); break;
+        case 'reset_password':   handleResetPassword($input);  break;
+        default:                 send(false, 'Acción no reconocida', null, 400);
     }
 } catch (Throwable $e) {
     send(false, 'Error interno del servidor', null, 500);
@@ -108,6 +110,211 @@ function handleRegister(array $d): void {
         $_SESSION['user_email'] = $email; $_SESSION['user_rol'] = 'usuario';
         send(true, 'Cuenta creada', ['id' => $newId, 'name' => $d['name'], 'email' => $email, 'rol' => 'usuario']);
     } catch (Exception $e) { send(false, 'Error del servidor', null, 500); }
+}
+
+/**
+ * Solicitud de reseteo de contraseña.
+ *
+ * Reglas de seguridad clave:
+ *  - SIEMPRE responde con el mismo mensaje genérico, exista o no la cuenta
+ *    (evita "enumeración de usuarios" — que alguien descubra qué correos
+ *    están registrados probando este endpoint).
+ *  - Rate-limit por IP y por usuario (ventana de 1 hora) para evitar spam
+ *    de correos hacia la víctima o fuerza bruta de solicitudes.
+ *  - El token nunca se guarda en texto plano, solo su hash SHA-256 (igual
+ *    que el "remember me" de _persistSession más abajo).
+ *  - Cualquier token previo sin usar de ese usuario se invalida al pedir uno
+ *    nuevo, así un enlace viejo filtrado deja de servir.
+ */
+function handleForgotPassword(array $d): void {
+    $generic = 'Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña.';
+    $email   = strtolower(trim((string)($d['email'] ?? '')));
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        send(false, 'Ingresa un correo electrónico válido.');
+        return;
+    }
+
+    try {
+        $conn = getDBConnection();
+        _ensurePasswordResetsTable($conn);
+
+        $ip = trim(explode(',', $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '')[0]);
+
+        // Tope por IP (independiente de qué correo se pida): evita que alguien
+        // recorra muchos correos distintos pidiendo resets desde la misma IP.
+        $rlIp = $conn->prepare("SELECT COUNT(*) c FROM password_resets WHERE ip = ? AND creado_en > (NOW() - INTERVAL 1 HOUR)");
+        $rlIp->bind_param('s', $ip);
+        $rlIp->execute();
+        $ipCount = (int)($rlIp->get_result()->fetch_assoc()['c'] ?? 0);
+        $rlIp->close();
+
+        if ($ipCount < 6) {
+            $stmt = $conn->prepare("SELECT id, nombre, activo FROM usuarios WHERE email = ? LIMIT 1");
+            $stmt->bind_param('s', $email);
+            $stmt->execute();
+            $user = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+
+            if ($user && $user['activo']) {
+                // Tope por usuario: máximo 3 solicitudes por hora
+                $rlUser = $conn->prepare("SELECT COUNT(*) c FROM password_resets WHERE usuario_id = ? AND creado_en > (NOW() - INTERVAL 1 HOUR)");
+                $rlUser->bind_param('i', $user['id']);
+                $rlUser->execute();
+                $userCount = (int)($rlUser->get_result()->fetch_assoc()['c'] ?? 0);
+                $rlUser->close();
+
+                if ($userCount < 3) {
+                    $inv = $conn->prepare("UPDATE password_resets SET usado = 1 WHERE usuario_id = ? AND usado = 0");
+                    $inv->bind_param('i', $user['id']);
+                    $inv->execute();
+                    $inv->close();
+
+                    $raw    = bin2hex(random_bytes(32)); // 256 bits — token crudo, solo va por correo
+                    $hash   = hash('sha256', $raw);       // solo el hash se guarda en BD
+                    $expiry = date('Y-m-d H:i:s', strtotime('+60 minutes'));
+
+                    $ins = $conn->prepare("INSERT INTO password_resets (usuario_id, token_hash, expira_en, ip) VALUES (?, ?, ?, ?)");
+                    $ins->bind_param('isss', $user['id'], $hash, $expiry, $ip);
+                    $ins->execute();
+                    $ins->close();
+
+                    $link = urlAbsolute('reset_password', ['token' => $raw]);
+                    _sendPasswordResetEmail($email, $user['nombre'], $link);
+                }
+            }
+        }
+
+        // Misma respuesta sin importar si el correo existe, si está activo,
+        // si se llegó al límite, o si el envío del correo falló.
+        send(true, $generic);
+    } catch (Throwable $e) {
+        send(true, $generic);
+    }
+}
+
+/**
+ * Aplica el token recibido por correo: valida (existe, sin usar, sin
+ * expirar) y actualiza la contraseña. De un solo uso — se marca "usado"
+ * apenas se consume. También cierra cualquier sesión "recordada" (cookie
+ * persistente) de ese usuario, por si la contraseña anterior fue
+ * comprometida — fuerza a re-loguearse en todos los dispositivos.
+ */
+function handleResetPassword(array $d): void {
+    $token    = trim((string)($d['token'] ?? ''));
+    $password = (string)($d['password'] ?? '');
+
+    if ($token === '' || strlen($token) !== 64 || !ctype_xdigit($token)) {
+        send(false, 'Enlace inválido o expirado. Solicita uno nuevo.');
+        return;
+    }
+    if (strlen($password) < 6) {
+        send(false, 'La contraseña debe tener al menos 6 caracteres.');
+        return;
+    }
+
+    try {
+        $conn = getDBConnection();
+        _ensurePasswordResetsTable($conn);
+
+        $hash = hash('sha256', $token);
+        $stmt = $conn->prepare("
+            SELECT pr.id AS reset_id, u.id AS user_id, u.activo
+            FROM password_resets pr
+            JOIN usuarios u ON u.id = pr.usuario_id
+            WHERE pr.token_hash = ? AND pr.usado = 0 AND pr.expira_en > NOW()
+            LIMIT 1
+        ");
+        $stmt->bind_param('s', $hash);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$row || !$row['activo']) {
+            send(false, 'Enlace inválido o expirado. Solicita uno nuevo.');
+            return;
+        }
+
+        $newHash = password_hash($password, PASSWORD_DEFAULT);
+        $upd = $conn->prepare("UPDATE usuarios SET password = ? WHERE id = ?");
+        $upd->bind_param('si', $newHash, $row['user_id']);
+        $upd->execute();
+        $upd->close();
+
+        $mark = $conn->prepare("UPDATE password_resets SET usado = 1 WHERE id = ?");
+        $mark->bind_param('i', $row['reset_id']);
+        $mark->execute();
+        $mark->close();
+
+        $sess = $conn->prepare("DELETE FROM sesiones_persistentes WHERE usuario_id = ?");
+        $sess->bind_param('i', $row['user_id']);
+        $sess->execute();
+        $sess->close();
+
+        send(true, 'Contraseña actualizada. Ya puedes iniciar sesión.');
+    } catch (Throwable $e) {
+        send(false, 'Error del servidor', null, 500);
+    }
+}
+
+function _ensurePasswordResetsTable(mysqli $conn): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    $conn->query("CREATE TABLE IF NOT EXISTS password_resets (
+        id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        usuario_id  INT NOT NULL,
+        token_hash  CHAR(64) NOT NULL,
+        expira_en   DATETIME NOT NULL,
+        usado       TINYINT(1) NOT NULL DEFAULT 0,
+        ip          VARCHAR(45) DEFAULT NULL,
+        creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_token (token_hash),
+        KEY idx_usuario (usuario_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
+/**
+ * $toEmail llega ya validado con FILTER_VALIDATE_EMAIL por el caller —
+ * eso descarta saltos de línea, así que no hay riesgo de inyección de
+ * cabeceras de correo a través de ese parámetro. $name solo se usa dentro
+ * del cuerpo HTML (con htmlspecialchars), nunca en una cabecera.
+ *
+ * Usa mail() nativo de PHP (sin SMTP) — funciona en la mayoría de hosting
+ * compartido tipo cPanel sin configuración extra. Si la entrega a bandeja
+ * de entrada no es confiable, esta es la única función que habría que
+ * cambiar por un envío vía SMTP/PHPMailer.
+ */
+function _sendPasswordResetEmail(string $toEmail, string $name, string $link): bool {
+    $host = preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST'] ?? 'teledeportes.online');
+    $host = preg_replace('/^www\./', '', $host);
+    $from = 'no-reply@' . $host;
+
+    $subject  = 'Recupera tu contraseña - Tele Deportes';
+    $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+    $safeLink = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
+
+    $body = "
+    <div style=\"font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#1f1f1f;\">
+      <h2 style=\"color:#8b5cf6;\">Tele Deportes</h2>
+      <p>Hola {$safeName},</p>
+      <p>Recibimos una solicitud para restablecer tu contraseña. Si fuiste tú, hacé clic en el siguiente botón (válido por 60 minutos):</p>
+      <p style=\"text-align:center;margin:28px 0;\">
+        <a href=\"{$safeLink}\" style=\"background:#8b5cf6;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;\">Restablecer contraseña</a>
+      </p>
+      <p style=\"font-size:13px;color:#666;\">Si no solicitaste esto, ignora este correo — tu contraseña actual sigue funcionando.</p>
+      <p style=\"font-size:12px;color:#999;\">Si el botón no funciona, copia y pega este enlace en tu navegador:<br>{$safeLink}</p>
+    </div>";
+
+    $headers  = "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+    $headers .= "From: Tele Deportes <{$from}>\r\n";
+
+    try {
+        return @mail($toEmail, $subject, $body, $headers);
+    } catch (Throwable $e) {
+        return false;
+    }
 }
 
 function handleLogout(): void { _destroyPersistentSession(); $_SESSION = []; session_destroy(); send(true, 'Sesión cerrada'); }

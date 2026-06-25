@@ -9,7 +9,50 @@ function switchTab(tab) {
   document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
   document.getElementById('form-login').style.display    = tab === 'login'    ? 'block' : 'none';
   document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+  const forgot = document.getElementById('form-forgot');
+  if (forgot) forgot.style.display = 'none';
+  const tabs = document.querySelector('.auth-tabs');
+  if (tabs) tabs.style.display = '';
   clearAlerts();
+}
+
+// ── Olvidé mi contraseña ──────────────────────────────────────────────────
+
+function showForgotPassword() {
+  document.getElementById('form-login').style.display    = 'none';
+  document.getElementById('form-register').style.display = 'none';
+  document.getElementById('form-forgot').style.display   = 'block';
+  const tabs = document.querySelector('.auth-tabs');
+  if (tabs) tabs.style.display = 'none';
+  clearAlerts();
+  const emailInput = document.getElementById('forgot-email');
+  if (emailInput) emailInput.focus();
+}
+
+function validateForgotEmail() {
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email) { showAlert('forgot', 'Ingresa tu correo electrónico.', 'error'); return false; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAlert('forgot', 'Email no válido.', 'error'); return false; }
+  return true;
+}
+
+async function submitForgotPassword() {
+  if (!validateForgotEmail()) return;
+  const btn = document.getElementById('btn-forgot-submit');
+  btn.textContent = 'Enviando...'; btn.disabled = true;
+  try {
+    const result = await apiPost({
+      action: 'forgot_password',
+      email:  document.getElementById('forgot-email').value.trim(),
+    });
+    // El backend siempre responde con el mismo mensaje exista o no la cuenta
+    // (a propósito, para no revelar qué correos están registrados).
+    showAlert('forgot', result.message || 'Si el correo está registrado, te enviamos un enlace.', result.success ? 'success' : 'error');
+  } catch (e) {
+    showAlert('forgot', 'Error de conexión. Inténtalo de nuevo.', 'error');
+  }
+  btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Enviar enlace';
+  btn.disabled = false;
 }
 
 function validateLogin() {
@@ -300,10 +343,77 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  // Página de reset (?p=reset_password) tiene su propio formulario — no
+  // hay tabs de login/register ahí.
+  if (document.getElementById('reset-password-form')) {
+    initResetPasswordPage();
+    return;
+  }
+
   // Login/Register normal
   document.querySelectorAll('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
   const params = new URLSearchParams(window.location.search);
   if (params.get('tab') === 'register') switchTab('register');
+
+  const forgotLink = document.getElementById('link-forgot-password');
+  if (forgotLink) forgotLink.addEventListener('click', (e) => { e.preventDefault(); showForgotPassword(); });
+
+  const backLink = document.getElementById('link-back-to-login');
+  if (backLink) backLink.addEventListener('click', (e) => { e.preventDefault(); switchTab('login'); });
 });
+
+// ── Página de reset de contraseña (?p=reset_password&token=...) ───────────
+
+function initResetPasswordPage() {
+  // El token va en la URL solo para el enlace del correo. Lo movemos a una
+  // variable JS y lo quitamos de la barra de direcciones (history.replaceState)
+  // para que no quede ahí pegado en el historial del navegador más de lo
+  // necesario. El envío del formulario nunca vuelve a ir por GET.
+  const url   = new URL(window.location.href);
+  const token = url.searchParams.get('token') || '';
+  if (token) {
+    url.searchParams.delete('token');
+    history.replaceState(null, '', url.toString());
+  }
+  window.RESET_TOKEN = token;
+
+  const btn = document.getElementById('btn-reset-submit');
+  if (btn) btn.addEventListener('click', submitResetPassword);
+}
+
+function validateResetPassword() {
+  const pass = document.getElementById('reset-password').value;
+  const conf = document.getElementById('reset-password-confirm').value;
+  if (!window.RESET_TOKEN) { showAlert('reset', 'Enlace inválido. Solicita uno nuevo desde la pantalla de inicio de sesión.', 'error'); return false; }
+  if (!pass || !conf) { showAlert('reset', 'Completa todos los campos.', 'error'); return false; }
+  if (pass.length < 6) { showAlert('reset', 'Mínimo 6 caracteres.', 'error'); return false; }
+  if (pass !== conf) { showAlert('reset', 'Las contraseñas no coinciden.', 'error'); return false; }
+  return true;
+}
+
+async function submitResetPassword() {
+  if (!validateResetPassword()) return;
+  const btn = document.getElementById('btn-reset-submit');
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+  try {
+    const result = await apiPost({
+      action:   'reset_password',
+      token:    window.RESET_TOKEN,
+      password: document.getElementById('reset-password').value,
+    });
+    if (result.success) {
+      showAlert('reset', result.message || 'Contraseña actualizada.', 'success');
+      document.getElementById('reset-password').disabled = true;
+      document.getElementById('reset-password-confirm').disabled = true;
+      btn.textContent = 'Redirigiendo...';
+      setTimeout(() => { window.location.href = '?p=login'; }, 1800);
+      return;
+    }
+    showAlert('reset', result.message || 'No se pudo actualizar la contraseña.', 'error');
+  } catch (e) {
+    showAlert('reset', 'Error de conexión. Inténtalo de nuevo.', 'error');
+  }
+  btn.textContent = 'Guardar nueva contraseña'; btn.disabled = false;
+}
