@@ -26,6 +26,7 @@ if ($channelId > 0) {
             'nombre' => $_fuenteRaw['nombre'],
             'canal'  => $_fuenteRaw['canal'],
             'tipo'   => $_fuenteRaw['tipo'],
+            'epg'    => trim((string)($_fuenteRaw['epg'] ?? '')),
         ];
 
         $iframeUrl = 'pages/reproductor.php?' . http_build_query([
@@ -174,6 +175,27 @@ if ($partidoId > 0) {
 }
 
 $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') === '16');
+
+// Programa de TV actual (guía importada por cron, ver cron/run_epg.php).
+// No va por parámetro: ya sabemos qué canales tienen guía activa por el campo
+// "epg" de la fuente (fuentes.json), y cuál programa está en vivo ahora mismo
+// lo mantiene el propio cron en data/programas/all.json (campo en_vivo).
+$programaData = null;
+
+if ($partidoId === 0 && !empty($fuenteData['epg'])) {
+    $_progPath = __DIR__ . '/../data/programas/all.json';
+    if (file_exists($_progPath)) {
+        $_progCanales = json_decode(file_get_contents($_progPath), true) ?: [];
+        foreach ($_progCanales as $_pc) {
+            if (($_pc['canal'] ?? '') !== $fuenteData['epg']) continue;
+            foreach ($_pc['programas'] ?? [] as $_pp) {
+                if (!empty($_pp['en_vivo'])) { $programaData = $_pp; break 2; }
+            }
+        }
+        unset($_progCanales, $_pc, $_pp);
+    }
+    unset($_progPath);
+}
 ?>
 
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/chat.css">
@@ -277,6 +299,60 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
   font-size: .88rem;
   color: var(--text-muted);
   flex-shrink: 0;
+}
+
+/* Programa de TV (cron EPG) — reusa la estructura de .partido-header */
+.programa-poster {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.programa-poster-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.programa-info-block {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: .2rem;
+  text-align: left;
+}
+.programa-title {
+  font-family: 'Space Mono', monospace;
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+.programa-tipo {
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.programa-desc {
+  font-size: .76rem;
+  color: var(--text-muted);
+  margin: .1rem 0 0;
+  line-height: 1.4;
+  max-width: 520px;
+}
+@media (max-width: 576px) {
+  .programa-info-block { align-items: center; text-align: center; }
+  .programa-desc { max-width: 100%; }
 }
 
 /* Inline status badges (shared style) */
@@ -429,6 +505,8 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
     <span style="color:var(--text-secondary); font-size:0.8rem;" id="breadcrumb-name">
       <?php if ($partidoData): ?>
         <?= htmlspecialchars(($partidoData['homeTeam']['name'] ?? '') . ' vs ' . ($partidoData['awayTeam']['name'] ?? '')) ?>
+      <?php elseif ($programaData): ?>
+        <?= htmlspecialchars($programaData['titulo'] ?? '') ?>
       <?php else: ?>Canal<?php endif; ?>
     </span>
   </nav>
@@ -468,6 +546,43 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
             <img src="<?= $pVisitLogo ?>" data-logo-base="<?= $pVisitLogo ?>" class="lazy-img" loading="lazy" onerror="this.style.opacity='.2'">
             <span><?= $pVisit ?></span>
           </div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn-theater" id="btn-chat-float" title="Chat en vivo">
+            <i class="fas fa-comments"></i><span>Chat</span>
+            <span class="chat-float-badge" id="chat-float-badge"></span>
+          </button>
+          <button class="btn-theater" id="btn-theater" title="Modo teatro">
+            <i class="fas fa-expand-alt"></i><span>Teatro</span>
+          </button>
+        </div>
+      </div>
+      <span id="player-channel-name" style="display:none">Cargando...</span>
+      <?php elseif ($programaData):
+        $progTitulo = htmlspecialchars($programaData['titulo'] ?? '');
+        $progDesc   = mb_strimwidth(trim((string)($programaData['descripcion'] ?? '')), 0, 160, '…');
+        $progTipo   = htmlspecialchars($programaData['tipo'] ?? '');
+        $progInicio = htmlspecialchars($programaData['hora_inicio'] ?? '');
+        $progFin    = htmlspecialchars($programaData['hora_fin'] ?? '');
+        $progEnVivo = !empty($programaData['en_vivo']);
+      ?>
+      <div class="partido-header">
+        <div class="partido-meta">
+          <?php if (!empty($programaData['imagen'])): ?>
+          <img src="<?= htmlspecialchars($programaData['imagen']) ?>" class="programa-poster lazy-img" loading="lazy" onerror="this.style.display='none'">
+          <?php else: ?>
+          <i class="fas fa-tv programa-poster-icon"></i>
+          <?php endif; ?>
+          <?php if ($progEnVivo): ?>
+            <span class="badge-live"><span class="dot-live"></span> EN VIVO</span>
+          <?php else: ?>
+            <span class="badge-time"><i class="fas fa-clock"></i> <?= $progInicio ?>–<?= $progFin ?></span>
+          <?php endif; ?>
+        </div>
+        <div class="partido-teams programa-info-block">
+          <h3 class="programa-title"><?= $progTitulo ?></h3>
+          <?php if ($progTipo): ?><span class="programa-tipo"><?= $progTipo ?></span><?php endif; ?>
+          <?php if ($progDesc): ?><p class="programa-desc"><?= htmlspecialchars($progDesc) ?></p><?php endif; ?>
         </div>
         <div style="margin-left:auto;display:flex;gap:8px;flex-shrink:0;">
           <button class="btn-theater" id="btn-chat-float" title="Chat en vivo">
@@ -790,6 +905,7 @@ const BASE_URL     = <?= json_encode(BASE_URL) ?>;
 const CHANNEL_ID   = <?= $channelId ?>;
 const CANAL        = <?= $jsCanal ?>;
 const PARTIDO_ID   = <?= $partidoId ?>;
+const PROGRAMA_ACTIVE = <?= $programaData ? 'true' : 'false' ?>;
 const CANAL_VIEWS  = <?= $canalViews ?>;
 const IS_LOGGED_IN = <?= $isLoggedIn ? 'true' : 'false' ?>;
 const INIT_LIKE    = <?= $initLike   ? 'true' : 'false' ?>;
@@ -962,7 +1078,7 @@ if (PARTIDO_ID) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (PARTIDO_ID) return; // breadcrumb already set server-side
+  if (PARTIDO_ID || PROGRAMA_ACTIVE) return; // breadcrumb already set server-side
   const observer = new MutationObserver(() => {
     const name = document.getElementById('player-channel-name').textContent;
     if (name !== 'Cargando...') {
