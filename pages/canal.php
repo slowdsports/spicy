@@ -613,7 +613,7 @@ $isMundial = ($partidoData !== null && (string)($partidoData['league'] ?? '') ==
         <i class="fab fa-telegram telegram-panel-icon"></i>
         <h3>Únete a nuestro canal de Telegram</h3>
         <p>Avisos de canales en vivo, novedades del sitio y soporte directo.</p>
-        <a href="https://t.me/iraffle_tv" target="_blank" rel="noopener noreferrer" class="btn-telegram-join">
+        <a href="https://t.me/teledeportes1" target="_blank" rel="noopener noreferrer" class="btn-telegram-join">
           <i class="fab fa-telegram"></i> Abrir en Telegram
         </a>
       </div>
