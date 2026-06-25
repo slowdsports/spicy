@@ -214,6 +214,26 @@ if (!empty($fuenteData['geo_bloqueado']) && $fuenteData['pais_nombre'] !== '') {
         $geoAvisoPais = $fuenteData['pais_nombre'];
     }
 }
+
+// Markup del aviso, capturado una sola vez para mostrarlo en dos lugares
+// distintos según el tamaño de pantalla (ver .geo-alert-slot--* más abajo):
+// arriba del chat/Telegram en escritorio, arriba del reproductor en móvil.
+$geoAlertHtml = '';
+if ($geoAvisoPais) {
+    ob_start();
+    ?>
+    <div class="geo-alert-box">
+      <div class="geo-alert-icon"><i class="fas fa-globe"></i></div>
+      <div class="geo-alert-text">
+        <div class="geo-alert-title">Este canal podría no estar disponible en tu ubicación</div>
+        <div class="geo-alert-desc">
+          La señal está restringida a <?= htmlspecialchars($geoAvisoPais) ?> y detectamos que estás conectándote desde <?= htmlspecialchars($_SESSION['_eu_country']) ?>. Si el reproductor no carga, es por esta restricción del canal de origen, no de Tele Deportes.
+        </div>
+      </div>
+    </div>
+    <?php
+    $geoAlertHtml = ob_get_clean();
+}
 ?>
 
 <link rel="stylesheet" href="<?= BASE_URL ?>assets/css/chat.css">
@@ -411,6 +431,45 @@ if (!empty($fuenteData['geo_bloqueado']) && $fuenteData['pais_nombre'] !== '') {
   white-space: nowrap;
 }
 
+/* Aviso de geo-restricción — se muestra arriba del chat/Telegram en
+   escritorio, y arriba del reproductor en móvil (.chat-column ya está
+   oculta por defecto en móvil, por eso ahí no hace falta otra regla) */
+.geo-alert-box {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.3);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+}
+.geo-alert-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(245,158,11,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #f59e0b;
+  font-size: 1rem;
+}
+.geo-alert-text { flex: 1; min-width: 220px; }
+.geo-alert-title {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.geo-alert-desc { font-size: .8rem; color: var(--text-muted); }
+.geo-alert-slot--mobile  { margin-bottom: .75rem; }
+.geo-alert-slot--desktop { margin-bottom: .75rem; }
+@media (min-width: 769px) {
+  .geo-alert-slot--mobile { display: none; }
+}
+
 /* Match source pills bar */
 .match-pills-bar {
   padding: .5rem 0 .6rem;
@@ -533,6 +592,9 @@ if (!empty($fuenteData['geo_bloqueado']) && $fuenteData['pais_nombre'] !== '') {
 
     <!-- REPRODUCTOR -->
     <div class="player-column">
+      <?php if ($geoAlertHtml): ?>
+      <div class="geo-alert-slot geo-alert-slot--mobile"><?= $geoAlertHtml ?></div>
+      <?php endif; ?>
       <?php if ($partidoData):
         $pLocal     = htmlspecialchars($partidoData['homeTeam']['name'] ?? '');
         $pVisit     = htmlspecialchars($partidoData['awayTeam']['name'] ?? '');
@@ -713,6 +775,9 @@ if (!empty($fuenteData['geo_bloqueado']) && $fuenteData['pais_nombre'] !== '') {
 
     <!-- CHAT -->
     <div class="chat-column">
+      <?php if ($geoAlertHtml): ?>
+      <div class="geo-alert-slot geo-alert-slot--desktop"><?= $geoAlertHtml ?></div>
+      <?php endif; ?>
       <div class="chat-header">
         <div class="chat-tabs" role="tablist">
           <button type="button" class="chat-tab active" data-tab="telegram" role="tab" aria-selected="true">
@@ -782,22 +847,6 @@ if (!empty($fuenteData['geo_bloqueado']) && $fuenteData['pais_nombre'] !== '') {
   <!-- Teatro: backdrop para cerrar el panel de chat -->
   <div class="chat-theater-backdrop" id="chat-theater-backdrop"></div>
 
-  <?php if ($geoAvisoPais): ?>
-  <div style="margin-top:1rem; border-radius:14px; padding:1rem 1.25rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
-    background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3);">
-    <div style="width:38px; height:38px; border-radius:10px; background:rgba(245,158,11,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-      <i class="fas fa-globe" style="color:#f59e0b; font-size:1rem;"></i>
-    </div>
-    <div style="flex:1; min-width:220px;">
-      <div style="font-size:.9rem; font-weight:700; color:var(--text-primary); margin-bottom:2px;">
-        Este canal podría no estar disponible en tu ubicación
-      </div>
-      <div style="font-size:.8rem; color:var(--text-muted);">
-        La señal está restringida a <?= htmlspecialchars($geoAvisoPais) ?> y detectamos que estás conectándote desde <?= htmlspecialchars($_SESSION['_eu_country']) ?>. Si el reproductor no carga, es por esta restricción del canal de origen, no de Tele Deportes.
-      </div>
-    </div>
-  </div>
-  <?php endif; ?>
 
   <?php
   $isSoloSpicy = $channelId > 0 && !empty($fuenteIosMap[$channelId]['solo_spicy']);

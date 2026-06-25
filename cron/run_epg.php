@@ -21,6 +21,7 @@ $base = __DIR__;
 $scripts = [
     'gato_individual.php',
     'mitv_individual.php',
+    'tdt_epg.php',
     'merge_programas.php',
 ];
 

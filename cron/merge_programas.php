@@ -7,7 +7,9 @@
  *   - Objeto único:      {canal, tz_source, programas:[...]}
  *   - Array de canales:  [{canal, programas}, ...]
  *
- * Archivos excluidos: all.json, tdt.json, tdt_epg.json
+ * Archivos excluidos: all.json, tdt.json (tdt_epg.json SÍ se incluye desde
+ * que cron/tdt_epg.php quedó conectado a cron/run_epg.php — ver fuentes.epg
+ * para los canales que usan TDTChannels como fuente de programación)
  *
  * Protección contra datos obsoletos: si un scraper individual deja de
  * ejecutarse (sitio fuente caído, bloqueo, etc.), su JSON se queda congelado
@@ -22,7 +24,7 @@ const STALE_THRESHOLD = 3 * 3600; // 3 horas
 
 $dir  = __DIR__ . '/../data/programas';
 $out  = "$dir/all.json";
-$skip = ['all.json', 'tdt.json', 'tdt_epg.json'];
+$skip = ['all.json', 'tdt.json'];
 $all  = [];
 $stale = [];
 

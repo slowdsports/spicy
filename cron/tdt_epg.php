@@ -54,6 +54,7 @@ foreach ($channels as $channel) {
 
     $result[] = [
         'canal'     => $epg_id,
+        'tz_source' => 0, // gmdate() ya formatea en UTC; merge_programas.php lo convierte a Honduras
         'programas' => $programas,
     ];
 }
