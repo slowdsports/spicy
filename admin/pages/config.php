@@ -12,12 +12,26 @@ $error = '';
 try {
     $conn = getDBConnection();
 
+    // Descripciones por defecto para claves que todavía no existan en config_sitio
+    // (ej: un servidor donde esta clave nunca se insertó manualmente en la BD)
+    $descripcionesDefault = [
+        'telegram_canal'   => 'Usuario del canal de Telegram (sin @), ej: teledeportes1',
+        'telegram_post_id' => 'Número del mensaje a mostrar (el número al final del link del post de Telegram)',
+    ];
+
     // Guardar cambios si hay POST
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['config'])) {
         foreach ($_POST['config'] as $clave => $valor) {
             $clave = preg_replace('/[^a-z0-9_]/', '', $clave); // sanitizar clave
-            $stmt  = $conn->prepare("UPDATE config_sitio SET valor = ? WHERE clave = ?");
-            $stmt->bind_param('ss', $valor, $clave);
+            $desc  = $descripcionesDefault[$clave] ?? null;
+            // INSERT...ON DUPLICATE KEY: si la clave no existe todavía en esta BD
+            // (ej. recién agregada al panel pero nunca insertada en el servidor),
+            // la crea en vez de no hacer nada como pasaba con un UPDATE simple.
+            $stmt = $conn->prepare(
+                "INSERT INTO config_sitio (clave, valor, descripcion) VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE valor = ?"
+            );
+            $stmt->bind_param('ssss', $clave, $valor, $desc, $valor);
             $stmt->execute();
             $stmt->close();
         }
