@@ -251,6 +251,26 @@ if ($maintenance === 1) {
         Guía de TV
       </span>
     </div>
-    <div id="programs-list"></div>
+    <div id="programs-list">
+      <!-- Skeleton de carga — loadPrograms() en main.js lo reemplaza al llegar el JSON -->
+      <?php for ($i = 0; $i < 3; $i++): ?>
+      <div class="program-row" aria-hidden="true" style="cursor:default;">
+        <div class="program-ch">
+          <div class="program-ch-thumb"><div class="skeleton-block" style="width:100%; height:100%;"></div></div>
+          <div style="flex:1; min-width:0;">
+            <div class="skeleton-block" style="width:75%; height:13px;"></div>
+            <div class="skeleton-block" style="width:45%; height:11px; margin-top:6px;"></div>
+          </div>
+        </div>
+        <div class="program-info">
+          <div class="skeleton-block" style="width:55%; height:14px; margin-bottom:8px;"></div>
+          <div class="skeleton-block" style="width:90%; height:12px;"></div>
+        </div>
+        <div class="program-progress-wrap">
+          <div class="skeleton-block" style="width:70px; height:11px; margin-left:auto;"></div>
+        </div>
+      </div>
+      <?php endfor; ?>
+    </div>
   </div>
 </section>

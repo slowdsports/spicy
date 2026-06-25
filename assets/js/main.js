@@ -203,19 +203,63 @@ let allChannels = [];
 
 async function loadChannels() {
   try {
-    const res  = await fetch(cacheBustedUrl('data/fuentes.json'));
-    const data = await res.json();
+    const [fRes, cRes] = await Promise.all([
+      fetch(cacheBustedUrl('data/fuentes.json')),
+      fetch(cacheBustedUrl('data/channels.json'))
+    ]);
+    const data     = await fRes.json();
+    const channels = await cRes.json();
     allChannels = data.filter(ch => ch.activo === 1);
 
-    const page   = new URLSearchParams(window.location.search).get('p') || 'home';
-    const toShow = page === 'home' ? allChannels.slice(0, 12) : allChannels;
-
+    renderTopChannels(channels, allChannels);
     generateCategoryPills(allChannels);
-    renderChannels(toShow);
     initSearch();
   } catch (e) {
     console.error('Error cargando canales:', e);
   }
+}
+
+// "Top Channels" del home: una card por CANAL (no por fuente), ordenadas por
+// vistas descendente. Cada card enlaza a una fuente representativa de ese
+// canal (la primera activa y visible en TV/Home).
+function renderTopChannels(channels, fuentes) {
+  const grid = document.getElementById('channels-grid');
+  if (!grid) return;
+
+  const fuenteIdPorCanal = {};
+  fuentes.forEach(f => {
+    if (f.mostrar_tv === 0) return;
+    if (!(f.canal in fuenteIdPorCanal)) fuenteIdPorCanal[f.canal] = f.id;
+  });
+
+  const top = channels
+    .filter(c => c.active === 1 && fuenteIdPorCanal[c.id] !== undefined)
+    .sort((a, b) => (parseInt(b.views, 10) || 0) - (parseInt(a.views, 10) || 0))
+    .slice(0, 12);
+
+  if (!top.length) {
+    grid.innerHTML = '<div class="no-results"><i class="fas fa-search" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:.5rem;"></i>No se encontraron canales</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  top.forEach((ch, i) => {
+    const logoHtml = ch.logo
+      ? `<img src="${ch.logo}" alt="${ch.name}" class="channel-logo lazy-img" loading="lazy">`
+      : `<i class="fas fa-broadcast-tower" style="color:var(--accent); font-size:2rem;"></i>`;
+
+    const card = document.createElement('a');
+    card.href = `?p=canal&id=${fuenteIdPorCanal[ch.id]}`;
+    card.className = 'channel-card fade-in';
+    card.style.animationDelay = `${i * 0.05}s`;
+    card.style.opacity = '0';
+    card.innerHTML = `
+      <div class="channel-logo-wrapper">${logoHtml}</div>
+      <span class="channel-name">${ch.name}</span>
+      <span style="display: none" class="channel-category-label">${ch.category}</span>
+    `;
+    grid.appendChild(card);
+  });
 }
 
 function generateCategoryPills(channels) {
@@ -363,7 +407,7 @@ async function loadPrograms() {
   if (!container) return;
   try {
     const res = await fetch(cacheBustedUrl('data/programas/all.json'));
-    if (!res.ok) return;
+    if (!res.ok) { container.innerHTML = ''; return; }
     const canales = await res.json();
 
     // Solo mostrar programas de canales disponibles en fuentes.json (con epg configurado)
@@ -416,7 +460,9 @@ async function loadPrograms() {
       container.appendChild(row);
     });
     convertProgramTimes();
-  } catch (e) { /* silencioso */ }
+  } catch (e) {
+    container.innerHTML = ''; // no dejar el skeleton girando para siempre si falla
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
