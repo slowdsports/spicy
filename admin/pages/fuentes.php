@@ -15,6 +15,7 @@ $_migcols = [
     'tipo_ios'    => "ALTER TABLE fuentes ADD COLUMN tipo_ios    VARCHAR(20) NOT NULL DEFAULT 'hls'",
     'usar_proxy'  => "ALTER TABLE fuentes ADD COLUMN usar_proxy  TINYINT(1)  NOT NULL DEFAULT 0",
     'solo_spicy'  => "ALTER TABLE fuentes ADD COLUMN solo_spicy  TINYINT(1)  NOT NULL DEFAULT 0",
+    'geo_bloqueado' => "ALTER TABLE fuentes ADD COLUMN geo_bloqueado TINYINT(1) NOT NULL DEFAULT 0",
 ];
 foreach ($_migcols as $_col => $_sql) {
     $_r = $_conn_mig->query("SHOW COLUMNS FROM fuentes LIKE '{$_col}'");

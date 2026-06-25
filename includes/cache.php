@@ -61,22 +61,27 @@ function regenerateCanalesCache(): bool {
 function regenerateFuentesCache(): bool {
     $conn = getDBConnection();
     $fuentes = $conn->query("
-        SELECT id, nombre, canal, tipo, epg, activo, sandbox, mostrar_tv, solo_spicy,
-               (url_ios IS NOT NULL AND url_ios <> '') AS ios
-        FROM fuentes ORDER BY nombre ASC
+        SELECT f.id, f.nombre, f.canal, f.tipo, f.epg, f.activo, f.sandbox, f.mostrar_tv, f.solo_spicy,
+               f.geo_bloqueado, p.paisNombre AS pais_nombre,
+               (f.url_ios IS NOT NULL AND f.url_ios <> '') AS ios
+        FROM fuentes f
+        LEFT JOIN paises p ON f.pais = p.id
+        ORDER BY f.nombre ASC
     ")->fetch_all(MYSQLI_ASSOC);
 
     $json = array_map(fn($f) => [
-        'id'         => (int)$f['id'],
-        'nombre'     => $f['nombre'] ?? '',
-        'canal'      => (int)$f['canal'] ?: null,
-        'tipo'       => (int)$f['tipo'] ?: null,
-        'epg'        => $f['epg'] ?? '',
-        'activo'     => (int)$f['activo'],
-        'sandbox'    => (int)($f['sandbox'] ?? 1),
-        'mostrar_tv' => (int)($f['mostrar_tv'] ?? 1),
-        'ios'        => (bool)$f['ios'],
-        'solo_spicy' => (bool)($f['solo_spicy'] ?? false),
+        'id'            => (int)$f['id'],
+        'nombre'        => $f['nombre'] ?? '',
+        'canal'         => (int)$f['canal'] ?: null,
+        'tipo'          => (int)$f['tipo'] ?: null,
+        'epg'           => $f['epg'] ?? '',
+        'activo'        => (int)$f['activo'],
+        'sandbox'       => (int)($f['sandbox'] ?? 1),
+        'mostrar_tv'    => (int)($f['mostrar_tv'] ?? 1),
+        'ios'           => (bool)$f['ios'],
+        'solo_spicy'    => (bool)($f['solo_spicy'] ?? false),
+        'geo_bloqueado' => (bool)($f['geo_bloqueado'] ?? false),
+        'pais_nombre'   => $f['pais_nombre'] ?? '',
     ], $fuentes);
 
     return _cacheWrite('fuentes.json', $json);

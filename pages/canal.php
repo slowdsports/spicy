@@ -22,11 +22,13 @@ if ($channelId > 0) {
 
     if ($_fuenteRaw) {
         $fuenteData = [
-            'id'     => $_fuenteRaw['id'],
-            'nombre' => $_fuenteRaw['nombre'],
-            'canal'  => $_fuenteRaw['canal'],
-            'tipo'   => $_fuenteRaw['tipo'],
-            'epg'    => trim((string)($_fuenteRaw['epg'] ?? '')),
+            'id'            => $_fuenteRaw['id'],
+            'nombre'        => $_fuenteRaw['nombre'],
+            'canal'         => $_fuenteRaw['canal'],
+            'tipo'          => $_fuenteRaw['tipo'],
+            'epg'           => trim((string)($_fuenteRaw['epg'] ?? '')),
+            'geo_bloqueado' => !empty($_fuenteRaw['geo_bloqueado']),
+            'pais_nombre'   => trim((string)($_fuenteRaw['pais_nombre'] ?? '')),
         ];
 
         $iframeUrl = 'pages/reproductor.php?' . http_build_query([
@@ -195,6 +197,22 @@ if ($partidoId === 0 && !empty($fuenteData['epg'])) {
         unset($_progCanales, $_pc, $_pp);
     }
     unset($_progPath);
+}
+
+// Aviso de geo-restricción: TDTChannels marca varios canales españoles como
+// geo-bloqueados (ver cron/tdt_channels_sync.php). Si la fuente lo exige y el
+// país detectado por IP no coincide, mostramos un aviso — no podemos bloquear
+// el stream nosotros, eso lo hace el servidor de origen, así que esto es solo
+// informativo. _euDetectCountry()/_euGetIp() ya están definidas globalmente
+// (includes/eu_check.php se incluye desde index.php antes de esta página).
+$geoAvisoPais = null;
+if (!empty($fuenteData['geo_bloqueado']) && $fuenteData['pais_nombre'] !== '') {
+    if (!isset($_SESSION['_eu_country'])) {
+        $_SESSION['_eu_country'] = _euDetectCountry(_euGetIp());
+    }
+    if ($_SESSION['_eu_country'] !== '' && $_SESSION['_eu_country'] !== $fuenteData['pais_nombre']) {
+        $geoAvisoPais = $fuenteData['pais_nombre'];
+    }
 }
 ?>
 
@@ -763,6 +781,23 @@ if ($partidoId === 0 && !empty($fuenteData['epg'])) {
 
   <!-- Teatro: backdrop para cerrar el panel de chat -->
   <div class="chat-theater-backdrop" id="chat-theater-backdrop"></div>
+
+  <?php if ($geoAvisoPais): ?>
+  <div style="margin-top:1rem; border-radius:14px; padding:1rem 1.25rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
+    background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3);">
+    <div style="width:38px; height:38px; border-radius:10px; background:rgba(245,158,11,0.12); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+      <i class="fas fa-globe" style="color:#f59e0b; font-size:1rem;"></i>
+    </div>
+    <div style="flex:1; min-width:220px;">
+      <div style="font-size:.9rem; font-weight:700; color:var(--text-primary); margin-bottom:2px;">
+        Este canal podría no estar disponible en tu ubicación
+      </div>
+      <div style="font-size:.8rem; color:var(--text-muted);">
+        La señal está restringida a <?= htmlspecialchars($geoAvisoPais) ?> y detectamos que estás conectándote desde <?= htmlspecialchars($_SESSION['_eu_country']) ?>. Si el reproductor no carga, es por esta restricción del canal de origen, no de Tele Deportes.
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <?php
   $isSoloSpicy = $channelId > 0 && !empty($fuenteIosMap[$channelId]['solo_spicy']);
