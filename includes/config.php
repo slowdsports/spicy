@@ -172,6 +172,30 @@ function userId(): int {
     return (int)($_SESSION['user_id'] ?? 0);
 }
 
+/**
+ * Devuelve true si el User-Agent corresponde a una Smart TV / Smart Box
+ * (compartido entre pages/login.php — modo QR — y pages/canal.php — controles
+ * extra de sonido/pantalla completa, ver attachFullBitmovinUi en
+ * pages/reproductor-3.php).
+ */
+function isSmartTvDevice(): bool {
+    static $result = null;
+    if ($result !== null) return $result;
+
+    $ua = strtolower($_SERVER['HTTP_USER_AGENT'] ?? '');
+    $patterns = [
+        'smart-tv', 'smarttv', 'netcast', 'webos', 'tizen', 'hbbtv',
+        'firetv', 'fire tv', 'appletv', 'apple tv', 'roku',
+        'androidtv', 'android tv', 'bravia', 'viera',
+        'googletv', 'google tv', 'aftb', 'aftt', 'aftm', 'afts', 'aftr', 'aftn',
+        'crkey', 'nettv', 'netrange', 'philips tv',
+    ];
+    foreach ($patterns as $p) {
+        if (strpos($ua, $p) !== false) return $result = true;
+    }
+    return $result = false;
+}
+
 // ============================================================
 // HELPERS DE ESTADO DEL SITIO
 // ============================================================
