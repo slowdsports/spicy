@@ -28,6 +28,7 @@ header('X-Frame-Options: SAMEORIGIN');
 header("Content-Security-Policy: frame-ancestors 'self'");
 
 $nombre      = htmlspecialchars($fuenteData['nombre']);
+$isSmartTv   = isSmartTvDevice();
 // URL y DRM keys NO se pasan al cliente — las sirve api/stream.php bajo token firmado
 $jsBase      = json_encode(BASE_URL);
 $jsFid       = (int)$streamFuenteId;
@@ -51,6 +52,9 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
     <meta name="robots" content="noindex">
     <meta name="referrer" content="none">
     <title><?= $nombre ?> - Tele Deportes</title>
+    <?php if ($isSmartTv): ?>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <?php endif; ?>
 
     <script>
     // ── Bloqueo de incrustación cross-origin (iframe en otro sitio) ─────────
@@ -188,6 +192,37 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
             border-color: #6366f1; background-color: #6366f1;
         }
         .bmpui-ui-selectbox, .bmpui-on { color: #6366f1; }
+
+        /* Controles extra para Smart TV — independientes de la UI del
+           reproductor, para no depender de su versión/clases internas */
+        #tv-controls {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 150;
+            display: flex;
+            gap: 10px;
+        }
+        .tv-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(0,0,0,.65);
+            border: 1px solid rgba(255,255,255,.3);
+            color: #fff;
+            font-size: 0.85em;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .tv-btn:hover,
+        .tv-btn:focus,
+        .tv-btn.active {
+            background: #8b5cf6;
+            border-color: #8b5cf6;
+        }
     </style>
 </head>
 <body>
@@ -197,6 +232,16 @@ $reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
         <div class="s-title">Cargando canal...</div>
     </div>
     <div id="player"></div>
+    <?php if ($isSmartTv): ?>
+    <div id="tv-controls">
+        <button type="button" id="tv-unmute-btn" class="tv-btn" aria-label="Activar sonido">
+            <i class="fas fa-volume-mute"></i><span>Sonido</span>
+        </button>
+        <button type="button" id="tv-fullscreen-btn" class="tv-btn" aria-label="Pantalla completa">
+            <i class="fas fa-expand"></i><span>Pantalla completa</span>
+        </button>
+    </div>
+    <?php endif; ?>
     <?php if ($isIOS): ?>
     <div id="ios-notice" class="ios-notice">
         <span class="ios-notice-dot"></span>
@@ -284,60 +329,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <?php if ($reproductor === 'bitmovin'): ?>
         // ── BITMOVIN ─────────────────────────────────────────────────────────
-        // ui:false — la UI por defecto de Bitmovin detecta Smart TVs (WebOS,
-        // Tizen, Vizio, Hisense, Xbox, PlayStation, Vidaa, Xumo, vía user-agent)
-        // y les aplica su layout "tv" propio, que A PROPÓSITO no trae control
-        // de volumen ni botón de pantalla completa (asume mando físico para
-        // volumen y que la TV ya está siempre en pantalla completa). Para
-        // nuestros canales sí los queremos siempre, así que construimos la
-        // misma UI "main" que usan desktop/mobile a mano, sin dejar que
-        // Bitmovin la cambie por la de TV. Ver attachFullBitmovinUi más abajo.
+        // Configuración intacta — la UI por defecto de Bitmovin queda como
+        // siempre (desktop/mobile la necesitan tal cual). Para Smart TV no
+        // tocamos esta UI: agregamos botones propios más abajo (ver bloque
+        // "Controles extra para Smart TV"), que no dependen de las clases
+        // internas de bitmovin-player-ui (esas cambian entre versiones del
+        // CDN y romper esto deja a TODOS sin controles, no solo a las TV).
         var player = new bitmovin.player.Player(document.getElementById('player'), {
             key:      '11d3698c-efdf-42f1-8769-54663995de2b',
             analytics: false,
             cast:     { enable: true },
             playback: { autoplay: true, muted: true },
-            style:    { width: '100%', height: '100%' },
-            ui:       false
+            style:    { width: '100%', height: '100%' }
         });
-
-        function attachFullBitmovinUi(p) {
-            if (!window.bitmovin || !bitmovin.playerui) return;
-            var UIFactory = bitmovin.playerui.UIFactory;
-            var UIManager = bitmovin.playerui.UIManager;
-            try {
-                if (UIFactory.defaultLayouts && typeof UIFactory.defaultLayouts.main === 'function') {
-                    new UIManager(p, UIFactory.defaultLayouts.main());
-                } else if (typeof UIFactory.buildDefaultUI === 'function') {
-                    UIFactory.buildDefaultUI(p);
-                } else if (typeof UIFactory.modernUI === 'function') {
-                    new UIManager(p, UIFactory.modernUI());
-                }
-            } catch (e) {
-                console.error('No se pudo construir la UI de Bitmovin:', e);
-            }
-        }
-
-        // Puente para el botón "Sonido" de canal.php (fuera de este iframe).
-        // Usa la API real de Bitmovin (no toca el <video> directo) para que
-        // el estado interno del player y de su UI queden consistentes.
-        window.shUnmute = function () {
-            try {
-                player.unmute();
-                player.setVolume(100);
-            } catch (e) {
-                console.error('shUnmute error:', e);
-            }
-        };
+        window.player = player; // usado solo por los controles de Smart TV de más abajo
 
         var source = { dash: url };
         if (ck_keyid && ck_key) {
             source.drm = { clearkey: [{ keyId: ck_keyid, key: ck_key }] };
         }
-        player.load(source).then(function () {
-            attachFullBitmovinUi(player);
-            showPlayer();
-        }).catch(function (err) {
+        player.load(source).then(showPlayer).catch(function (err) {
             showError('Error al cargar el stream.');
             console.error('Bitmovin error:', err);
         });
@@ -393,6 +404,70 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
+
+<?php if ($isSmartTv): ?>
+// ── Controles extra para Smart TV ───────────────────────────────────────────
+// No dependen de la librería de UI de ningún reproductor (bitmovin/clappr/
+// jwplayer) — eso es justo lo que se rompió la vez pasada. "Sonido" usa la
+// API estable de Bitmovin si está disponible (window.player, asignado más
+// arriba) y si no, busca el <video> que sea y lo desmutea directo — sirve
+// para cualquier reproductor. "Pantalla completa" usa la API nativa del
+// navegador sobre #wrapper, sin pasar por ningún reproductor.
+document.addEventListener('DOMContentLoaded', function () {
+    var unmuteBtn     = document.getElementById('tv-unmute-btn');
+    var fullscreenBtn = document.getElementById('tv-fullscreen-btn');
+    var wrapper       = document.getElementById('wrapper');
+
+    if (unmuteBtn) {
+        unmuteBtn.addEventListener('click', function () {
+            var ok = false;
+            try {
+                if (window.player && typeof window.player.unmute === 'function') {
+                    window.player.unmute();
+                    if (typeof window.player.setVolume === 'function') window.player.setVolume(100);
+                    ok = true;
+                }
+            } catch (e) { console.error('No se pudo desmutear via player API:', e); }
+
+            if (!ok) {
+                try {
+                    var video = document.querySelector('#player video');
+                    if (video) { video.muted = false; video.volume = 1; ok = true; }
+                } catch (e) { console.error('No se pudo desmutear el <video>:', e); }
+            }
+
+            if (ok) {
+                unmuteBtn.classList.add('active');
+                var icon = unmuteBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-volume-up';
+            }
+        });
+    }
+
+    if (fullscreenBtn && wrapper) {
+        function isFs() {
+            return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+        }
+        fullscreenBtn.addEventListener('click', function () {
+            if (isFs()) {
+                var exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+                if (exit) exit.call(document);
+                return;
+            }
+            var req = wrapper.requestFullscreen || wrapper.webkitRequestFullscreen || wrapper.msRequestFullscreen;
+            if (req) req.call(wrapper);
+        });
+        ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach(function (evt) {
+            document.addEventListener(evt, function () {
+                var on = isFs();
+                fullscreenBtn.classList.toggle('active', on);
+                var icon = fullscreenBtn.querySelector('i');
+                if (icon) icon.className = on ? 'fas fa-compress' : 'fas fa-expand';
+            });
+        });
+    }
+});
+<?php endif; ?>
 </script>
 </body>
 </html>

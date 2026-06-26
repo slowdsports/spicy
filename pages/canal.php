@@ -8,7 +8,6 @@ $fuenteData = null;
 $fuentes    = [];
 $canalViews = 0;
 $canalLogo  = '';
-$isSmartTv  = isSmartTvDevice();
 
 if ($channelId > 0) {
     // Metadata de fuentes desde el caché JSON — nunca toca la BD (ver
@@ -493,27 +492,6 @@ if ($geoAvisoPais) {
   .partido-teams { width: 100%; }
 }
 
-/* Controles extra para Smart TV, flotando sobre el reproductor */
-.smarttv-controls {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 20;
-  display: flex;
-  gap: 8px;
-}
-.smarttv-controls .btn-theater {
-  background: rgba(0,0,0,.6);
-  border-color: rgba(255,255,255,.25);
-  color: #fff;
-}
-.smarttv-controls .btn-theater:hover,
-.smarttv-controls .btn-theater.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
 /* ── Mundial 2026: tema dorado para canal.php ─────────────── */
 .mundial-canal {
   --gold:        #f59e0b;
@@ -732,22 +710,6 @@ if ($geoAvisoPais) {
         <iframe id="player-iframe" src="<?= htmlspecialchars($iframeUrl) ?>" allowfullscreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture"
           style="display:<?= !empty($iframeUrl) ? 'block' : 'none' ?>;"></iframe>
-
-        <?php if ($isSmartTv): ?>
-        <!-- Controles extra para Smart TV: el reproductor arranca muteado
-             (política de autoplay) y en algunas TVs ni el control de volumen
-             ni el botón de pantalla completa del player interno se ven (ver
-             attachFullBitmovinUi en reproductor-3.php). Estos botones viven
-             en canal.php, fuera del iframe, para no depender de eso. -->
-        <div class="smarttv-controls" id="smarttv-controls">
-          <button type="button" class="btn-theater" id="btn-tv-unmute" title="Activar sonido">
-            <i class="fas fa-volume-mute"></i><span>Sonido</span>
-          </button>
-          <button type="button" class="btn-theater" id="btn-tv-fullscreen" title="Pantalla completa">
-            <i class="fas fa-expand"></i><span>Pantalla completa</span>
-          </button>
-        </div>
-        <?php endif; ?>
       </div>
 
       <?php if (!empty($canalesPartido)): ?>
@@ -1347,82 +1309,3 @@ document.addEventListener('DOMContentLoaded', function () {
   activateTab(getSavedTab());
 });
 </script>
-
-<?php if ($isSmartTv): ?>
-<script>
-// Controles extra para Smart TV: el reproductor arranca muteado por la
-// política de autoplay de los navegadores, y en varias TVs ni el control de
-// volumen ni el botón de pantalla completa del player interno se ven (ver
-// pages/reproductor-3.php). Estos botones viven acá, fuera del iframe, así
-// no dependen de la UI del reproductor para funcionar.
-document.addEventListener('DOMContentLoaded', function () {
-  var iframe        = document.getElementById('player-iframe');
-  var unmuteBtn      = document.getElementById('btn-tv-unmute');
-  var fullscreenBtn  = document.getElementById('btn-tv-fullscreen');
-  var wrapper        = document.querySelector('.player-iframe-wrapper');
-  if (!iframe) return;
-
-  // ── Sonido ────────────────────────────────────────────────────────────
-  if (unmuteBtn) {
-    unmuteBtn.addEventListener('click', function () {
-      var ok = false;
-
-      // 1) Preferido: la API real del reproductor (Bitmovin), expuesta por
-      //    reproductor-3.php como window.shUnmute — mismo origen, así que
-      //    podemos llamarla directo desde acá.
-      try {
-        if (iframe.contentWindow && typeof iframe.contentWindow.shUnmute === 'function') {
-          iframe.contentWindow.shUnmute();
-          ok = true;
-        }
-      } catch (e) { /* seguir con el fallback */ }
-
-      // 2) Fallback genérico: cualquier reproductor (JW, Clappr, HLS nativo)
-      //    termina renderizando un <video> — lo desmuteamos directo.
-      if (!ok) {
-        try {
-          var video = iframe.contentDocument && iframe.contentDocument.querySelector('video');
-          if (video) { video.muted = false; video.volume = 1; ok = true; }
-        } catch (e) { /* nada más que hacer */ }
-      }
-
-      if (ok) {
-        unmuteBtn.classList.add('active');
-        var icon = unmuteBtn.querySelector('i');
-        if (icon) icon.className = 'fas fa-volume-up';
-      }
-    });
-  }
-
-  // ── Pantalla completa ─────────────────────────────────────────────────
-  // Pedimos fullscreen sobre el wrapper (no sobre el iframe) para que estos
-  // mismos botones sigan visibles y usables una vez en pantalla completa.
-  if (fullscreenBtn) {
-    var target = wrapper || iframe;
-
-    function isFullscreen() {
-      return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
-    }
-
-    fullscreenBtn.addEventListener('click', function () {
-      if (isFullscreen()) {
-        var exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
-        if (exit) exit.call(document);
-        return;
-      }
-      var req = target.requestFullscreen || target.webkitRequestFullscreen || target.msRequestFullscreen;
-      if (req) req.call(target);
-    });
-
-    ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'].forEach(function (evt) {
-      document.addEventListener(evt, function () {
-        var on = isFullscreen();
-        fullscreenBtn.classList.toggle('active', on);
-        var icon = fullscreenBtn.querySelector('i');
-        if (icon) icon.className = on ? 'fas fa-compress' : 'fas fa-expand';
-      });
-    });
-  }
-});
-</script>
-<?php endif; ?>
