@@ -708,7 +708,7 @@ if ($geoAvisoPais) {
         </script>
         <?php endif; ?>
         <iframe id="player-iframe" src="<?= htmlspecialchars($iframeUrl) ?>" allowfullscreen
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; picture-in-picture"
           style="display:<?= !empty($iframeUrl) ? 'block' : 'none' ?>;"></iframe>
       </div>
 

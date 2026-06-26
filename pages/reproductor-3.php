@@ -284,19 +284,48 @@ document.addEventListener('DOMContentLoaded', function () {
 
 <?php if ($reproductor === 'bitmovin'): ?>
         // ── BITMOVIN ─────────────────────────────────────────────────────────
+        // ui:false — la UI por defecto de Bitmovin detecta Smart TVs (WebOS,
+        // Tizen, Vizio, Hisense, Xbox, PlayStation, Vidaa, Xumo, vía user-agent)
+        // y les aplica su layout "tv" propio, que A PROPÓSITO no trae control
+        // de volumen ni botón de pantalla completa (asume mando físico para
+        // volumen y que la TV ya está siempre en pantalla completa). Para
+        // nuestros canales sí los queremos siempre, así que construimos la
+        // misma UI "main" que usan desktop/mobile a mano, sin dejar que
+        // Bitmovin la cambie por la de TV. Ver attachFullBitmovinUi más abajo.
         var player = new bitmovin.player.Player(document.getElementById('player'), {
             key:      '11d3698c-efdf-42f1-8769-54663995de2b',
             analytics: false,
             cast:     { enable: true },
             playback: { autoplay: true, muted: true },
-            style:    { width: '100%', height: '100%' }
+            style:    { width: '100%', height: '100%' },
+            ui:       false
         });
+
+        function attachFullBitmovinUi(p) {
+            if (!window.bitmovin || !bitmovin.playerui) return;
+            var UIFactory = bitmovin.playerui.UIFactory;
+            var UIManager = bitmovin.playerui.UIManager;
+            try {
+                if (UIFactory.defaultLayouts && typeof UIFactory.defaultLayouts.main === 'function') {
+                    new UIManager(p, UIFactory.defaultLayouts.main());
+                } else if (typeof UIFactory.buildDefaultUI === 'function') {
+                    UIFactory.buildDefaultUI(p);
+                } else if (typeof UIFactory.modernUI === 'function') {
+                    new UIManager(p, UIFactory.modernUI());
+                }
+            } catch (e) {
+                console.error('No se pudo construir la UI de Bitmovin:', e);
+            }
+        }
 
         var source = { dash: url };
         if (ck_keyid && ck_key) {
             source.drm = { clearkey: [{ keyId: ck_keyid, key: ck_key }] };
         }
-        player.load(source).then(showPlayer).catch(function (err) {
+        player.load(source).then(function () {
+            attachFullBitmovinUi(player);
+            showPlayer();
+        }).catch(function (err) {
             showError('Error al cargar el stream.');
             console.error('Bitmovin error:', err);
         });
