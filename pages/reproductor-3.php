@@ -318,6 +318,18 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
+        // Puente para el botón "Sonido" de canal.php (fuera de este iframe).
+        // Usa la API real de Bitmovin (no toca el <video> directo) para que
+        // el estado interno del player y de su UI queden consistentes.
+        window.shUnmute = function () {
+            try {
+                player.unmute();
+                player.setVolume(100);
+            } catch (e) {
+                console.error('shUnmute error:', e);
+            }
+        };
+
         var source = { dash: url };
         if (ck_keyid && ck_key) {
             source.drm = { clearkey: [{ keyId: ck_keyid, key: ck_key }] };

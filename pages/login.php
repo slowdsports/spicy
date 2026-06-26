@@ -4,20 +4,7 @@
  */
 
 // ── Detección de Smart TV / Smart Box ───────────────────────────────────────
-$_tvUa = strtolower($_SERVER['HTTP_USER_AGENT'] ?? '');
-$_tvPatterns = [
-    'smart-tv', 'smarttv', 'netcast', 'webos', 'tizen', 'hbbtv',
-    'firetv', 'fire tv', 'appletv', 'apple tv', 'roku',
-    'androidtv', 'android tv', 'bravia', 'viera',
-    'googletv', 'google tv', 'aftb', 'aftt', 'aftm', 'afts', 'aftr', 'aftn',
-    'crkey', 'nettv', 'netrange', 'philips tv',
-];
-$_isTvDevice = false;
-foreach ($_tvPatterns as $_p) {
-    if (strpos($_tvUa, $_p) !== false) { $_isTvDevice = true; break; }
-}
-
-$_isTvMode     = $_isTvDevice || isset($_GET['tvlogin']);
+$_isTvMode     = isSmartTvDevice() || isset($_GET['tvlogin']);
 $_tvToken      = preg_replace('/[^a-f0-9]/', '', $_GET['tv'] ?? '');
 $_isMobileAuth = strlen($_tvToken) === 32;
 
