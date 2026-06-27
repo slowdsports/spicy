@@ -40,6 +40,12 @@ if (!$streamUrl) {
     http_response_code(502);
     die('No se pudo obtener la URL del stream.');
 }
+
+// zicotv.cc bloquea (403) el manifest/segmentos cuando el navegador los pide
+// directo desde otro dominio (anti-hotlinking), aunque sí responde a
+// peticiones server-side. Se reproduce a través de nuestro propio proxy
+// (api/m3u8proxy.php) para que el navegador nunca toque su CDN directamente.
+$proxyStreamUrl = 'api/m3u8proxy.php?url=' . rawurlencode($streamUrl);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -152,7 +158,7 @@ if (!$streamUrl) {
 
     <script>
         // URL .m3u8 obtenida en PHP arriba, con el token vigente en este momento.
-        var STREAM_URL = <?= json_encode($streamUrl) ?>;
+        var STREAM_URL = <?= json_encode($proxyStreamUrl) ?>;
 
         var statusEl = document.getElementById('status');
         function showPlayer() { statusEl.style.display = 'none'; }
