@@ -53,21 +53,6 @@
 </div>
 
 <script>
-var DASH_URL = 'https://live-oneapp-prd-news.akamaized.net/Content/CMAF_OL2-CTR-4s-v2/Live/channel(kvea)/master.mpd';
-var CK_KEYID = 'ce7ab3022e753307997f58afe001bac4';
-var CK_KEY   = '72d631a66e635c60829a0fe7705516c1';
-
-var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-var statusEl = document.getElementById('status');
-function showPlayer() { statusEl.style.display = 'none'; }
-function showError(msg) {
-    document.querySelector('.spinner').style.display = 'none';
-    document.querySelector('.s-title').textContent = msg;
-    console.error('[player]', msg);
-}
-
-// Bypass licencia Bitmovin
 (function () {
     var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
     function ov(u) {
@@ -80,64 +65,37 @@ function showError(msg) {
 })();
 
 document.addEventListener('DOMContentLoaded', function () {
+    var statusEl = document.getElementById('status');
 
     var player = new bitmovin.player.Player(document.getElementById('player'), {
         key:      '11d3698c-efdf-42f1-8769-54663995de2b',
         analytics: false,
-        cast:     { enable: !isIOS },
-        playback: {
-            autoplay:    true,
-            muted:       true,
-            playsinline: true,
-            // El stream OL2 de Akamai tiene chunked-transfer CMAF.
-            // Bitmovin detecta low-latency y consume fragmentos parciales,
-            // lo que en iOS MMS produce video a trozos. Lo desactivamos:
-            lowLatency:  false
-        },
-        style: { width: '100%', height: '100%' },
-        buffer: isIOS ? {
-            // En iOS: buffer moderado, preferimos estabilidad a baja latencia
-            video: { forwardduration: 16, backwardduration: 2 },
-            audio: { forwardduration: 16, backwardduration: 2 }
-        } : {
+        cast:     { enable: true },
+        playback: { autoplay: true, muted: true, playsinline: true },
+        style:    { width: '100%', height: '100%' },
+        buffer: {
             video: { forwardduration: 30, backwardduration: 5 },
             audio: { forwardduration: 30, backwardduration: 5 }
         },
         adaptation: {
-            startupBitrate:    isIOS ? 860000  : 1500000,
-            maxStartupBitrate: isIOS ? 860000  : 3000000
+            startupBitrate:    1500000,
+            maxStartupBitrate: 3000000
         },
         tweaks: {
             max_video_download_delay: 12,
-            startup_threshold:        isIOS ? 4 : 2,
-            // Asegura que no intenta reanudar desde posición cercana al live edge
-            live_edge_segment_delay_factor: isIOS ? 3 : 1
+            startup_threshold:        2
         }
     });
 
     player.load({
-        dash: DASH_URL,
-        drm:  { clearkey: [{ keyId: CK_KEYID, key: CK_KEY }] }
-    })
-    .then(function () {
-        showPlayer();
-        if (isIOS) {
-            // Bloquear a 860 kbps — calidad estable sin saltos de ABR
-            setTimeout(function () {
-                var qs = player.getAvailableVideoQualities();
-                if (!qs || !qs.length) return;
-                qs.sort(function (a, b) { return a.bitrate - b.bitrate; });
-                var target = qs[0];
-                for (var i = 0; i < qs.length; i++) {
-                    if (qs[i].bitrate <= 900000) target = qs[i];
-                }
-                player.setVideoQuality(target.id);
-                console.log('[iOS] calidad fijada:', target.bitrate + ' bps');
-            }, 2000);
-        }
-    })
-    .catch(function (err) {
-        showError('Error: ' + (err.message || err.code || JSON.stringify(err)));
+        dash: 'https://live-oneapp-prd-news.akamaized.net/Content/CMAF_OL2-CTR-4s-v2/Live/channel(kvea)/master.mpd',
+        drm:  { clearkey: [{ keyId: 'ce7ab3022e753307997f58afe001bac4', key: '72d631a66e635c60829a0fe7705516c1' }] }
+    }).then(function () {
+        statusEl.style.display = 'none';
+    }).catch(function (err) {
+        console.error('[Bitmovin]', err);
+        // No mostrar error al usuario — el player intentará reproducir lo que pueda
+        statusEl.style.display = 'none';
     });
 });
 </script>

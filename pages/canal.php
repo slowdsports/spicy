@@ -82,6 +82,30 @@ if ($channelId > 0) {
     }
     unset($_fuentesPath, $_allFuentes, $_fuenteRaw, $_f);
 }
+
+// Vista simplificada para Smart TV: sin navbar/chat/sliders (ver
+// $isTvPlayerView en index.php), el reproductor ocupa el 100% de la
+// pantalla directamente. Probar desde escritorio con "&ua=smart" en la URL.
+if (isSmartTvDevice()) {
+    if (!$iframeUrl) {
+        http_response_code(404);
+        echo '<p style="color:#fff;background:#000;">Canal no encontrado.</p>';
+        return;
+    }
+    // Propagar el override de prueba "ua=smart" al iframe para que
+    // reproductor.php / reproductor-3.php también detecten Smart TV en esa
+    // petición aparte (un Smart TV real ya manda el User-Agent real ahí).
+    $tvIframeUrl = $iframeUrl . (isset($_GET['ua']) ? '&ua=' . urlencode($_GET['ua']) : '');
+    ?>
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+  #tv-player-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
+</style>
+<iframe id="tv-player-frame" src="<?= htmlspecialchars($tvIframeUrl, ENT_QUOTES) ?>" allow="autoplay; fullscreen" allowfullscreen></iframe>
+    <?php
+    return;
+}
+
 $jsCanal = json_encode($fuenteData['canal'] ?? '');
 
 // Chat config

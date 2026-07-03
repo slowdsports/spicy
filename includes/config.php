@@ -4,11 +4,18 @@
  * Incluido en todas las páginas antes de cualquier output.
  */
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'u5869826_root');
-define('DB_PASS', 'OF0wh^]#kK9C+U1W');
-define('DB_NAME', 'u5869826_streamhub');
-define('BASE_URL', $_env['BASE_URL'] ?? '/');
+// includes/.env.php nunca se versiona (ver .gitignore) ni lo toca el deploy
+// (.cpanel.yml hace "cp -Rf *" desde el checkout de git, que no lo incluye),
+// así que sirve para tener credenciales distintas en local y en el servidor
+// sin tener que editar este archivo a mano en cada deploy. Ver
+// includes/.env.example.php para la plantilla.
+$_env = file_exists(__DIR__ . '/.env.php') ? (require __DIR__ . '/.env.php') : [];
+
+define('DB_HOST', $_env['DB_HOST'] ?? 'localhost');
+define('DB_USER', $_env['DB_USER'] ?? 'root');
+define('DB_PASS', $_env['DB_PASS'] ?? '');
+define('DB_NAME', $_env['DB_NAME'] ?? 'streamhub');
+define('BASE_URL', $_env['BASE_URL'] ?? '/spicy/');
 
 unset($_env);
 
@@ -174,13 +181,18 @@ function userId(): int {
 
 /**
  * Devuelve true si el User-Agent corresponde a una Smart TV / Smart Box
- * (compartido entre pages/login.php — modo QR — y pages/canal.php — controles
- * extra de sonido/pantalla completa, ver attachFullBitmovinUi en
- * pages/reproductor-3.php).
+ * (compartido entre pages/login.php — modo QR —, pages/canal.php — vista
+ * simplificada a pantalla completa — y pages/reproductor-3.php — controles
+ * extra de sonido/pantalla completa, ver attachFullBitmovinUi).
+ *
+ * Admite el override "?ua=smart" para poder probar la vista de Smart TV
+ * desde un navegador de escritorio normal sin cambiar el User-Agent real.
  */
 function isSmartTvDevice(): bool {
     static $result = null;
     if ($result !== null) return $result;
+
+    if (($_GET['ua'] ?? '') === 'smart') return $result = true;
 
     $ua = strtolower($_SERVER['HTTP_USER_AGENT'] ?? '');
     $patterns = [

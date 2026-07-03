@@ -1,7 +1,10 @@
 # Configuración de entorno — contiene credenciales, NUNCA al repo
 includes/.env.php
 
-# Datos generados en runtime
-data/matches.json
-data/channels.json
-data/fuentes.json
+# Datos generados en runtime (cron jobs los actualizan en el servidor;
+# el deploy hace "cp -Rf *" y no borra nada, pero si estuvieran versionados
+# el commit viejo pisaría el JSON fresco del servidor en cada deploy)
+*.json
+
+# Scripts de análisis/desofuscación de sitios externos (uso local, no versionar)
+/reverse-engineering/

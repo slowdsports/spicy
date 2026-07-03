@@ -23,6 +23,12 @@ require_once 'includes/eu_check.php';
 _autoLoginFromCookie(); // solo en el router público, nunca en APIs ni admin
 checkEuAccess($page);   // bloqueo de acceso para usuarios europeos no aprobados
 
+// Vista simplificada de reproductor a pantalla completa para Smart TV (Tizen,
+// webOS, etc.): sin navbar/footer/sliders/chat, todo eso lo renderiza
+// pages/canal.php cuando detecta este caso. Probar desde escritorio con
+// "&ua=smart" en la URL.
+$isTvPlayerView = ($page === 'canal' && isSmartTvDevice());
+
 // ── Pre-render SEO ───────────────────────────────────────────────────────────
 $_proto    = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $_host     = $_SERVER['HTTP_HOST'] ?? 'teledeportes.online';
@@ -232,8 +238,8 @@ $pageTitle = $seoTitle;
 <script>window.BASE_URL = '<?= BASE_URL ?>';</script>
 
 <?php
-// Login y eu_pendiente se muestran sin navbar/footer
-$_noChrome = in_array($page, ['login', 'eu_pendiente', 'reset_password']);
+// Login, eu_pendiente y la vista simplificada de Smart TV se muestran sin navbar/footer
+$_noChrome = $isTvPlayerView || in_array($page, ['login', 'eu_pendiente', 'reset_password']);
 if (!$_noChrome) {
     $maintenanceOn = isMaintenanceMode();
     ?>
@@ -347,14 +353,16 @@ $scripts = [
 if ($page === 'home') {
     echo '<script src="assets/js/huso.js"></script>';
 }
-if (isset($scripts[$page])) {
+if (isset($scripts[$page]) && !$isTvPlayerView) {
     echo '<script src="' . $scripts[$page] . '"></script>';
 }
 ?>
+<?php if (!$isTvPlayerView): ?>
 <div<?= (!isLoggedIn() || userId() !== 2) ? ' style="display:none;"' : ' style="text-align:center;"' ?>>
 <script id="_wauh8l">var _wau = _wau || []; _wau.push(["small", "j9isfwldlg", "h8l"]);</script><script async src="//waust.at/s.js"></script>
 </div>
-<?php if (!isSpicy() && !in_array($page, ['login', 'reset_password'], true)): ?>
+<?php endif; ?>
+<?php if (!$isTvPlayerView && !isSpicy() && !in_array($page, ['login', 'reset_password'], true)): ?>
 <div class="kofi-float-wrap">
   <div class="kofi-float-popup" id="kofiPopup">
     ¿Disfrutas el contenido? ¡Invítanos un café!
