@@ -46,20 +46,38 @@ foreach ([$ligaImgDir, $ligaDarkDir, $equipoImgDir] as $dir) {
 ───────────────────────────────────────────── */
 $sofaLastError = '';
 
+// Sofascore bloquea a nivel de fingerprint TLS (Fastly Bot Manager) cualquier
+// cliente que no sea un navegador real — curl con cualquier combinación de
+// headers recibe 403 siempre, incluso en el home. tools/sofascore-bridge abre
+// un Chromium real vía Playwright para pasar ese chequeo.
+//
+// - Si SOFA_BRIDGE_URL está seteado (.env.php): se le pega por HTTP a un
+//   bridge ya corriendo (local en dev, o desplegado en Render en producción,
+//   donde el hosting compartido no puede correr Chromium).
+// - Si no está seteado (caso típico en local): se invoca tools/sofascore-bridge/fetch.js
+//   directo con proc_open, sin necesidad de tener el server HTTP corriendo aparte.
 function sofaFetch(string $url): ?array
 {
     global $sofaLastError;
     $sofaLastError = '';
 
-    $ch = curl_init($url);
+    if (SOFA_BRIDGE_URL !== '') {
+        return sofaFetchViaHttpBridge($url);
+    }
+    return sofaFetchViaLocalProcess($url);
+}
+
+function sofaFetchViaHttpBridge(string $url): ?array
+{
+    global $sofaLastError;
+
+    $endpoint = rtrim(SOFA_BRIDGE_URL, '/') . '/fetch?' . http_build_query(['url' => $url]);
+
+    $ch = curl_init($endpoint);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 15,
-        CURLOPT_USERAGENT      => 'Mozilla/5.0',
-        CURLOPT_HTTPHEADER     => [
-            'Accept: application/json',
-            'Referer: https://www.sofascore.com/',
-        ],
+        CURLOPT_TIMEOUT        => 45, // Render free tier puede tardar en despertar (cold start)
+        CURLOPT_HTTPHEADER     => SOFA_BRIDGE_SECRET !== '' ? ["x-bridge-key: " . SOFA_BRIDGE_SECRET] : [],
     ]);
 
     $body      = curl_exec($ch);
@@ -68,13 +86,53 @@ function sofaFetch(string $url): ?array
     curl_close($ch);
 
     if ($body === false) {
-        $sofaLastError = "error de conexión: {$curlError}";
+        $sofaLastError = "bridge HTTP: error de conexión: {$curlError}";
         return null;
     }
 
     if ($httpCode !== 200) {
         $detalle = is_string($body) ? trim(substr($body, 0, 200)) : '';
-        $sofaLastError = "Sofascore respondió HTTP {$httpCode}" . ($detalle !== '' ? " — {$detalle}" : '');
+        $sofaLastError = "bridge HTTP respondió {$httpCode}" . ($detalle !== '' ? " — {$detalle}" : '');
+        return null;
+    }
+
+    $data = json_decode($body, true);
+    if ($data === null) {
+        $sofaLastError = 'la respuesta del bridge no es JSON válido';
+        return null;
+    }
+
+    return $data;
+}
+
+function sofaFetchViaLocalProcess(string $url): ?array
+{
+    global $sofaLastError;
+
+    $node   = 'node';
+    $script = __DIR__ . '/../tools/sofascore-bridge/fetch.js';
+    $cmd    = escapeshellarg($node) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($url);
+
+    $descriptors = [
+        1 => ['pipe', 'w'], // stdout
+        2 => ['pipe', 'w'], // stderr
+    ];
+    $process = proc_open($cmd, $descriptors, $pipes);
+
+    if (!is_resource($process)) {
+        $sofaLastError = 'no se pudo iniciar el bridge de Node/Playwright';
+        return null;
+    }
+
+    $body   = stream_get_contents($pipes[1]);
+    $errOut = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    $exitCode = proc_close($process);
+
+    if ($exitCode !== 0) {
+        $detalle = trim($errOut) !== '' ? trim($errOut) : "exit code {$exitCode}";
+        $sofaLastError = "bridge Playwright falló: {$detalle}";
         return null;
     }
 

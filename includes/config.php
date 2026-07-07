@@ -17,6 +17,12 @@ define('DB_PASS', $_env['DB_PASS'] ?? '');
 define('DB_NAME', $_env['DB_NAME'] ?? 'streamhub');
 define('BASE_URL', $_env['BASE_URL'] ?? '/spicy/');
 
+// Bridge Playwright para admin/sofa.php (ver tools/sofascore-bridge) — vacío
+// en local usa proc_open directo; en producción apunta al bridge desplegado
+// en Render, porque el hosting compartido no puede correr Chromium.
+define('SOFA_BRIDGE_URL',    $_env['SOFA_BRIDGE_URL'] ?? '');
+define('SOFA_BRIDGE_SECRET', $_env['SOFA_BRIDGE_SECRET'] ?? '');
+
 unset($_env);
 
 // Secreto para firmar tokens de stream — derivado de credenciales de BD (nunca cambia entre requests)

@@ -8,3 +8,12 @@ includes/.env.php
 
 # Scripts de análisis/desofuscación de sitios externos (uso local, no versionar)
 /reverse-engineering/
+
+# Dependencias del bridge Playwright — se reinstalan con npm install en local
+# y se instalan solas en Render vía Dockerfile
+tools/sofascore-bridge/node_modules/
+
+# La regla "*.json" de arriba también los atrapaba, pero Render necesita estos
+# dos para el build del Dockerfile
+!tools/sofascore-bridge/package.json
+!tools/sofascore-bridge/package-lock.json

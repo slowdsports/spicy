@@ -19,4 +19,10 @@ return [
     // URL base: '/' si la web está en la raíz del dominio,
     // '/spicy/' si está en un subdirectorio.
     'BASE_URL' => '/',
+
+    // Bridge Playwright para importar de Sofascore (admin/sofa.php) — ver
+    // tools/sofascore-bridge/README.md. URL del servicio desplegado en Render,
+    // sin slash final, ej: 'https://tu-app.onrender.com'.
+    'SOFA_BRIDGE_URL'    => 'https://tu-app.onrender.com',
+    'SOFA_BRIDGE_SECRET' => 'CAMBIA_ESTO_MISMO_VALOR_QUE_BRIDGE_SECRET_EN_RENDER',
 ];
