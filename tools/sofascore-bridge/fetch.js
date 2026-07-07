@@ -3,7 +3,7 @@
 // Imprime el JSON de la respuesta en stdout. Cualquier error va a stderr con
 // exit code != 0.
 const { chromium } = require('playwright');
-const { robustGoto } = require('./robustGoto');
+const { fetchJsonViaPage } = require('./robustGoto');
 
 async function main() {
     const targetUrl = process.argv[2];
@@ -19,12 +19,10 @@ async function main() {
         });
         const page = await context.newPage();
 
-        // Sofascore le hace un chequeo de bot-detection a la sesión del
-        // navegador antes de servir la API; visitar el home primero deja esa
-        // sesión "calentada" tal como pasaría con un usuario real.
-        await robustGoto(page, 'https://www.sofascore.com/');
-
-        const { status, body } = await robustGoto(page, targetUrl);
+        // fetchJsonViaPage navega la home primero (deja la sesión "calentada"
+        // como un usuario real) y pide targetUrl con fetch() desde dentro de
+        // esa página, no como navegación directa — ver robustGoto.js.
+        const { status, body } = await fetchJsonViaPage(page, targetUrl);
 
         if (status !== 200) {
             console.error(`HTTP ${status}: ${body.slice(0, 300)}`);

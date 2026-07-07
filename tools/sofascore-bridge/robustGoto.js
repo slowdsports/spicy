@@ -1,17 +1,23 @@
-// Fastly Bot Manager a veces no da un 403 llano sino una página de "challenge"
-// (corre JS y redirige sola si lo resuelve) — pasa sobre todo desde IPs de
-// datacenter/nube (ej. Render), no tanto desde IPs residenciales.
-//
-// waitUntil:'networkidle' NO sirve acá: Sofascore es una SPA con polling en
-// vivo (marcadores en tiempo real) que nunca deja de hacer requests, así que
-// networkidle se cuelga hasta el timeout siempre, haya o no challenge. Por
-// eso usamos domcontentloaded (rápido, es lo que ya funcionaba) y solo
-// agregamos una espera + reload manual cuando el body es específicamente el
-// JSON de challenge de Fastly.
-async function robustGoto(page, url, { timeout = 30000 } = {}) {
-    let response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
-    let status = response.status();
-    let body = await response.text();
+// Navega la home de Sofascore (rápido, no dispara challenge) y luego pide la
+// URL de la API con fetch() *dentro* del contexto de esa página, vía
+// page.evaluate. Es clave hacerlo así y no con page.goto(apiUrl) directo:
+// una navegación de nivel superior a un endpoint JSON no la hace nunca un
+// usuario real (el sitio real trae esos datos con fetch() desde la SPA ya
+// cargada) y es una señal fuerte de bot para el Bot Manager de Fastly —
+// justo lo que nos daba el 403 "challenge" en Render aun con Chromium real.
+// Haciéndolo vía fetch() en la página, Origin/Referer/sec-fetch-* salen
+// igual que en un browser normal navegando el sitio.
+async function fetchJsonViaPage(page, apiUrl, { timeout = 30000 } = {}) {
+    if (page.url() === 'about:blank') {
+        await page.goto('https://www.sofascore.com/', { waitUntil: 'domcontentloaded', timeout });
+    }
+
+    const doFetch = () => page.evaluate(async (url) => {
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        return { status: res.status, body: await res.text() };
+    }, apiUrl);
+
+    let { status, body } = await doFetch();
 
     if (status !== 200) {
         let isChallenge = false;
@@ -20,14 +26,12 @@ async function robustGoto(page, url, { timeout = 30000 } = {}) {
         } catch { /* no era JSON de challenge */ }
 
         if (isChallenge) {
-            await page.waitForTimeout(5000);
-            response = await page.reload({ waitUntil: 'domcontentloaded', timeout });
-            status = response.status();
-            body = await response.text();
+            await page.waitForTimeout(4000);
+            ({ status, body } = await doFetch());
         }
     }
 
     return { status, body, finalUrl: page.url() };
 }
 
-module.exports = { robustGoto };
+module.exports = { fetchJsonViaPage };

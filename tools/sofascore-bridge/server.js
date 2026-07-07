@@ -7,7 +7,7 @@
 // Restringido a URLs bajo dominios *.sofascore.* para no ser un proxy abierto.
 const express = require('express');
 const { chromium } = require('playwright');
-const { robustGoto } = require('./robustGoto');
+const { fetchJsonViaPage } = require('./robustGoto');
 
 const PORT = process.env.PORT || 4321;
 const BRIDGE_SECRET = process.env.BRIDGE_SECRET || '';
@@ -33,8 +33,8 @@ async function initBrowser() {
     // contexto "calentadas" como las de un usuario real. Como el contexto se
     // reutiliza entre requests, no hace falta repetirlo en cada /fetch.
     const warmupPage = await context.newPage();
-    const warmup = await robustGoto(warmupPage, 'https://www.sofascore.com/');
-    console.log(`Warmup home: status=${warmup.status} finalUrl=${warmup.finalUrl}`);
+    const response = await warmupPage.goto('https://www.sofascore.com/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    console.log(`Warmup home: status=${response.status()}`);
     await warmupPage.close();
 }
 
@@ -70,7 +70,7 @@ app.get('/fetch', async (req, res) => {
     try {
         const ctx = await getContext();
         page = await ctx.newPage();
-        const { status, body, finalUrl } = await robustGoto(page, target);
+        const { status, body, finalUrl } = await fetchJsonViaPage(page, target);
         if (status !== 200) {
             console.log(`/fetch no-200: status=${status} finalUrl=${finalUrl} target=${target}`);
         }
