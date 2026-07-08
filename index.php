@@ -258,59 +258,53 @@ $pageTitle = $seoTitle;
 // Login, eu_pendiente y la vista simplificada de Smart TV se muestran sin navbar/footer
 $_noChrome = $isTvPlayerView || in_array($page, ['login', 'eu_pendiente', 'reset_password']);
 if (!$_noChrome) {
-    $maintenanceOn = isMaintenanceMode();
-    ?>
-    <div class="site-status-bar">
-      <div class="container">
-        <span class="status-pill <?= $maintenanceOn ? 'status-pill-maint' : 'status-pill-ok' ?>"
-              title="<?= $maintenanceOn ? 'Sistema en mantenimiento' : 'Sistema operativo' ?>">
-          <span class="status-dot"></span>
-          <span class="status-pill-label"><?= $maintenanceOn ? 'Mantenimiento' : 'Operativo' ?></span>
-        </span>
-      </div>
-    </div>
-    <style>
-    .site-status-bar {
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
-      padding: 5px 0;
+    if (isMaintenanceMode()) {
+        ?>
+        <div class="site-status-bar">
+          <div class="container">
+            <span class="status-pill status-pill-maint" title="Sistema en mantenimiento">
+              <span class="status-dot"></span>
+              <span class="status-pill-label">Mantenimiento</span>
+            </span>
+          </div>
+        </div>
+        <style>
+        .site-status-bar {
+          background: var(--bg-secondary);
+          border-bottom: 1px solid var(--border);
+          padding: 5px 0;
+        }
+        .site-status-bar .container {
+          display: flex;
+          justify-content: flex-end;
+        }
+        .status-pill {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 0.3rem 0.75rem;
+          border-radius: 100px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          white-space: nowrap;
+          line-height: 1;
+        }
+        .status-pill-maint {
+          background: #fef3c7;
+          border: 1px solid #fde68a;
+          color: #92400e;
+        }
+        .status-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          background: #d97706;
+          animation: pulse-badge 2s infinite;
+        }
+        </style>
+        <?php
     }
-    .site-status-bar .container {
-      display: flex;
-      justify-content: flex-end;
-    }
-    .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 0.3rem 0.75rem;
-      border-radius: 100px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      white-space: nowrap;
-      line-height: 1;
-    }
-    .status-pill-ok {
-      background: var(--accent-soft);
-      border: 1px solid var(--border-accent);
-      color: var(--text-secondary);
-    }
-    .status-pill-maint {
-      background: #fef3c7;
-      border: 1px solid #fde68a;
-      color: #92400e;
-    }
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      background: #22c55e;
-      animation: pulse-badge 2s infinite;
-    }
-    .status-pill-maint .status-dot { background: #d97706; }
-    </style>
-    <?php
     require 'includes/navbar.php';
 }
 

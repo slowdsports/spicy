@@ -35,7 +35,7 @@ async function loadChannelPage() {
     const channel = channels.find(c => c.id === source.canal) ?? null;
 
     enrichPlayerUI(source, channel);
-    const recommended = sources.filter(c => c.id !== id && c.activo === 1 && c.mostrar_tv !== 0).slice(0, 8);
+    const recommended = pickRecommendedChannels(source, channel, sources, channels, 8);
     renderRecommendedChannels(recommended, channels);
     startDemoChat();
   } catch (e) {
@@ -69,6 +69,40 @@ function enrichPlayerUI(source, channel) {
     avatarImg.src = channel.logo;
     avatarImg.alt = channel.name ?? source.nombre;
   }
+}
+
+/** Fisher-Yates in-place */
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * Prioriza fuentes cuyo canal padre comparte categoría con el canal actual
+ * (ej. "Deportes") — antes esto era simplemente el orden alfabético de
+ * fuentes.json, sin relación alguna con lo que se está viendo. Si no hay
+ * suficientes de la misma categoría, se completa con el resto para no dejar
+ * el carrusel corto o vacío. Cada grupo se mezcla aparte (y no todo el pool
+ * junto) para no perder la prioridad de categoría; así cada visita muestra
+ * una selección distinta en vez de siempre las mismas primeras fuentes.
+ */
+function pickRecommendedChannels(currentSource, currentChannel, sources, channels, limit) {
+  const candidates = sources.filter(c => c.id !== currentSource.id && c.activo === 1 && c.mostrar_tv !== 0);
+  const category = currentChannel?.category ?? null;
+
+  if (!category) return shuffleArray(candidates.slice()).slice(0, limit);
+
+  const sameCategory = [];
+  const rest = [];
+  candidates.forEach(c => {
+    const parent = channels.find(ch => ch.id === c.canal);
+    (parent?.category === category ? sameCategory : rest).push(c);
+  });
+
+  return shuffleArray(sameCategory).concat(shuffleArray(rest)).slice(0, limit);
 }
 
 function renderRecommendedChannels(sources, channels) {
