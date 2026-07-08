@@ -2,8 +2,11 @@
 require_once __DIR__ . '/scraper.php';
 
 $canales = [
-    //'hbo_argentina',
-    //'hbo_2_latinoamerica',
+    'universal_crime',
+    'universal_premiere',
+    'universal_cinema',
+    'universal_comedy',
+    'universal_reality',
     'univision_latinoamerica',
     'universo',
     'chilevision',
