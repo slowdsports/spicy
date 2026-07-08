@@ -276,6 +276,7 @@ function guardarPartido() {
   for (let i = 1; i <= 10; i++) {
     data['canal' + i] = document.getElementById('partido-canal' + i)?.value ?? '';
   }
+  data.extra_min = document.getElementById('partido-extra-min')?.value ?? 0;
 
   fetch(API, {
     method: 'POST',
@@ -293,13 +294,15 @@ function guardarPartido() {
 }
 
 // ── Mostrar/ocultar el campo Reproductor según tipo de fuente ─
-// Solo tiene sentido para tipos DASH (nombre contiene "dash").
+// DASH (reproductor-3.php) soporta bitmovin/clappr/jwplayer. "HLS JW"
+// (reproductor-1.php) ahora también soporta bitmovin además de JW Player.
+// "HLS CLP" (Clappr) no tiene esta opción — se queda fijo en Clappr.
 function actualizarCampoReproductor() {
   const tipoEl = document.getElementById('fuente-tipo');
   const tipoText = (tipoEl?.options[tipoEl.selectedIndex]?.text ?? '').toLowerCase();
-  const isDash = tipoText.includes('dash');
+  const soportaEleccion = tipoText.includes('dash') || tipoText.includes('hls jw');
   const campo = document.getElementById('reproductor-field');
-  if (campo) campo.style.display = isDash ? '' : 'none';
+  if (campo) campo.style.display = soportaEleccion ? '' : 'none';
 }
 
 document.addEventListener('DOMContentLoaded', function () {

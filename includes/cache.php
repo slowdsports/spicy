@@ -90,9 +90,19 @@ function regenerateFuentesCache(): bool {
 /** partidos (+ joins equipos/ligas/fuentes/canales) → data/matches.json */
 function regenerateMatchesCache(): bool {
     $conn = getDBConnection();
+
+    // Auto-migración: esta función corre desde cron (cron/tdt_channels_sync.php,
+    // etc.) y puede ser el primer punto de contacto con la BD tras un deploy —
+    // no depende de que un admin haya abierto antes admin/?p=partidos (que es
+    // donde también se auto-crea esta columna) para no romper el sitio entero.
+    $colCheck = $conn->query("SHOW COLUMNS FROM partidos LIKE 'extra_min'");
+    if ($colCheck && $colCheck->num_rows === 0) {
+        $conn->query("ALTER TABLE partidos ADD COLUMN extra_min SMALLINT NOT NULL DEFAULT 0");
+    }
+
     $partidos = $conn->query("
         SELECT
-            p.id, p.fecha_hora, p.tipo, p.liga,
+            p.id, p.fecha_hora, p.tipo, p.liga, p.extra_min,
             p.canal1,  p.canal2,  p.canal3,  p.canal4,  p.canal5,
             p.canal6,  p.canal7,  p.canal8,  p.canal9,  p.canal10,
             l.nombre AS equipo_local,    l.id AS id_local,
@@ -144,9 +154,16 @@ function regenerateMatchesCache(): bool {
         $dt = !empty($p['fecha_hora']) ? new DateTime($p['fecha_hora'], $tz) : null;
         $ts = $dt ? $dt->getTimestamp() : 0;
 
+        // Ventana "en vivo": 3h normales + minutos extra que el admin haya
+        // agregado a este partido puntual (prórroga, retrasos — ver
+        // admin/pages/partidos.php). extra_min también viaja en el JSON para
+        // que el countdown client-side (assets/js/main.js) use la misma ventana.
+        $extraMin      = (int)($p['extra_min'] ?? 0);
+        $liveWindowSec = 10800 + ($extraMin * 60);
+
         if (!$ts || $ts > $now)         { $status = 'upcoming'; $timeTxt = $dt ? $dt->format('H:i') : '--:--'; }
-        elseif ($ts > $now - 10800)     { $status = 'live';     $timeTxt = 'EN VIVO'; }
-        else                            { $status = 'finished'; $timeTxt = 'Finalizó'; }
+        elseif ($ts > $now - $liveWindowSec) { $status = 'live';     $timeTxt = 'EN VIVO'; }
+        else                             { $status = 'finished'; $timeTxt = 'Finalizó'; }
 
         $match = [
             'id'         => (int)$p['id'],
@@ -157,6 +174,7 @@ function regenerateMatchesCache(): bool {
             'time'       => $timeTxt,
             'fecha_hora' => $p['fecha_hora'] ?? '',
             'timestamp'  => $ts,
+            'extraMin'   => $extraMin,
             'tipo'       => $p['tipo'] ?? '',
             'homeTeam'   => ['name' => $p['equipo_local'] ?? '',     'logo' => $p['id_local'] ?? '',     'score' => 0],
             'awayTeam'   => ['name' => $p['equipo_visitante'] ?? '', 'logo' => $p['id_visitante'] ?? '', 'score' => 0],

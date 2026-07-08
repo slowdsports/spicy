@@ -5,11 +5,11 @@
  * Uso:
  * admin/fotmob.php?filtrarLiga=77   (ID de liga en FotMob, ej. fotmob.com/leagues/77/...)
  *
- * FotMob usa su propio espacio de IDs (ligas, equipos, partidos), que puede
- * colisionar con los IDs ya usados por Sofascore en las mismas tablas. Para
- * evitarlo, todos los IDs que vienen de FotMob se guardan con un offset fijo
- * (+900000000). El offset es invisible para el admin: aquí siempre se recibe
- * y se llama a la API de FotMob con el ID real, sin offset.
+ * Los IDs se guardan tal cual los da FotMob, sin offset — FotMob es el único
+ * proveedor en uso (Sofascore quedó descartado por su bloqueo anti-bot). Si
+ * quedara algún equipo huérfano de una importación vieja de Sofascore con el
+ * mismo ID numérico, el UPSERT de más abajo lo sobreescribe con los datos
+ * reales de FotMob en vez de dejarlo con el nombre/logo viejo.
  */
 
 require_once __DIR__ . '/../includes/config.php';
@@ -23,10 +23,13 @@ if (!isLoggedIn() || !isAdmin()) {
     exit('Sin permisos.');
 }
 
-const FOTMOB_OFFSET = 900000000;
+// Tope de partidos a importar por corrida — una temporada completa (300+)
+// no tiene sentido cargarla de una, solo los próximos que realmente se van
+// a transmitir pronto.
+const MAX_PARTIDOS_IMPORT = 30;
 
 /* ─────────────────────────────────────────────
-   Liga recibida (ID real de FotMob, sin offset)
+   Liga recibida (ID real de FotMob)
 ───────────────────────────────────────────── */
 $apiLeague = isset($_POST['filtrarLiga'])
     ? (int)$_POST['filtrarLiga']
@@ -123,19 +126,21 @@ if (empty($allMatches)) {
     exit('No hay partidos para esta liga en FotMob.');
 }
 
-// Próximos primero (igual que Sofascore: next, y si no hay, last)
+// Próximos primero, ordenados por fecha más cercana, tope MAX_PARTIDOS_IMPORT.
+// Si no hay ninguno próximo, se cae a los últimos jugados (mismo tope).
 $proximos = array_values(array_filter($allMatches, function ($m) {
     return empty($m['status']['finished']) && empty($m['status']['cancelled']);
 }));
 
 if (!empty($proximos)) {
-    $eventos = $proximos;
+    usort($proximos, fn($a, $b) => strcmp($a['status']['utcTime'] ?? '', $b['status']['utcTime'] ?? ''));
+    $eventos = array_slice($proximos, 0, MAX_PARTIDOS_IMPORT);
 } else {
     $jugados = array_values(array_filter($allMatches, function ($m) {
         return !empty($m['status']['finished']);
     }));
     usort($jugados, fn($a, $b) => strcmp($b['status']['utcTime'] ?? '', $a['status']['utcTime'] ?? ''));
-    $eventos = array_slice($jugados, 0, 20);
+    $eventos = array_slice($jugados, 0, MAX_PARTIDOS_IMPORT);
 }
 
 if (empty($eventos)) {
@@ -145,8 +150,7 @@ if (empty($eventos)) {
 /* ─────────────────────────────────────────────
    Liga
 ───────────────────────────────────────────── */
-$ligaIdReal  = (int)$leagueData['details']['id'];
-$ligaId      = FOTMOB_OFFSET + $ligaIdReal;
+$ligaId      = (int)$leagueData['details']['id'];
 $ligaName    = $leagueData['details']['name'] ?? '';
 $ligaSlug    = $leagueData['details']['seopath'] ?? '';
 $ligaSeason  = $leagueData['details']['selectedSeason'] ?? null;
@@ -159,24 +163,17 @@ $stmt->bind_param("ss", $countryCode, $countryName);
 $stmt->execute();
 $stmt->close();
 
-$stmt = $conn->prepare("SELECT id FROM ligas WHERE id=?");
-$stmt->bind_param("i", $ligaId);
+$stmt = $conn->prepare("
+    INSERT INTO ligas (id, ligaNombre, ligaImg, ligaPais, tipo, season)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE ligaNombre=VALUES(ligaNombre), ligaImg=VALUES(ligaImg), ligaPais=VALUES(ligaPais), season=VALUES(season)
+");
+$stmt->bind_param("isssss", $ligaId, $ligaName, $ligaSlug, $countryCode, $sport, $ligaSeason);
 $stmt->execute();
-$existeLiga = $stmt->get_result()->num_rows > 0;
 $stmt->close();
 
-if (!$existeLiga) {
-    $stmt = $conn->prepare("
-        INSERT INTO ligas (id, ligaNombre, ligaImg, ligaPais, tipo, season)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->bind_param("isssss", $ligaId, $ligaName, $ligaSlug, $countryCode, $sport, $ligaSeason);
-    $stmt->execute();
-    $stmt->close();
-}
-
-downloadFile("https://images.fotmob.com/image_resources/logo/leaguelogo/{$ligaIdReal}.png", $ligaImgDir . $ligaId . ".png");
-downloadFile("https://images.fotmob.com/image_resources/logo/leaguelogo/{$ligaIdReal}.png", $ligaDarkDir . $ligaId . ".png");
+downloadFile("https://images.fotmob.com/image_resources/logo/leaguelogo/{$ligaId}.png", $ligaImgDir . $ligaId . ".png");
+downloadFile("https://images.fotmob.com/image_resources/logo/leaguelogo/{$ligaId}.png", $ligaDarkDir . $ligaId . ".png");
 
 /* ─────────────────────────────────────────────
    Procesar eventos
@@ -187,37 +184,29 @@ $agregados = 0;
 
 foreach ($eventos as $m) {
 
-    $homeIdReal  = (int)($m['home']['id'] ?? 0);
-    $awayIdReal  = (int)($m['away']['id'] ?? 0);
-    $matchIdReal = (int)($m['id'] ?? 0);
-    $utcTime     = $m['status']['utcTime'] ?? null;
+    $homeId  = (int)($m['home']['id'] ?? 0);
+    $awayId  = (int)($m['away']['id'] ?? 0);
+    $gameId  = (int)($m['id'] ?? 0);
+    $utcTime = $m['status']['utcTime'] ?? null;
 
-    if (!$homeIdReal || !$awayIdReal || !$matchIdReal || !$utcTime) continue;
-
-    $homeId = FOTMOB_OFFSET + $homeIdReal;
-    $awayId = FOTMOB_OFFSET + $awayIdReal;
-    $gameId = FOTMOB_OFFSET + $matchIdReal;
+    if (!$homeId || !$awayId || !$gameId || !$utcTime) continue;
 
     foreach ([
-        [$homeId, $homeIdReal, $m['home']['name'] ?? ''],
-        [$awayId, $awayIdReal, $m['away']['name'] ?? ''],
-    ] as [$tId, $tIdReal, $tName]) {
+        [$homeId, $m['home']['name'] ?? ''],
+        [$awayId, $m['away']['name'] ?? ''],
+    ] as [$tId, $tName]) {
 
-        $stmt = $conn->prepare("SELECT id FROM equipos WHERE id=?");
-        $stmt->bind_param("i", $tId);
+        $logo = "assets/img/equipos/fm/{$tId}.png";
+        $stmt = $conn->prepare("
+            INSERT INTO equipos (id, nombre, logo, pais)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), logo=VALUES(logo), pais=VALUES(pais)
+        ");
+        $stmt->bind_param("isss", $tId, $tName, $logo, $countryCode);
         $stmt->execute();
-        $existeEquipo = $stmt->get_result()->num_rows > 0;
         $stmt->close();
 
-        if (!$existeEquipo) {
-            $logo = "assets/img/equipos/fm/{$tId}.png";
-            $stmt = $conn->prepare("INSERT INTO equipos (id, nombre, logo, pais) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("isss", $tId, $tName, $logo, $countryCode);
-            $stmt->execute();
-            $stmt->close();
-        }
-
-        downloadFile("https://images.fotmob.com/image_resources/logo/teamlogo/{$tIdReal}.png", $equipoImgDir . $tId . ".png");
+        downloadFile("https://images.fotmob.com/image_resources/logo/teamlogo/{$tId}.png", $equipoImgDir . $tId . ".png");
     }
 
     $stmt = $conn->prepare("SELECT id FROM partidos WHERE id=?");

@@ -5,11 +5,16 @@
 
 // Canales guardados del usuario (JSON por usuario para evitar query en cada carga)
 $savedJsonUrl = null;
+$savedTeamsJsonUrl = null;
 if (isLoggedIn()) {
     $uid       = userId();
     $savedFile = __DIR__ . '/../data/guardados/' . $uid . '.json';
     if (file_exists($savedFile)) {
         $savedJsonUrl = BASE_URL . 'data/guardados/' . $uid . '.json';
+    }
+    $savedTeamsFile = __DIR__ . '/../data/equipos_guardados/' . $uid . '.json';
+    if (file_exists($savedTeamsFile)) {
+        $savedTeamsJsonUrl = BASE_URL . 'data/equipos_guardados/' . $uid . '.json';
     }
 }
 
@@ -210,7 +215,10 @@ if ($maintenance === 1) {
 </section>
 
 <?php if (isLoggedIn()): ?>
-<script>const SAVED_JSON_URL = <?= $savedJsonUrl ? json_encode($savedJsonUrl) : 'null' ?>;</script>
+<script>
+const SAVED_JSON_URL = <?= $savedJsonUrl ? json_encode($savedJsonUrl) : 'null' ?>;
+const SAVED_TEAMS_JSON_URL = <?= $savedTeamsJsonUrl ? json_encode($savedTeamsJsonUrl) : 'null' ?>;
+</script>
 <!-- SECCIÓN 1.5: MIS GUARDADOS (visible solo si el usuario tiene guardados) -->
 <section id="saved-section" style="display:none; padding:1.5rem 0; border-bottom:1px solid var(--border);">
   <div class="container">
@@ -221,6 +229,20 @@ if ($maintenance === 1) {
       </span>
     </div>
     <div class="channels-grid" id="saved-channels-grid"></div>
+  </div>
+</section>
+
+<!-- SECCIÓN 1.6: PARTIDOS DE MIS EQUIPOS (visible solo si tiene equipos
+     favoritos con partidos próximos/en vivo, sin importar la liga) -->
+<section id="team-matches-section" style="display:none; padding:1.5rem 0; border-bottom:1px solid var(--border);">
+  <div class="container">
+    <div class="section-title">
+      <span>Mis Equipos</span>
+      <span class="section-subtitle">
+        <i class="fas fa-star" style="color:#eab308; margin-right:4px;"></i>Próximos partidos
+      </span>
+    </div>
+    <div class="matches-slider" id="team-matches-slider"></div>
   </div>
 </section>
 <?php endif; ?>

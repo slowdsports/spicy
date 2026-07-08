@@ -82,8 +82,7 @@ function getTeamLogoPath(logo) {
   if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) {
     return value;
   }
-  const folder = Number(value) >= 900000000 ? 'fm' : 'sf';
-  return `assets/img/equipos/${folder}/${encodeURIComponent(value)}.png`;
+  return `assets/img/equipos/fm/${encodeURIComponent(value)}.png`;
 }
 
 function updateCountdown(el) {
@@ -93,9 +92,10 @@ function updateCountdown(el) {
   const target = new Date(timeStr.replace(' ', 'T') + '-06:00');
   if (isNaN(target)) return;
   const distance = target - Date.now();
+  const extraMs = (parseInt(el.dataset.extraMin, 10) || 0) * 60000;
   const badge = el.closest('.match-status-badge');
   if (distance < 0) {
-    if (distance > -7200000) {
+    if (distance > -(7200000 + extraMs)) {
       el.textContent = '● EN VIVO';
       if (badge) { badge.classList.remove('badge-upcoming', 'badge-finished'); badge.classList.add('badge-live'); }
     } else {
@@ -138,11 +138,15 @@ function createMatchCard(match) {
   card.style.textDecoration = 'none';
   card.className = 'match-card fade-in';
   const isLive = match.status === 'live';
+  const isFinished = match.status === 'finished';
   const hasDatetime = !!match.fecha_hora;
   const badgeClass = isLive ? 'badge-live' : 'badge-upcoming';
+  // El marcador se muestra en vivo (con polling) y se congela al finalizar
+  // (un solo fetch, ver assets/js/live-scores.js) — nunca vuelve a "vs".
+  const hasLiveScore = isLive || isFinished;
   // Si hay fecha_hora, el countdown gestiona el estado (EN VIVO → Finalizado)
   const badgeText = hasDatetime
-    ? `<span class="match-countdown" data-time="${match.fecha_hora}"><span class="t">${match.time || '--:--'}</span></span>`
+    ? `<span class="match-countdown" data-time="${match.fecha_hora}" data-extra-min="${match.extraMin || 0}"><span class="t">${match.time || '--:--'}</span></span>`
     : isLive
       ? '● EN VIVO'
       : `<span class="t">${match.time || '--:--'}</span>`;
@@ -167,12 +171,20 @@ function createMatchCard(match) {
         <img src="${homeLogo}" data-logo-base="${homeBase}" data-fallback-icon="team" alt="${match.homeTeam.name}" class="team-logo lazy-img" loading="lazy">
         <span class="team-name">${match.homeTeam.name}</span>
       </div>
-      <div class="score-vs">vs</div>
+      <div class="match-score">
+        <div class="score-vs"${hasLiveScore ? ` data-live-score="${match.id}"` : ''}>vs</div>
+        ${isLive ? `<div class="match-minute" data-live-minute="${match.id}"></div>` : ''}
+      </div>
       <div class="match-team">
         <img src="${awayLogo}" data-logo-base="${awayBase}" data-fallback-icon="team" alt="${match.awayTeam.name}" class="team-logo lazy-img" loading="lazy">
         <span class="team-name">${match.awayTeam.name}</span>
       </div>
     </div>
+    ${hasLiveScore ? `
+    <div class="match-info-footer">
+      <span data-live-venue="${match.id}"></span>
+      <span data-live-referee="${match.id}"></span>
+    </div>` : ''}
   `;
   return card;
 }
@@ -362,6 +374,42 @@ function createSavedCard(ch, index) {
 }
 
 // ============================================================
+// PARTIDOS DE EQUIPOS FAVORITOS (cualquier liga, próximos o en vivo)
+// ============================================================
+async function loadFavoriteTeamMatches() {
+  if (typeof SAVED_TEAMS_JSON_URL === 'undefined' || !SAVED_TEAMS_JSON_URL) return;
+  const section = document.getElementById('team-matches-section');
+  const slider  = document.getElementById('team-matches-slider');
+  if (!section || !slider) return;
+
+  try {
+    const [teamsRes, matchesRes] = await Promise.all([
+      fetch(SAVED_TEAMS_JSON_URL),
+      fetch(cacheBustedUrl('data/matches.json')),
+    ]);
+    const teamsData = await teamsRes.json();
+    const matches   = await matchesRes.json();
+
+    const favIds = new Set((teamsData.equipos || []).map(e => String(e.id)));
+    if (!favIds.size) return;
+
+    const filtered = matches.filter(m => {
+      if (m.status !== 'live' && m.status !== 'upcoming') return false;
+      return favIds.has(String(m.homeTeam?.logo)) || favIds.has(String(m.awayTeam?.logo));
+    });
+    if (!filtered.length) return;
+
+    filtered.sort((a, b) => (a.status === 'live' ? 0 : 1) - (b.status === 'live' ? 0 : 1) || (a.timestamp || 0) - (b.timestamp || 0));
+
+    slider.innerHTML = '';
+    filtered.forEach(m => slider.appendChild(createMatchCard(m)));
+    section.style.display = '';
+    initCountdowns();
+    if (typeof initLiveScores === 'function') initLiveScores();
+  } catch (e) { /* silencioso */ }
+}
+
+// ============================================================
 // PROGRAMAS EN VIVO
 // ============================================================
 function convertProgramTimes() {
@@ -466,7 +514,10 @@ async function loadPrograms() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  loadMatches().then(initSliderDrag);
+  loadMatches().then(initSliderDrag).then(() => {
+    if (typeof initLiveScores === 'function') initLiveScores();
+  });
   loadChannels().then(loadPrograms); // loadPrograms necesita allChannels listo
   loadSavedChannels();
+  loadFavoriteTeamMatches();
 });

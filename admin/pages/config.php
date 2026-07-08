@@ -54,7 +54,6 @@ $grupos = [
     'Apariencia'  => ['color_acento'],
     'Zona horaria'=> ['timezone', 'sofascore_timezone'],
     'Limits'      => ['max_fuentes_canal'],
-    'Partidos'    => ['api_partidos'],
     'Telegram'    => ['telegram_canal', 'telegram_post_id'],
 ];
 
@@ -115,14 +114,6 @@ $cfgMap = array_column($configs, null, 'clave');
                       style="background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:0.45rem 0.75rem; color:var(--text-primary); font-size:0.85rem; width:100%;">
                 <option value="0" <?= $val == '0' ? 'selected' : '' ?>>No / Desactivado</option>
                 <option value="1" <?= $val == '1' ? 'selected' : '' ?>>Sí / Activado</option>
-              </select>
-
-            <?php elseif ($clave === 'api_partidos'): ?>
-              <!-- Proveedor de datos para importar partidos -->
-              <select name="config[<?= $clave ?>]"
-                      style="background:var(--bg-input); border:1px solid var(--border); border-radius:10px; padding:0.45rem 0.75rem; color:var(--text-primary); font-size:0.85rem; width:100%;">
-                <option value="sofascore" <?= $val === 'sofascore' || $val === '' ? 'selected' : '' ?>>Sofascore</option>
-                <option value="fotmob" <?= $val === 'fotmob' ? 'selected' : '' ?>>FotMob</option>
               </select>
 
             <?php else: ?>

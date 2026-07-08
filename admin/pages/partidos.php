@@ -6,6 +6,17 @@
 
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
+// Migración: extra_min — minutos extra que el admin agrega a la ventana "en
+// vivo" de un partido puntual (prórroga, retrasos), para que no se marque
+// "Finalizó" mientras todavía se está jugando. Mismo patrón self-healing que
+// admin/pages/fuentes.php.
+$_conn_mig = getDBConnection();
+$_r = $_conn_mig->query("SHOW COLUMNS FROM partidos LIKE 'extra_min'");
+if ($_r && $_r->num_rows === 0) {
+    $_conn_mig->query("ALTER TABLE partidos ADD COLUMN extra_min SMALLINT NOT NULL DEFAULT 0");
+}
+unset($_conn_mig, $_r);
+
 /* ─────────────────────────────
    Mensajes para Telegram (próximos partidos y en vivo)
 ───────────────────────────── */
@@ -64,15 +75,6 @@ try {
         WHERE activo = 1
         ORDER BY tipo, ligaNombre
     ")->fetch_all(MYSQLI_ASSOC);
-
-    /* ─────────────────────────────
-       Proveedor de datos configurado (sofascore | fotmob)
-    ───────────────────────────── */
-    $stmt = $conn->prepare("SELECT valor FROM config_sitio WHERE clave = 'api_partidos'");
-    $stmt->execute();
-    $apiPartidos = $stmt->get_result()->fetch_assoc()['valor'] ?? 'sofascore';
-    $stmt->close();
-    if ($apiPartidos !== 'fotmob') $apiPartidos = 'sofascore';
 
     /* ─────────────────────────────
        Mensajes para Telegram (próximos + en vivo, desde matches.json)
@@ -303,16 +305,17 @@ try {
             Importar liga
         </button>
 
-        <!-- pegar JSON manual -->
-        <button class="btn-sofa" onclick="mostrarPegarJSON()">
-            <i class="fas fa-paste"></i>
-            Pegar JSON
-        </button>
-
         <!-- borrar partidos antiguos -->
         <button class="btn-sofa-danger" id="btn-borrar-antiguos" onclick="borrarPartidosAntiguos()">
             <i class="fas fa-broom"></i>
             Borrar partidos &gt; 5 días
+        </button>
+
+        <!-- borrar todos los partidos de la liga filtrada -->
+        <button class="btn-sofa-danger" id="btn-borrar-liga" onclick="borrarPartidosLiga()"
+            <?= $filtroLiga > 0 ? '' : 'disabled title="Selecciona una liga en el filtro primero"' ?>>
+            <i class="fas fa-trash-alt"></i>
+            Borrar partidos de esta liga
         </button>
 
         <!-- mensajes para telegram -->
@@ -372,45 +375,14 @@ try {
     </div>
 </div>
 
-<!-- panel pegar JSON manual (mientras Sofascore bloquea al servidor) -->
-<div id="panel-pegar-json" style="display:none;margin-bottom:1rem;">
-
-    <div class="card p-3">
-
-        <div class="mb-2 fw-bold">
-            Importar partidos pegando el JSON de Sofascore
-        </div>
-
-        <div class="mb-2" style="opacity:.8;font-size:.9em;">
-            Abre en tu navegador, por ejemplo,
-            <code>api.sofascore.com/api/v1/unique-tournament/{LIGA}/season/{TEMPORADA}/events/next/0</code>,
-            copia todo el JSON de la respuesta y pégalo aquí.
-        </div>
-
-        <textarea id="json-pegado" class="form-control" rows="6"
-            placeholder='{"events":[ ... ]}'></textarea>
-
-        <div class="d-flex gap-2 mt-2">
-            <button class="btn-sofa" id="btn-importar-json-pegado" onclick="importarJSONPegado()">
-                Importar
-            </button>
-        </div>
-
-        <div id="json-pegado-resultado" style="display:none;margin-top:10px;"></div>
-
-    </div>
-</div>
-
 <!-- panel importar -->
 <div id="panel-sofa-partidos" style="display:none;margin-bottom:1rem;">
 
     <div class="card p-3">
 
         <div class="mb-2 fw-bold">
-            Importar partidos desde <?= $apiPartidos === 'fotmob' ? 'FotMob' : 'Sofascore' ?>
+            Importar partidos desde FotMob
         </div>
-
-        <?php if ($apiPartidos === 'fotmob'): ?>
 
         <div class="mb-2" style="opacity:.8;font-size:.9em;">
             Escribe el ID de la liga en FotMob (lo ves en la URL, ej.
@@ -429,31 +401,6 @@ try {
             </button>
 
         </div>
-
-        <?php else: ?>
-
-        <div class="d-flex gap-2">
-
-            <select id="sofa-partidos-id" class="form-select">
-                <option value="">-- Selecciona liga --</option>
-                <?php foreach ($ligas as $lig): ?>
-                <option value="<?= $lig['id'] ?>">
-                    [<?= $lig['id'] ?>]
-                    <?= htmlspecialchars($lig['ligaNombre']) ?>
-                    (<?= htmlspecialchars($lig['tipo']) ?>)
-                </option>
-                <?php endforeach; ?>
-            </select>
-
-            <button class="btn-sofa"
-                id="btn-importar-partidos"
-                onclick="importarPartidos()">
-                Importar
-            </button>
-
-        </div>
-
-        <?php endif; ?>
 
         <div id="sofa-partidos-resultado"
             style="display:none;margin-top:10px;"></div>
@@ -545,13 +492,21 @@ onclick="confirmarBorrar(
 <div class="modal-content">
 
 <div class="modal-header">
-<h5 class="modal-title">Editar Canales</h5>
+<h5 class="modal-title">Editar partido</h5>
 <button class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 
 <div class="modal-body">
 
 <input type="hidden" id="partido-id">
+
+<div class="mb-3">
+<label class="form-label">Tiempo extra (minutos)</label>
+<input type="number" id="partido-extra-min" class="form-control" style="width:160px" min="0" step="5" value="0">
+<p style="font-size:0.72rem; color:var(--text-muted); margin:0.4rem 0 0;">
+    Extiende la ventana "EN VIVO" del partido más allá de las 3 horas normales — útil para prórroga, penales o retrasos, así no se marca "Finalizó" mientras se sigue jugando.
+</p>
+</div>
 
 <div class="row g-2">
 
@@ -594,8 +549,6 @@ Guardar
 </div>
 
 <script>
-const apiPartidos = '<?= $apiPartidos ?>'; // 'sofascore' | 'fotmob' — definido en Configuración
-
 function aplicarFiltros() {
     const tipo = document.getElementById('filtro-tipo').value;
     const liga = document.getElementById('filtro-liga').value;
@@ -612,21 +565,20 @@ function mostrarImportarPartidos() {
     const panel = document.getElementById('panel-sofa-partidos');
     panel.style.display = 'block';
 
-    // Pre-seleccionar la liga activa en el filtro
-    const ligaActiva = document.getElementById('filtro-liga').value;
-    if (ligaActiva && ligaActiva !== '0') {
-        tsSet('sofa-partidos-id', ligaActiva);
+    // Pre-llenar con la liga activa en el filtro — el id ya ES el id real
+    // de FotMob (sin offset, único proveedor en uso).
+    const ligaActiva = Number(document.getElementById('filtro-liga').value);
+    if (ligaActiva) {
+        document.getElementById('fotmob-liga-id').value = ligaActiva;
     }
 }
 
 function importarPartidos() {
 
-    const ligaId = apiPartidos === 'fotmob'
-        ? document.getElementById('fotmob-liga-id').value
-        : document.getElementById('sofa-partidos-id').value;
+    const ligaId = document.getElementById('fotmob-liga-id').value;
 
     if (!ligaId) {
-        alert(apiPartidos === 'fotmob' ? 'Escribe el ID de la liga en FotMob primero.' : 'Selecciona una liga primero.');
+        alert('Escribe el ID de la liga en FotMob primero.');
         return;
     }
 
@@ -634,9 +586,7 @@ function importarPartidos() {
     btn.disabled = true;
     btn.innerHTML = 'Importando...';
 
-    const endpoint = apiPartidos === 'fotmob' ? 'fotmob.php' : 'sofa.php';
-
-    fetch(`<?= BASE_URL ?>admin/${endpoint}?filtrarLiga=${ligaId}`)
+    fetch(`<?= BASE_URL ?>admin/fotmob.php?filtrarLiga=${ligaId}`)
     .then(r => r.text())
     .then(t => {
         const box = document.getElementById('sofa-partidos-resultado');
@@ -650,11 +600,6 @@ function importarPartidos() {
         btn.disabled = false;
         btn.innerHTML = 'Importar';
     });
-}
-
-function mostrarPegarJSON() {
-    const panel = document.getElementById('panel-pegar-json');
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 }
 
 function mostrarMensajesTelegram() {
@@ -671,39 +616,39 @@ function copiarMensajeTelegram(btn) {
     }).catch(() => adminToast('No se pudo copiar', 'error'));
 }
 
-function importarJSONPegado() {
+function borrarPartidosLiga() {
 
-    const json = document.getElementById('json-pegado').value.trim();
-
-    if (!json) {
-        alert('Pega el JSON primero.');
+    const ligaId = Number(document.getElementById('filtro-liga').value);
+    if (!ligaId) {
+        alert('Selecciona una liga en el filtro primero.');
         return;
     }
 
-    const btn = document.getElementById('btn-importar-json-pegado');
+    const nombreLiga = document.getElementById('filtro-liga').selectedOptions[0]?.textContent.trim() ?? ('liga ' + ligaId);
+    if (!confirm(`¿Borrar TODOS los partidos de "${nombreLiga}"?\nEsta acción no se puede deshacer.`)) return;
+
+    const btn = document.getElementById('btn-borrar-liga');
     btn.disabled = true;
-    btn.innerHTML = 'Importando...';
+    btn.innerHTML = 'Borrando...';
 
     fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'importar_json_partidos', json })
+        body: JSON.stringify({ action: 'delete_partidos_liga', liga: ligaId })
     })
     .then(r => r.json())
     .then(res => {
-        const box = document.getElementById('json-pegado-resultado');
-        box.style.display = 'block';
-        box.textContent = res.message;
         if (res.success) {
-            document.getElementById('json-pegado').value = '';
-            if (res.message.startsWith('Se agregaron')) generarJSON('partidos');
-            setTimeout(() => location.reload(), 1200);
+            adminToast(res.message, 'success');
+            setTimeout(() => location.reload(), 800);
+        } else {
+            adminToast(res.message, 'error');
         }
     })
     .catch(() => adminToast('Error de conexión', 'error'))
     .finally(() => {
         btn.disabled = false;
-        btn.innerHTML = 'Importar';
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Borrar partidos de esta liga';
     });
 }
 
@@ -749,6 +694,7 @@ function abrirModalPartido(id) {
         for (let i=1;i<=10;i++) {
             tsSet('partido-canal'+i, data.data['canal'+i] ?? '');
         }
+        document.getElementById('partido-extra-min').value = data.data.extra_min ?? 0;
 
         new bootstrap.Modal(
             document.getElementById('modalPartido')

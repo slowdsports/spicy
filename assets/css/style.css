@@ -86,6 +86,31 @@ body {
   transition: var(--transition);
   min-height: 100vh;
   overflow-x: hidden;
+  animation: page-fade-in .25s ease;
+}
+
+/* Transición de página (ver assets/js/page-transition.js): fundido de
+   entrada al cargar (arriba) y de salida justo antes de navegar a otra
+   página interna — sin pushState, así que no hay riesgo de que los scripts
+   de cada página se re-ejecuten sobre el mismo scope global. */
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+body.page-leaving {
+  opacity: 0;
+  transition: opacity .16s ease;
+}
+
+.page-progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  width: 0%;
+  height: 2.5px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow, var(--accent));
+  z-index: 99999;
+  transition: width .35s cubic-bezier(.4,0,.2,1);
 }
 
 /* Scrollbar personalizado */
@@ -463,6 +488,44 @@ body {
   color: var(--text-muted);
 }
 
+.match-venue-mini {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.match-minute {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+}
+
+/* Estadio + árbitro — pie de la tarjeta, separado de equipos/marcador */
+.match-info-footer {
+  margin-top: 0.6rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.match-info-footer span {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .score-time {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -774,7 +837,8 @@ img[data-logo-base] {
 /* El wrap de mensajes (o el panel de Telegram) ocupa todo el espacio
    disponible dentro del panel flotante */
 .channel-page-layout.theater-mode.chat-open .chat-messages-wrap,
-.channel-page-layout.theater-mode.chat-open .telegram-panel {
+.channel-page-layout.theater-mode.chat-open .telegram-panel,
+.channel-page-layout.theater-mode.chat-open .partido-timeline-panel {
   flex: 1;
   height: auto;
   min-height: 0;
@@ -1167,6 +1231,29 @@ img[data-logo-base] {
   padding: 0.75rem;
   overflow-y: auto;
 }
+/* Panel "Minuto a minuto" (pestaña nueva, solo cuando hay ?partido=) */
+.partido-timeline-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  height: 400px;
+  overflow-y: auto;
+  padding: 0.9rem 1.1rem;
+}
+.pt-skel-row { height: 24px; border-radius: 6px; margin-bottom: 8px; }
+.pt-tl-item { display: flex; align-items: center; gap: .6rem; padding: .45rem 0; font-size: .78rem; border-bottom: 1px solid var(--border); }
+.pt-tl-item:last-child { border-bottom: none; }
+.pt-tl-minute { font-family: 'Space Mono', monospace; font-size: .7rem; color: var(--text-muted); width: 32px; flex-shrink: 0; text-align: right; }
+.pt-tl-icon { width: 18px; text-align: center; flex-shrink: 0; }
+.pt-tl-icon.goal { color: var(--accent); }
+.pt-tl-icon.sub { color: #22c55e; }
+.pt-tl-icon.yellow { color: #eab308; }
+.pt-tl-icon.red { color: #ef4444; }
+.pt-tl-text { color: var(--text-primary); flex: 1; }
+.pt-tl-text small { color: var(--text-muted); display: block; font-size: .68rem; }
+.pt-empty { color: var(--text-muted); font-size: .82rem; text-align: center; padding: 2rem 1rem; }
+
 .telegram-panel-icon {
   font-size: 2.75rem;
   color: #26A5E4;
@@ -1449,7 +1536,7 @@ img[data-logo-base] {
     grid-template-columns: 1fr;
   }
 
-  .chat-messages, .chat-unavailable, .telegram-panel {
+  .chat-messages, .chat-unavailable, .telegram-panel, .partido-timeline-panel {
     height: 280px;
   }
 
@@ -1483,7 +1570,8 @@ img[data-logo-base] {
     animation: chat-slide-in .2s ease;
   }
   .channel-page-layout.chat-open .chat-messages-wrap,
-  .channel-page-layout.chat-open .telegram-panel {
+  .channel-page-layout.chat-open .telegram-panel,
+  .channel-page-layout.chat-open .partido-timeline-panel {
     flex: 1;
     height: auto;
     min-height: 0;

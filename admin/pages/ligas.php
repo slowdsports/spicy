@@ -1,7 +1,7 @@
 <?php
 /**
  * Admin - Ligas
- * Lista las ligas importadas desde Sofascore. CRUD + botón de importación.
+ * Lista las ligas importadas desde FotMob. CRUD + botón de importación.
  */
 
 try {
@@ -24,9 +24,9 @@ try {
       <i class="fas fa-file-export"></i> Actualizar JSON
     </button>
 
-    <!-- Importar desde Sofascore -->
+    <!-- Importar desde FotMob -->
     <button class="btn-sofa" onclick="mostrarImportarLiga()">
-      <i class="fas fa-cloud-download-alt"></i> Importar vía Sofascore
+      <i class="fas fa-cloud-download-alt"></i> Importar vía FotMob
     </button>
 
     <!-- Crear manualmente -->
@@ -36,23 +36,24 @@ try {
   </div>
 </div>
 
-<!-- Panel de importación Sofascore -->
+<!-- Panel de importación FotMob -->
 <div id="panel-sofa-liga" style="display:none; margin-bottom:1.25rem;">
   <div style="background:var(--bg-card); border:1px solid rgba(34,197,94,0.3); border-radius:14px; padding:1.25rem;">
     <p style="font-size:0.82rem; font-weight:700; color:#22c55e; margin:0 0 0.75rem;">
       <i class="fas fa-cloud-download-alt me-1"></i>
-      Importar partidos desde Sofascore
+      Importar partidos desde FotMob
     </p>
     <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 1rem;">
-      Introduce el ID de la liga en Sofascore. Los partidos, equipos e imágenes se importarán automáticamente.
-      <a href="https://www.sofascore.com" target="_blank" style="color:var(--accent);">¿Cómo encontrar el ID?</a>
+      Introduce el ID de la liga en FotMob (lo ves en la URL, ej.
+      <code>fotmob.com/leagues/<b>77</b>/overview/world-cup</code> → 77). Los partidos, equipos e imágenes se importarán automáticamente.
+      <a href="https://www.fotmob.com" target="_blank" style="color:var(--accent);">¿Cómo encontrar el ID?</a>
     </p>
     <div class="d-flex gap-2 flex-wrap align-items-end">
       <div>
-        <label style="font-size:0.75rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:4px;">ID de liga Sofascore</label>
+        <label style="font-size:0.75rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:4px;">ID de liga FotMob</label>
         <input type="number" id="sofa-liga-id" class="form-control"
                style="background:var(--bg-input); border:1px solid var(--border); color:var(--text-primary); border-radius:10px; width:160px;"
-               placeholder="Ej: 17">
+               placeholder="Ej: 77">
       </div>
       <button class="btn-sofa" onclick="importarLiga()" id="btn-importar-liga">
         <i class="fas fa-play"></i> Importar
@@ -84,7 +85,7 @@ try {
     <tbody>
       <?php if (empty($ligas)): ?>
         <tr><td colspan="8">
-          <div class="admin-empty"><i class="fas fa-trophy"></i><p>No hay ligas. Importa una desde Sofascore.</p></div>
+          <div class="admin-empty"><i class="fas fa-trophy"></i><p>No hay ligas. Importa una desde FotMob.</p></div>
         </td></tr>
       <?php else: ?>
         <?php foreach ($ligas as $l): ?>
@@ -139,7 +140,7 @@ try {
       <div class="modal-body">
         <input type="hidden" id="liga-id">
         <div class="mb-3">
-          <label class="form-label">ID Sofascore <span style="color:#ef4444;">*</span></label>
+          <label class="form-label">ID de liga <span style="color:#ef4444;">*</span></label>
           <input type="number" id="liga-sf-id" class="form-control" placeholder="Ej: 17">
         </div>
         <div class="mb-3">
@@ -178,7 +179,7 @@ function mostrarImportarLiga() {
   document.getElementById('sofa-liga-id').focus();
 }
 
-// Llama a sofa.php pasando el ID de la liga
+// Llama a fotmob.php pasando el ID de la liga
 function importarLiga() {
   const ligaId = document.getElementById('sofa-liga-id').value.trim();
   if (!ligaId) { adminToast('Introduce un ID de liga válido.', 'error'); return; }
@@ -190,8 +191,8 @@ function importarLiga() {
   const res = document.getElementById('sofa-resultado');
   res.style.display = 'none';
 
-  // Llamada al sofa.php del admin con el ID de liga
-  fetch(`<?= BASE_URL ?>admin/sofa.php?filtrarLiga=${ligaId}`)
+  // Llamada al fotmob.php del admin con el ID de liga
+  fetch(`<?= BASE_URL ?>admin/fotmob.php?filtrarLiga=${ligaId}`)
     .then(r => r.text())
     .then(text => {
       res.style.display = 'block';

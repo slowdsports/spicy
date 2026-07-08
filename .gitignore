@@ -9,6 +9,14 @@ includes/.env.php
 # Scripts de análisis/desofuscación de sitios externos (uso local, no versionar)
 /reverse-engineering/
 
+# Imágenes descargadas en runtime (admin/fotmob.php, api/partido_extra.php) —
+# cada servidor descarga su propio set según los partidos/equipos que importó;
+# versionarlas pisaría con un commit viejo las imágenes frescas de producción,
+# mismo motivo que la regla "*.json" de arriba.
+assets/img/equipos/
+assets/img/ligas/
+assets/img/jugadores/
+
 # Dependencias del bridge Playwright — se reinstalan con npm install en local
 # y se instalan solas en Render vía Dockerfile
 tools/sofascore-bridge/node_modules/

@@ -22,9 +22,12 @@ if (!isLoggedIn()) {
 
 $action   = trim($_POST['action'] ?? '');
 $fuenteId = (int)($_POST['fuente_id'] ?? 0);
+$equipoId = (int)($_POST['equipo_id'] ?? 0);
 $userId   = userId();
 
-if ($fuenteId <= 0) {
+// fuente_id solo hace falta para las acciones sobre canales (love/save/report);
+// save_equipo usa equipo_id — cada case valida el suyo antes de tocar la BD.
+if ($action !== 'save_equipo' && $fuenteId <= 0) {
     http_response_code(400);
     echo json_encode(['ok' => false, 'msg' => 'fuente_id inválido']);
     exit;
@@ -82,6 +85,54 @@ try {
             }
 
             regenerarGuardadosJson($conn, $userId);
+
+            echo json_encode(['ok' => true, 'active' => $active]);
+            break;
+        }
+
+        // ── GUARDAR EQUIPO (favorito) ──────────────────────────────
+        case 'save_equipo': {
+            if ($equipoId <= 0) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'msg' => 'equipo_id inválido']);
+                break;
+            }
+
+            // Auto-migración: crea la tabla la primera vez que se usa esta
+            // acción, para no depender de correr el CREATE TABLE a mano en
+            // el servidor (mismo espíritu que admin/pages/fuentes.php).
+            $conn->query("
+                CREATE TABLE IF NOT EXISTS equipo_guardados (
+                    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    user_id INT UNSIGNED NOT NULL,
+                    equipo_id INT UNSIGNED NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY uq_save (user_id, equipo_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+            ");
+
+            $check = $conn->prepare("SELECT id FROM equipo_guardados WHERE user_id = ? AND equipo_id = ? LIMIT 1");
+            $check->bind_param('ii', $userId, $equipoId);
+            $check->execute();
+            $exists = $check->get_result()->num_rows > 0;
+            $check->close();
+
+            if ($exists) {
+                $del = $conn->prepare("DELETE FROM equipo_guardados WHERE user_id = ? AND equipo_id = ?");
+                $del->bind_param('ii', $userId, $equipoId);
+                $del->execute();
+                $del->close();
+                $active = false;
+            } else {
+                $ins = $conn->prepare("INSERT IGNORE INTO equipo_guardados (user_id, equipo_id) VALUES (?, ?)");
+                $ins->bind_param('ii', $userId, $equipoId);
+                $ins->execute();
+                $ins->close();
+                $active = true;
+            }
+
+            regenerarEquiposGuardadosJson($conn, $userId);
 
             echo json_encode(['ok' => true, 'active' => $active]);
             break;
@@ -188,6 +239,39 @@ function regenerarGuardadosJson(mysqli $conn, int $userId): void
         $dir . '/' . $userId . '.json',
         json_encode(
             ['user_id' => $userId, 'updated_at' => date('c'), 'fuentes' => $items],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        )
+    );
+}
+
+function regenerarEquiposGuardadosJson(mysqli $conn, int $userId): void
+{
+    $res = $conn->query("
+        SELECT e.id, e.nombre, e.logo
+        FROM equipo_guardados g
+        JOIN equipos e ON e.id = g.equipo_id
+        WHERE g.user_id = {$userId}
+        ORDER BY g.created_at DESC
+    ");
+
+    $items = [];
+    while ($row = $res->fetch_assoc()) {
+        $items[] = [
+            'id'     => (int)$row['id'],
+            'nombre' => $row['nombre'],
+            'logo'   => $row['logo'] ?? '',
+        ];
+    }
+
+    $dir = __DIR__ . '/../data/equipos_guardados';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+
+    file_put_contents(
+        $dir . '/' . $userId . '.json',
+        json_encode(
+            ['user_id' => $userId, 'updated_at' => date('c'), 'equipos' => $items],
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         )
     );

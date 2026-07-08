@@ -90,8 +90,7 @@
     var v = String(logo).trim();
     if (!v) return '';
     if (v.startsWith('http://') || v.startsWith('https://') || v.startsWith('/')) return v;
-    var folder = Number(v) >= 900000000 ? 'fm' : 'sf';
-    return BASE + 'assets/img/equipos/' + folder + '/' + encodeURIComponent(v) + '.png';
+    return BASE + 'assets/img/equipos/fm/' + encodeURIComponent(v) + '.png';
   }
 
   function buildTimeLabel(m) {

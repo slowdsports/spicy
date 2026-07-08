@@ -15,9 +15,10 @@ function updateCountdown(el) {
     if (isNaN(target)) return;
     distance = target - Date.now();
   }
+  const extraMs = (parseInt(el.dataset.extraMin, 10) || 0) * 60000;
   const badge = el.closest('.badge-time');
   if (distance < 0) {
-    if (distance > -10800000) {
+    if (distance > -(10800000 + extraMs)) {
       el.textContent = '● EN VIVO';
       if (badge) {
         badge.classList.remove('badge-time');
@@ -68,20 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCountdown(el);
     setInterval(() => updateCountdown(el), 1000);
   });
-
-  // Auto-abrir y hacer scroll al partido indicado en ?partido=
-  const partidoId = new URLSearchParams(window.location.search).get('partido');
-  if (partidoId) {
-    const target = document.getElementById('match' + partidoId);
-    if (target) {
-      // Abrir el accordion si está colapsado
-      const btn = target.previousElementSibling?.querySelector('.accordion-button.collapsed');
-      if (btn) btn.click();
-      setTimeout(function () {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 200);
-    }
-  }
 
   // Animar items del accordion al aparecer
   const items = document.querySelectorAll('.sh-accordion-item');

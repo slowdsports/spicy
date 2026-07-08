@@ -175,8 +175,6 @@ function canalNombre($id){
 
 <?php foreach($partidos as $i => $p):
 
-$id = "match".$p['id'];
-
 $local = $p['homeTeam']['name'] ?? '';
 $visit = $p['awayTeam']['name'] ?? '';
 
@@ -213,13 +211,7 @@ for($x=1;$x<=10;$x++){
 $primerCanal = $canalesPartido[0] ?? null;
 ?>
 
-<div class="accordion-item sh-item">
-
-<h2 class="accordion-header">
-<button class="accordion-button sh-btn <?= $i>0?'collapsed':'' ?>"
-        type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#<?= $id ?>">
+<a href="<?= url('partido', ['id' => $p['id']]) ?>" class="accordion-item sh-item match-link-row">
 
 <div class="match-grid">
 
@@ -236,7 +228,7 @@ $primerCanal = $canalesPartido[0] ?? null;
 </span>
 <?php else: ?>
 <span class="badge-time">
-<i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($p['fecha_hora'] ?? $time) ?>" data-ts="<?= (int)($p['timestamp'] ?? 0) ?>"><?= htmlspecialchars($time) ?></span>
+<i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($p['fecha_hora'] ?? $time) ?>" data-ts="<?= (int)($p['timestamp'] ?? 0) ?>" data-extra-min="<?= (int)($p['extraMin'] ?? 0) ?>"><?= htmlspecialchars($time) ?></span>
 </span>
 <?php endif; ?>
 
@@ -251,7 +243,14 @@ $primerCanal = $canalesPartido[0] ?? null;
 </div>
 
 <div class="vs-box">
+<?php if($status==='live' || $status==='finished'): ?>
+<strong class="score-vs" data-live-score="<?= (int)$p['id'] ?>">vs</strong>
+<?php if($status==='live'): ?>
+<small class="match-minute" data-live-minute="<?= (int)$p['id'] ?>"></small>
+<?php endif; ?>
+<?php else: ?>
 <strong>vs</strong>
+<?php endif; ?>
 <small><span class="match-time-local" data-hn="<?= htmlspecialchars($time) ?>"><?= htmlspecialchars($time) ?></span></small>
 </div>
 
@@ -280,66 +279,8 @@ $primerCanal = $canalesPartido[0] ?? null;
 </div>
 
 </div>
-</button>
-</h2>
-
-<div id="<?= $id ?>" class="accordion-collapse collapse <?= $i===0?'show':'' ?>"
-     data-bs-parent="#matchesAccordion">
-
-<div class="accordion-body sh-body">
-
-<h6 class="channels-title">
-<i class="fas fa-broadcast-tower me-2"></i>
-Canales de cobertura
-</h6>
-
-<?php if(empty($canalesPartido)): ?>
-
-<div class="no-list-channel">
-No hay canales disponibles.
-</div>
-
-<?php else: ?>
-
-<div class="channel-list">
-
-<?php foreach($canalesPartido as $canal): ?>
-
-<a href="<?= url('canal',['id'=>$canal['id'],'partido'=>$p['id']]) ?>" class="channel-row">
-
-<img src="<?= $canal['logo'] ?>" class="channel-row-logo lazy-img" loading="lazy">
-
-<div class="channel-row-name">
-<?= htmlspecialchars($canal['nombre']) ?>
-<?php if($canal['solo_spicy']): ?>
-<span style="font-size:0.65rem; background:rgba(236,72,153,0.15); color:#f472b6; border:1px solid rgba(236,72,153,0.3); padding:2px 7px; border-radius:100px; font-weight:700; white-space:nowrap; flex-shrink:0;">
-  <i class="fas fa-fire" style="font-size:0.6rem;"></i> Solo Spicy
-</span>
-<?php endif; ?>
-</div>
-
-<?php if($canal['ios']): ?>
-<span class="chnl-ios-badge ok" title="Fuente alternativa iOS disponible"><i class="fab fa-apple"></i></span>
-<?php elseif($canal['noIos']): ?>
-<span class="chnl-ios-badge no" title="No disponible en iOS (DASH)">
-  <i class="fab fa-apple"></i>
-  <small class="chnl-ios-x">✕</small>
-</span>
-<?php else: ?>
-<i class="fas fa-play-circle chnl-play-icon"></i>
-<?php endif; ?>
 
 </a>
-
-<?php endforeach; ?>
-
-</div>
-
-<?php endif; ?>
-
-</div>
-</div>
-</div>
 
 <?php endforeach; ?>
 
@@ -395,6 +336,22 @@ background:var(--bg-card)!important;
 padding:1rem 1.2rem!important;
 background:var(--bg-card)!important;
 box-shadow:none!important;
+}
+
+/* La fila de partido era antes un <button class="accordion-button"> de
+   Bootstrap (que trae width:100% + padding por defecto) — ahora es un <a>
+   normal (navega a pages/partido.php en vez de expandir un acordeón), así
+   que hay que replicar ese padding/ancho a mano. */
+.match-link-row{
+display:block;
+width:100%;
+padding:1rem 1.2rem;
+background:var(--bg-card);
+transition:var(--transition);
+text-decoration:none;
+}
+.match-link-row:hover{
+background:var(--bg-card-hover);
 }
 
 .match-grid{

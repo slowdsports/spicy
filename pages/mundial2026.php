@@ -4,7 +4,7 @@
  * Página exclusiva para el Mundial de la FIFA 2026 (liga ID: 16)
  */
 
-define('MUNDIAL_LEAGUE_ID', '16');
+define('MUNDIAL_LEAGUE_ID', '77');
 
 /* ==========================================================
    JSON
@@ -64,13 +64,13 @@ usort($partidos, function($a, $b) {
    META
 ========================================================== */
 $ligaNombre = $partidos[0]['leagueName'] ?? 'FIFA World Cup 2026';
-$ligaLogo   = BASE_URL . 'assets/img/ligas/sf/16.png';
+$ligaLogo   = BASE_URL . 'assets/img/ligas/' . logoFolder(MUNDIAL_LEAGUE_ID) . '/' . MUNDIAL_LEAGUE_ID . '.png';
 
 /* ==========================================================
    HELPERS
 ========================================================== */
 function mTeamLogo($id) {
-    return BASE_URL . "assets/img/equipos/sf/{$id}.png";
+    return BASE_URL . 'assets/img/equipos/' . logoFolder($id) . "/{$id}.png";
 }
 
 function mCanalLogo($id) {
@@ -281,7 +281,8 @@ function mCanalLogo($id) {
                 <i class="fas fa-clock"></i>
                 <span class="match-countdown"
                       data-time="<?= htmlspecialchars($p['fecha_hora'] ?? $time) ?>"
-                      data-ts="<?= (int)($p['timestamp'] ?? 0) ?>">
+                      data-ts="<?= (int)($p['timestamp'] ?? 0) ?>"
+                      data-extra-min="<?= (int)($p['extraMin'] ?? 0) ?>">
                   <?= htmlspecialchars($time) ?>
                 </span>
               </span>
@@ -301,10 +302,11 @@ function mCanalLogo($id) {
               </div>
 
               <div class="vs-box mundial-vs">
-                <?php if($isLive && isset($p['homeTeam']['score'])): ?>
-                <strong class="score-display">
-                  <?= (int)$p['homeTeam']['score'] ?> – <?= (int)$p['awayTeam']['score'] ?>
-                </strong>
+                <?php if($isLive || $status==='finished'): ?>
+                <strong class="score-display" data-live-score="<?= (int)$p['id'] ?>">vs</strong>
+                <?php if($isLive): ?>
+                <small class="match-minute" data-live-minute="<?= (int)$p['id'] ?>"></small>
+                <?php endif; ?>
                 <?php else: ?>
                 <strong>vs</strong>
                 <?php endif; ?>
@@ -351,6 +353,13 @@ function mCanalLogo($id) {
            data-bs-parent="#mundialAccordion">
 
         <div class="accordion-body sh-body mundial-body">
+
+          <?php if($isLive || $status==='finished'): ?>
+          <div class="match-info-footer" style="margin-top:0;border-top:none;padding-top:0;margin-bottom:.75rem;">
+            <span data-live-venue="<?= (int)$p['id'] ?>"></span>
+            <span data-live-referee="<?= (int)$p['id'] ?>"></span>
+          </div>
+          <?php endif; ?>
 
           <h6 class="channels-title">
             <i class="fas fa-broadcast-tower me-2"></i>

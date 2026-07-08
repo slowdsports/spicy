@@ -301,7 +301,7 @@ try {
                 <option value="jwplayer">JW Player</option>
               </select>
               <p style="font-size:0.72rem; color:var(--text-muted); margin:0.5rem 0 0;">
-                Elige el reproductor según la compatibilidad del stream. Bitmovin es el predeterminado para DASH.
+                Elige el reproductor según la compatibilidad del stream. Predeterminado: Bitmovin para DASH, JW Player para HLS.
               </p>
             </div>
           </div>

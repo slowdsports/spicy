@@ -11,7 +11,7 @@ $page = isset($_GET['p']) ? trim($_GET['p']) : 'home';
 // colapsando silenciosamente a home)
 $page = preg_replace('/[^a-z0-9_\-]/', '', strtolower($page));
 
-$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga', 'donaciones', 'eu_pendiente', 'mundial2026', 'reset_password'];
+$allowed = ['home', 'tv', 'eventos', 'login', 'canal', 'liga', 'partido', 'donaciones', 'eu_pendiente', 'mundial2026', 'reset_password'];
 
 if (!in_array($page, $allowed)) {
     $page = 'home';
@@ -41,6 +41,7 @@ if ($page === 'canal')   $_qp['id']   = (int)($_GET['id']   ?? 0);
 if ($page === 'liga')  { $_qp['id']   = (int)($_GET['id']   ?? 0);
                          $_qp['type'] = preg_replace('/[^a-z]/', '', strtolower($_GET['type'] ?? 'soccer')); }
 if ($page === 'eventos') $_qp['type'] = preg_replace('/[^a-z]/', '', strtolower($_GET['type'] ?? 'football'));
+if ($page === 'partido') $_qp['id']   = (int)($_GET['id']   ?? 0);
 $seoCanonical = $SITE_URL . BASE_URL . '?' . http_build_query($_qp);
 
 $seoTitle       = 'Tele Deportes - TV en Vivo & Deportes';
@@ -105,6 +106,22 @@ switch ($page) {
         $seoTitle       = "{$_ligaNom} en Vivo - Tele Deportes";
         $seoDescription = "Todos los partidos de {$_ligaNom} en vivo. Transmisiones en directo, gratis y sin registro.";
         $seoKeywords    = "{$_ligaNom} en vivo, partidos {$_ligaNom}, streaming {$_ligaNom}, ver {$_ligaNom} gratis";
+        break;
+
+    case 'partido':
+        $_pId = (int)($_GET['id'] ?? 0);
+        $_pNom = "Partido {$_pId}";
+        if ($_pId > 0 && file_exists(__DIR__ . '/data/matches.json')) {
+            foreach (json_decode(file_get_contents(__DIR__ . '/data/matches.json'), true) ?? [] as $_m) {
+                if ((int)($_m['id'] ?? 0) === $_pId) {
+                    $_pNom = ($_m['homeTeam']['name'] ?? '') . ' vs ' . ($_m['awayTeam']['name'] ?? '');
+                    break;
+                }
+            }
+        }
+        $seoTitle       = "{$_pNom} en Vivo - Tele Deportes";
+        $seoDescription = "Sigue {$_pNom} en vivo: marcador, estadio, árbitro, tabla de posiciones y canales de transmisión.";
+        $seoKeywords    = "{$_pNom} en vivo, ver {$_pNom}, streaming {$_pNom}";
         break;
 
     case 'canal':
@@ -308,6 +325,9 @@ if (!$_noChrome) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="assets/js/theme.js"></script>
 <script src="assets/js/lazyload.js"></script>
+<?php if (!$isTvPlayerView): ?>
+<script src="assets/js/page-transition.js"></script>
+<?php endif; ?>
 
 <!-- ── Trampa debugger + configuración DisableDevtool ──────────────────── -->
 <script>
@@ -346,12 +366,16 @@ $scripts = [
     'canal'       => 'assets/js/channel.js',
     'eventos'     => 'assets/js/eventos.js',
     'liga'        => 'assets/js/liga.js',
+    'partido'     => 'assets/js/partido.js',
     'mundial2026' => 'assets/js/liga.js',
     'login'       => 'assets/js/auth.js',
     'reset_password' => 'assets/js/auth.js',
 ];
 if ($page === 'home') {
     echo '<script src="assets/js/huso.js"></script>';
+}
+if (in_array($page, ['home', 'liga', 'mundial2026', 'canal', 'partido'], true) && !$isTvPlayerView) {
+    echo '<script src="assets/js/live-scores.js"></script>';
 }
 if (isset($scripts[$page]) && !$isTvPlayerView) {
     echo '<script src="' . $scripts[$page] . '"></script>';

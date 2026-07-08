@@ -308,6 +308,7 @@ if ($geoAvisoPais) {
 /* Partido match card header */
 .partido-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
   padding: .75rem 1rem;
@@ -360,6 +361,13 @@ if ($geoAvisoPais) {
   font-weight: 700;
   font-size: .88rem;
   color: var(--text-muted);
+  flex-shrink: 0;
+}
+.partido-vs-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   flex-shrink: 0;
 }
 
@@ -633,7 +641,7 @@ if ($geoAvisoPais) {
         <div class="partido-meta">
           <img src="<?= $pLeagueLogo ?>" data-logo-base="<?= $pLeagueLogo ?>" data-fallback-icon="league" class="partido-league-img lazy-img" loading="lazy">
           <?php if (!empty($partidoData['fecha_hora'])): ?>
-            <span class="badge-time"><i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($partidoData['fecha_hora']) ?>" data-ts="<?= (int)($partidoData['timestamp'] ?? 0) ?>"><?= $pTime ?></span></span>
+            <span class="badge-time"><i class="fas fa-clock"></i> <span class="match-countdown" data-time="<?= htmlspecialchars($partidoData['fecha_hora']) ?>" data-ts="<?= (int)($partidoData['timestamp'] ?? 0) ?>" data-extra-min="<?= (int)($partidoData['extraMin'] ?? 0) ?>"><?= $pTime ?></span></span>
           <?php elseif ($pStatus === 'live'): ?>
             <span class="badge-live"><span class="dot-live"></span> EN VIVO</span>
           <?php else: ?>
@@ -645,7 +653,16 @@ if ($geoAvisoPais) {
             <img src="<?= $pLocalLogo ?>" data-logo-base="<?= $pLocalLogo ?>" data-fallback-icon="team" class="lazy-img" loading="lazy">
             <span><?= $pLocal ?></span>
           </div>
+          <?php if ($pStatus === 'live' || $pStatus === 'finished'): $pid = (int)$partidoData['id']; ?>
+          <div class="partido-vs-col">
+            <div class="partido-vs" data-live-score="<?= $pid ?>">vs</div>
+            <?php if ($pStatus === 'live'): ?>
+            <div class="match-minute" data-live-minute="<?= $pid ?>"></div>
+            <?php endif; ?>
+          </div>
+          <?php else: ?>
           <div class="partido-vs">vs</div>
+          <?php endif; ?>
           <div class="partido-team">
             <img src="<?= $pVisitLogo ?>" data-logo-base="<?= $pVisitLogo ?>" data-fallback-icon="team" class="lazy-img" loading="lazy">
             <span><?= $pVisit ?></span>
@@ -660,6 +677,12 @@ if ($geoAvisoPais) {
             <i class="fas fa-expand-alt"></i><span>Teatro</span>
           </button>
         </div>
+        <?php if ($pStatus === 'live' || $pStatus === 'finished'): ?>
+        <div class="match-info-footer" style="flex-basis:100%;">
+          <span data-live-venue="<?= $pid ?>"></span>
+          <span data-live-referee="<?= $pid ?>"></span>
+        </div>
+        <?php endif; ?>
       </div>
       <span id="player-channel-name" style="display:none">Cargando...</span>
       <?php elseif ($programaData):
@@ -804,6 +827,11 @@ if ($geoAvisoPais) {
       <?php endif; ?>
       <div class="chat-header">
         <div class="chat-tabs" role="tablist">
+          <?php if ($partidoId > 0): ?>
+          <button type="button" class="chat-tab" data-tab="partido" role="tab" aria-selected="false">
+            <i class="fas fa-stream"></i> Minuto a minuto
+          </button>
+          <?php endif; ?>
           <button type="button" class="chat-tab active" data-tab="telegram" role="tab" aria-selected="true">
             <i class="fab fa-telegram"></i> Telegram
           </button>
@@ -818,6 +846,18 @@ if ($geoAvisoPais) {
           <i class="fas fa-times"></i>
         </button>
       </div>
+
+      <!-- Panel: minuto a minuto del partido (solo si ?partido= está presente) -->
+      <?php if ($partidoId > 0): ?>
+      <div class="partido-timeline-panel" id="partido-timeline-panel" style="display:none;">
+        <div id="partido-timeline-content" class="pt-timeline-content">
+          <div class="pt-skel-row skeleton-block"></div>
+          <div class="pt-skel-row skeleton-block"></div>
+          <div class="pt-skel-row skeleton-block"></div>
+          <div class="pt-skel-row skeleton-block"></div>
+        </div>
+      </div>
+      <?php endif; ?>
 
       <!-- Panel: acceso al canal de Telegram (pestaña activa por defecto) -->
       <?php
@@ -1143,9 +1183,10 @@ if (PARTIDO_ID) {
         if (isNaN(target)) return;
         distance = target - Date.now();
       }
+      const extraMs = (parseInt(el.dataset.extraMin, 10) || 0) * 60000;
       const badge = el.closest('.badge-time, .badge-live, .badge-finished');
       if (distance < 0) {
-        if (distance > -7200000) {
+        if (distance > -(7200000 + extraMs)) {
           el.textContent = '● EN VIVO';
           if (badge) {
             badge.classList.remove('badge-time', 'badge-finished');
@@ -1275,21 +1316,26 @@ document.addEventListener('DOMContentLoaded', function () {
   if (closeBtn) closeBtn.addEventListener('click', function () { setChatOpen(false); });
 });
 
-// Pestañas del panel lateral: Telegram / Chat
+// Pestañas del panel lateral: Minuto a minuto (si hay ?partido=) / Telegram / Chat
 document.addEventListener('DOMContentLoaded', function () {
   const tabs          = document.querySelectorAll('.chat-tab');
   const telegramPanel = document.getElementById('telegram-panel');
   const chatWrap       = document.getElementById('chat-messages-wrap');
   const chatInputArea  = document.getElementById('chat-input-area');
   const usersEl        = document.getElementById('chat-users');
+  const partidoPanel   = document.getElementById('partido-timeline-panel');
+  const hasPartidoTab  = tabs.length && Array.from(tabs).some(t => t.dataset.tab === 'partido');
   if (!tabs.length || !telegramPanel || !chatWrap) return;
 
-  // Recuerda la pestaña elegida por el usuario entre visitas/canales
+  // Recuerda la pestaña elegida por el usuario entre visitas/canales — pero
+  // "partido" solo es válida si esta página en particular tiene esa pestaña
+  // (llegó con ?partido=); si no, cae a "telegram" como siempre.
   const TAB_STORAGE_KEY = 'sh_chat_tab';
   function getSavedTab() {
     try {
       const saved = localStorage.getItem(TAB_STORAGE_KEY);
-      return (saved === 'telegram' || saved === 'chat') ? saved : 'telegram';
+      const valid = ['telegram', 'chat'].concat(hasPartidoTab ? ['partido'] : []);
+      return valid.includes(saved) ? saved : 'telegram';
     } catch (e) { return 'telegram'; }
   }
   function saveTab(name) {
@@ -1310,8 +1356,15 @@ document.addEventListener('DOMContentLoaded', function () {
       btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
 
+    if (partidoPanel) partidoPanel.style.display = name === 'partido' ? 'block' : 'none';
+
     if (name === 'telegram') {
       telegramPanel.style.display = 'flex';
+      chatWrap.style.display      = 'none';
+      if (chatInputArea) chatInputArea.style.display = 'none';
+      if (usersEl)        usersEl.style.display       = 'none';
+    } else if (name === 'partido') {
+      telegramPanel.style.display = 'none';
       chatWrap.style.display      = 'none';
       if (chatInputArea) chatInputArea.style.display = 'none';
       if (usersEl)        usersEl.style.display       = 'none';
@@ -1332,4 +1385,74 @@ document.addEventListener('DOMContentLoaded', function () {
 
   activateTab(getSavedTab());
 });
+
+<?php if ($partidoId > 0): ?>
+// Minuto a minuto (pestaña nueva) — reusa api/partido_extra.php, mismo
+// origen de datos que pages/partido.php, solo que acá pintamos únicamente
+// el timeline dentro del panel lateral del canal.
+(function () {
+  const PT_PARTIDO_ID = <?= $partidoId ?>;
+  const PT_LIGA_ID     = <?= (int)($partidoData['league'] ?? 0) ?>;
+
+  const PT_ICONS = {
+    Goal:          { icon: 'fa-futbol', cls: 'goal' },
+    Substitution:  { icon: 'fa-right-left', cls: 'sub' },
+    YellowCard:    { icon: 'fa-square', cls: 'yellow' },
+    RedCard:       { icon: 'fa-square', cls: 'red' },
+    YellowRedCard: { icon: 'fa-square', cls: 'red' },
+    AddedTime:     { icon: 'fa-clock', cls: '' },
+  };
+
+  function ptEsc(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str ?? '');
+    return div.innerHTML;
+  }
+
+  function ptEventText(ev) {
+    switch (ev.type) {
+      case 'Goal':
+        return `${ev.ownGoal ? 'Autogol' : 'Gol'} de ${ptEsc(ev.player)}` +
+          (ev.assist ? `<small>Asistencia: ${ptEsc(ev.assist)}</small>` : '');
+      case 'Substitution':
+        return `${ptEsc(ev.playerIn)} entra <small>Sale: ${ptEsc(ev.playerOut)}</small>`;
+      case 'YellowCard':
+        return `Tarjeta amarilla — ${ptEsc(ev.player)}`;
+      case 'RedCard':
+      case 'YellowRedCard':
+        return `Tarjeta roja — ${ptEsc(ev.player)}`;
+      case 'AddedTime':
+        return `Tiempo añadido: +${ptEsc(ev.minutesAdded)} min`;
+      default:
+        return '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async function () {
+    const content = document.getElementById('partido-timeline-content');
+    if (!content) return;
+    try {
+      const res = await fetch(`<?= BASE_URL ?>api/partido_extra.php?id=${PT_PARTIDO_ID}&liga=${PT_LIGA_ID}`);
+      const data = await res.json();
+      if (!data.ok || !data.timeline || !data.timeline.length) {
+        content.innerHTML = '<div class="pt-empty">Todavía no hay eventos para este partido.</div>';
+        return;
+      }
+      const sorted = data.timeline.slice().sort((a, b) => b.time - a.time);
+      content.innerHTML = sorted.map(ev => {
+        const meta = PT_ICONS[ev.type] || { icon: 'fa-circle', cls: '' };
+        return `
+        <div class="pt-tl-item">
+          <span class="pt-tl-minute">${ptEsc(ev.minute)}'</span>
+          <span class="pt-tl-icon ${meta.cls}"><i class="fas ${meta.icon}"></i></span>
+          <span class="pt-tl-text">${ptEventText(ev)}</span>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      content.innerHTML = '<div class="pt-empty">No se pudo cargar el minuto a minuto.</div>';
+      console.error('Error cargando timeline:', e);
+    }
+  });
+})();
+<?php endif; ?>
 </script>

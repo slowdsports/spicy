@@ -85,12 +85,12 @@ function get(string $key, string $default = ''): string {
 }
 
 /**
- * Carpeta de logos (ligas/equipos) según el proveedor que originó el ID.
- * Los IDs de FotMob se guardan con un offset de +900000000 para no
- * colisionar con los IDs de Sofascore en las mismas tablas (ver admin/fotmob.php).
+ * Carpeta de logos (ligas/equipos). FotMob es el único proveedor en uso
+ * (Sofascore quedó descartado por su bloqueo anti-bot — ver admin/sofa.php);
+ * queda como función por si en algún momento hay más de un proveedor otra vez.
  */
 function logoFolder($id): string {
-    return ((int)$id >= 900000000) ? 'fm' : 'sf';
+    return 'fm';
 }
 
 // ============================================================

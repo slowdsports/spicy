@@ -22,6 +22,14 @@ $jsBase = json_encode(BASE_URL);
 $jsFid  = (int)$streamFuenteId;
 $jsTok  = json_encode($streamToken);
 $jsTs   = (int)$streamTs;
+
+// JW Player sigue siendo el default (no romper fuentes existentes que nunca
+// configuraron este campo); Bitmovin es opt-in por fuente, igual que en
+// reproductor-3.php (DASH).
+$allowed     = ['bitmovin', 'jwplayer'];
+$reproductor = in_array($fuenteData['reproductor'] ?? '', $allowed)
+    ? $fuenteData['reproductor']
+    : 'jwplayer';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -30,7 +38,11 @@ $jsTs   = (int)$streamTs;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $nombre ?> - Tele Deportes</title>
+    <?php if ($reproductor === 'bitmovin'): ?>
+    <script src="//cdn.bitmovin.com/player/web/8/bitmovinplayer.js"></script>
+    <?php else: ?>
     <link rel="stylesheet" href="../assets/css/jw.css">
+    <?php endif; ?>
     <style>
         * {
             margin: 0;
@@ -79,6 +91,20 @@ $jsTs   = (int)$streamTs;
             font-weight: 600;
             color: #fff;
         }
+        <?php if ($reproductor === 'bitmovin'): ?>
+        /* Estilos de marca para Bitmovin */
+        .bmpui-ui-watermark {
+            background-image: url("https://eduveel1.github.io/baleada/img/iRTVW_PLAYER.png");
+            top: 0; left: 0; min-width: 5em;
+        }
+        .bmpui-ui-seekbar .bmpui-seekbar .bmpui-seekbar-playbackposition,
+        .bmpui-ui-volumeslider .bmpui-seekbar .bmpui-seekbar-playbackposition { background-color: #6366f1; }
+        .bmpui-ui-seekbar .bmpui-seekbar .bmpui-seekbar-playbackposition-marker,
+        .bmpui-ui-volumeslider .bmpui-seekbar .bmpui-seekbar-playbackposition-marker {
+            border-color: #6366f1; background-color: #6366f1;
+        }
+        .bmpui-ui-selectbox, .bmpui-on { color: #6366f1; }
+        <?php endif; ?>
     </style>
 </head>
 <body>
@@ -90,10 +116,12 @@ $jsTs   = (int)$streamTs;
         <div id="player-container"></div>
     </div>
 
+    <?php if ($reproductor !== 'bitmovin'): ?>
     <!-- JW Player CDN -->
     <script src="//ssl.p.jwpcdn.com/player/v/8.24.0/jwplayer.js"></script>
     <script>jwplayer.key = 'XSuP4qMl+9tK17QNb+4+th2Pm9AWgMO/cYH8CI0HGGr7bdjo';</script>
-    
+    <?php endif; ?>
+
     <!-- Clappr CDN -->
     <script src="https://cdn.clappr.io/latest/clappr.min.js"></script>
 
@@ -157,8 +185,24 @@ $jsTs   = (int)$streamTs;
             statusEl.style.display = 'flex';
         }
 
+        <?php if ($reproductor === 'bitmovin'): ?>
+        // Interceptar licencias Bitmovin ANTES de que el player emita la primera petición
+        (function () {
+            var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
+            function override(u) {
+                var wm = document.querySelector('button.bmpui-ui-watermark');
+                if (wm) wm.setAttribute('disabled', 'disabled');
+                if (u.indexOf('licensing.bitmovin.com/licensing')  > -1) return GRANT;
+                if (u.indexOf('licensing.bitmovin.com/impression') > -1) return GRANT;
+                return u;
+            }
+            var _open = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function () { arguments[1] = override(arguments[1]); return _open.apply(this, arguments); };
+        })();
+        <?php endif; ?>
+
         // ============================================================
-        // INICIALIZAR REPRODUCTOR (JW Player por defecto)
+        // INICIALIZAR REPRODUCTOR
         // ============================================================
         function initializePlayer() {
             // Solicitar la URL al servidor — token HMAC vinculado a la sesión
@@ -171,14 +215,46 @@ $jsTs   = (int)$streamTs;
             })
             .then(function (sd) {
                 if (!sd.url) { showError('Stream no disponible'); return; }
-                PLAYER_CONFIG.url = sd.url;
+                PLAYER_CONFIG.url    = sd.url;
+                PLAYER_CONFIG.keyId  = sd.keyId || '';
+                PLAYER_CONFIG.key    = sd.key   || '';
+<?php if ($reproductor === 'bitmovin'): ?>
+                initBitmovin(PLAYER_CONFIG);
+<?php else: ?>
                 initJWPlayer(PLAYER_CONFIG);
+<?php endif; ?>
             })
             .catch(function (err) {
                 showError('No se pudo conectar con el servidor.');
                 console.error(err);
             });
         }
+
+        <?php if ($reproductor === 'bitmovin'): ?>
+        /**
+         * REPRODUCTOR: Bitmovin
+         * Mismo bypass de licencia que reproductor-3.php (DASH), pero con
+         * source.hls en vez de source.dash — este tipo de fuente es HLS simple.
+         */
+        function initBitmovin(config) {
+            var player = new bitmovin.player.Player(document.getElementById('player-container'), {
+                key:       '11d3698c-efdf-42f1-8769-54663995de2b',
+                analytics: false,
+                cast:      { enable: true },
+                playback:  { autoplay: true, muted: true },
+                style:     { width: '100%', height: '100%' }
+            });
+
+            var source = { hls: config.url };
+            if (config.keyId && config.key) {
+                source.drm = { clearkey: [{ keyId: config.keyId, key: config.key }] };
+            }
+            player.load(source).then(showPlayer).catch(function (err) {
+                showError('Error al cargar el stream.');
+                console.error('Bitmovin error:', err);
+            });
+        }
+        <?php endif; ?>
 
         /**
          * REPRODUCTOR 1: JW Player
