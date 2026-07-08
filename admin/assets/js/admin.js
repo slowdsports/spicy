@@ -167,6 +167,8 @@ function abrirModalFuente(data = null) {
   document.getElementById('fuente-epg').value       = data?.epg      ?? '';
   document.getElementById('fuente-ck-key').value    = data?.ck_key   ?? '';
   document.getElementById('fuente-ck-keyid').value  = data?.ck_keyid ?? '';
+  const ckMultiEl = document.getElementById('fuente-ck-key-multi');
+  if (ckMultiEl) ckMultiEl.value = data?.ck_key ?? '';
   tsSet('fuente-activo',     data?.activo     ?? '1');
   tsSet('fuente-mostrar-tv', data?.mostrar_tv ?? '1');
   document.getElementById('fuente-sandbox').checked     = (data?.sandbox    ?? 1) == 1;
@@ -178,8 +180,9 @@ function abrirModalFuente(data = null) {
 
   document.getElementById('modalFuenteTitulo').textContent = data ? 'Editar fuente' : 'Nueva fuente';
 
-  // Mostrar/ocultar campo reproductor según el tipo seleccionado
+  // Mostrar/ocultar campo reproductor y modo DRM según el tipo seleccionado
   actualizarCampoReproductor();
+  actualizarCampoDRM();
 
   new bootstrap.Modal(document.getElementById('modalFuente')).show();
 }
@@ -195,8 +198,9 @@ function guardarFuente() {
     tipo:        document.getElementById('fuente-tipo').value,
     pais:        document.getElementById('fuente-pais').value,
     epg:         document.getElementById('fuente-epg').value.trim(),
-    ck_key:      document.getElementById('fuente-ck-key').value.trim(),
-    ck_keyid:    document.getElementById('fuente-ck-keyid').value.trim(),
+    ck_key:      esTipoMultiKey() ? (document.getElementById('fuente-ck-key-multi')?.value.trim() ?? '')
+                                  : document.getElementById('fuente-ck-key').value.trim(),
+    ck_keyid:    esTipoMultiKey() ? '' : document.getElementById('fuente-ck-keyid').value.trim(),
     activo:      document.getElementById('fuente-activo').value,
     mostrar_tv:  document.getElementById('fuente-mostrar-tv').value,
     sandbox:     document.getElementById('fuente-sandbox').checked     ? 1 : 0,
@@ -305,9 +309,30 @@ function actualizarCampoReproductor() {
   if (campo) campo.style.display = soportaEleccion ? '' : 'none';
 }
 
+// "DASHM" (reproductor-4.php) admite varias claves ClearKey por canal — usa
+// un textarea (una línea por par) en vez de los dos inputs de un solo par.
+function esTipoMultiKey() {
+  const tipoEl = document.getElementById('fuente-tipo');
+  const tipoText = (tipoEl?.options[tipoEl.selectedIndex]?.text ?? '').toLowerCase();
+  return tipoText.includes('dashm');
+}
+
+function actualizarCampoDRM() {
+  const multiKey  = esTipoMultiKey();
+  const singleKey = document.getElementById('ck-key-single-wrap');
+  const singleId  = document.getElementById('ck-keyid-single-wrap');
+  const multi     = document.getElementById('ck-key-multi-wrap');
+  if (singleKey) singleKey.style.display = multiKey ? 'none' : '';
+  if (singleId)  singleId.style.display  = multiKey ? 'none' : '';
+  if (multi)     multi.style.display     = multiKey ? '' : 'none';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const tipoEl = document.getElementById('fuente-tipo');
-  if (tipoEl) tipoEl.addEventListener('change', actualizarCampoReproductor);
+  if (tipoEl) {
+    tipoEl.addEventListener('change', actualizarCampoReproductor);
+    tipoEl.addEventListener('change', actualizarCampoDRM);
+  }
 });
 
 // ============================================================

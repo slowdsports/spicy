@@ -277,13 +277,23 @@ try {
                 <i class="fas fa-lock me-1"></i> Configuración DRM
               </p>
               <div class="row g-2">
-                <div class="col-12 col-md-6">
+                <!-- Un solo par keyId:key (todos los tipos excepto DASHM) -->
+                <div class="col-12 col-md-6" id="ck-key-single-wrap">
                   <label class="form-label">CK Key</label>
                   <input type="text" id="fuente-ck-key" class="form-control" placeholder="Clave de descifrado">
                 </div>
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-6" id="ck-keyid-single-wrap">
                   <label class="form-label">CK Key ID</label>
                   <input type="text" id="fuente-ck-keyid" class="form-control" placeholder="ID de la clave">
+                </div>
+                <!-- Varios pares (solo tipo DASHM) -->
+                <div class="col-12" id="ck-key-multi-wrap" style="display:none;">
+                  <label class="form-label">CK Keys (multi-key)</label>
+                  <textarea id="fuente-ck-key-multi" class="form-control" rows="3" placeholder="Una línea por par:&#10;--key keyid1:key1&#10;--key keyid2:key2"></textarea>
+                  <div class="form-text" style="font-size:0.72rem;">
+                    Varios pares ClearKey, uno por línea, formato <code>--key keyid:key</code>
+                    (el prefijo <code>--key</code> es opcional).
+                  </div>
                 </div>
               </div>
             </div>

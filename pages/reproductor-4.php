@@ -1,9 +1,19 @@
 <?php
 /**
- * StreamHub - Reproductor Tipo 2: HLS
+ * StreamHub - Reproductor Tipo 4: DASH (Bitmovin, multi-key ClearKey)
  * ============================================================
-    * Configuración para streams HLS (HTTP Live Streaming)
-    * Reproductores soportados: Video.js, HLS.js, Shaka Player
+ * Bitmovin Player v8 con bypass de licencia (igual que reproductor-3).
+ * A diferencia de reproductor-3, este soporta VARIAS claves ClearKey por
+ * canal (no solo un par keyId:key), útil cuando un stream DASH usa
+ * distintas keys por período/track. El campo ck_key en BD puede traer:
+ *
+ *   - Un solo par:       keyId (en ck_keyid) + key (en ck_key)
+ *   - Varios pares en ck_key, uno por línea, estilo shaka-packager/mp4decrypt:
+ *       --key 4518f2fc410a5327b26a26e8c0cebd17:16da291229b2b68ded5419cc35339beb
+ *       --key 3ef088eaf6685839a1d77c9bc89b1e20:68c8566c7cb4400fac63d0abe8eea6d4
+ *       --key 2528892552c65b5399017c2f2a194ab7:fc87001860c95eb094c2dd5fc2d2e2bd
+ *     (el prefijo "--key" es opcional; también acepta separarlos por
+ *     comas, espacios o saltos de línea)
  */
 
 if (!isset($fuenteData)) {
@@ -12,7 +22,7 @@ if (!isset($fuenteData)) {
 
 $nombre = htmlspecialchars($fuenteData['nombre']);
 
-// URL y DRM key NO se pasan al cliente — los sirve api/stream.php bajo token firmado
+// URL y DRM keys NO se pasan al cliente — las sirve api/stream.php bajo token firmado
 $jsBase = json_encode(BASE_URL);
 $jsFid  = (int)$streamFuenteId;
 $jsTok  = json_encode($streamToken);
@@ -25,11 +35,12 @@ $jsTs   = (int)$streamTs;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $nombre ?> - Tele Deportes</title>
-    <link rel="stylesheet" href="../assets/css/clappr.css">
+    <script src="//cdn.bitmovin.com/player/web/8/bitmovinplayer.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
         body {
             background: #000;
@@ -74,6 +85,19 @@ $jsTs   = (int)$streamTs;
             font-weight: 600;
             color: #fff;
         }
+
+        /* Estilos de marca para Bitmovin */
+        .bmpui-ui-watermark {
+            background-image: url("https://eduveel1.github.io/baleada/img/iRTVW_PLAYER.png");
+            top: 0; left: 0; min-width: 5em;
+        }
+        .bmpui-ui-seekbar .bmpui-seekbar .bmpui-seekbar-playbackposition,
+        .bmpui-ui-volumeslider .bmpui-seekbar .bmpui-seekbar-playbackposition { background-color: #6366f1; }
+        .bmpui-ui-seekbar .bmpui-seekbar .bmpui-seekbar-playbackposition-marker,
+        .bmpui-ui-volumeslider .bmpui-seekbar .bmpui-seekbar-playbackposition-marker {
+            border-color: #6366f1; background-color: #6366f1;
+        }
+        .bmpui-ui-selectbox, .bmpui-on { color: #6366f1; }
     </style>
 </head>
 <body>
@@ -84,15 +108,6 @@ $jsTs   = (int)$streamTs;
         </div>
         <div id="player"></div>
     </div>
-    
-    <!-- Clappr CDN -->
-    <script src="//cdn.jsdelivr.net/npm/clappr@latest/dist/clappr.min.js"></script>
-    <script src="//cdn.jsdelivr.net/npm/level-selector@latest/dist/level-selector.min.js"></script>
-    <script src="//cdn.jsdelivr.net/npm/clappr-pip@latest/dist/clappr-pip.min.js"></script>
-    <script src="//cdn.jsdelivr.net/gh/clappr/dash-shaka-playback@latest/dist/dash-shaka-playback.min.js"></script>
-    <script src='//cdn.jsdelivr.net/npm/clappr-chromecast-plugin@latest/dist/clappr-chromecast-plugin.min.js'></script>
-    <script src='//cdn.jsdelivr.net/npm/clappr-pip@latest/dist/clappr-pip.min.js'></script>
-    <script src="//ewwink.github.io/clappr-youtube-plugin/clappr-youtube-plugin.js"></script>
 
     <script>
         // ============================================================
@@ -127,29 +142,20 @@ $jsTs   = (int)$streamTs;
         })();
 
         // ============================================================
-        // CONFIGURACIÓN DE REPRODUCCIÓN M3U8
+        // CONFIGURACIÓN DE REPRODUCCIÓN DASH
         // ============================================================
         const PLAYER_CONFIG = {
             id: <?= (int)$fuenteData['id'] ?>,
             nombre: '<?= $nombre ?>',
-            tipo: 1,
-            // OPCIONES PARA AGREGAR REPRODUCTORES:
-            // - useJWPlayer: true  -> Usa JW Player
-            // - useClappr: true    -> Usa Clappr
-            // - useHLS.js: true    -> Usa HLS.js (para navegadores sin soporte nativo)
+            tipo: 4,
         };
 
-        // ── Token de sesión (URL y DRM key nunca aparecen en el source) ─────
+        // ── Token de sesión (URL y DRM keys nunca aparecen en el source) ────
         var _BASE = <?= $jsBase ?>;
         var _FID  = <?= $jsFid ?>;
         var _TOK  = <?= $jsTok ?>;
         var _TS   = <?= $jsTs ?>;
 
-        /**
-         * REPRODUCTOR 2: Clappr
-         * Reproductor de código abierto basado en Flash/HTML5
-         * Configuración: https://github.com/clappr/clappr/blob/master/docs/README.md
-         */
         var statusEl = document.getElementById('status');
         function showPlayer() { statusEl.style.display = 'none'; }
         function showError(msg) {
@@ -159,43 +165,45 @@ $jsTs   = (int)$streamTs;
             statusEl.style.display = 'flex';
         }
 
-        function initClappr(config) {
-            var cfg = {
-                source: config.url,
-                parentId: '#player',
-                width: '100%',
-                height: '100%',
-                autoplay: true,
-                mute: false,
-
-                // Plugins disponibles
-                plugins: [LevelSelector, ClapprPip.PipButton, ClapprPip.PipPlugin, DashShakaPlayback, ChromecastPlugin, ClapprPip.PipButton, ClapprPip.PipPlugin],
-                events: {
-                    onReady: function () {
-                        showPlayer();
-                        var plugin = this.getPlugin("click_to_pause");
-                        plugin && plugin.disable();
-                    },
-                },
-
-                // AGREGAR OPCIONES AQUÍ:
-                // watermark: 'url',
-                // watermarkLink: 'url',
-                // hideMediaControlDelay: 3000,
-            };
-            if (config.keyId && config.key) {
-                var ck = {};
-                ck[config.keyId] = config.key;
-                cfg.shakaConfiguration = {
-                    preferredAudioLanguage: "es-MX",
-                    drm: { clearKeys: ck },
-                };
+        // Interceptar licencias Bitmovin ANTES de que el player emita la primera petición
+        (function () {
+            var GRANT = 'data:text/plain;charset=utf-8;base64,eyJzdGF0dXMiOiJncmFudGVkIiwibWVzc2FnZSI6IlRoZXJlIHlvdSBnby4ifQ==';
+            function override(u) {
+                var wm = document.querySelector('button.bmpui-ui-watermark');
+                if (wm) wm.setAttribute('disabled', 'disabled');
+                if (u.indexOf('licensing.bitmovin.com/licensing')  > -1) return GRANT;
+                if (u.indexOf('licensing.bitmovin.com/impression') > -1) return GRANT;
+                return u;
             }
-            window.player = new Clappr.Player(cfg);
+            var _open = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function () { arguments[1] = override(arguments[1]); return _open.apply(this, arguments); };
+        })();
+
+        /**
+         * Extrae uno o varios pares ClearKey (keyId:key) de los campos que
+         * devuelve api/stream.php. Soporta:
+         *   - Un solo par en keyId/key (formato clásico de las otras fuentes)
+         *   - Varios pares empaquetados en "key", uno por línea, con o sin
+         *     el prefijo "--key" (estilo shaka-packager / mp4decrypt), o
+         *     separados por comas/espacios.
+         * Devuelve un array de { kid, key } listo para bitmovin (la propiedad
+         * del keyId en la API de Bitmovin se llama "kid", no "keyId"), o [].
+         */
+        function parseClearKeys(keyId, key) {
+            var pairs = [];
+            var re = /([0-9a-fA-F]{16,64})\s*:\s*([0-9a-fA-F]{16,64})/g;
+            var match;
+            if (key) {
+                while ((match = re.exec(key)) !== null) {
+                    pairs.push({ kid: match[1], key: match[2] });
+                }
+            }
+            if (pairs.length > 0) return pairs;
+            if (keyId && key) return [{ kid: keyId, key: key }];
+            return [];
         }
 
-        // Inicializar cuando el DOM esté listo — solicitar URL y DRM key al
-        // servidor (token HMAC vinculado a la sesión) antes de montar el player.
+        // Solicitar datos al servidor — token HMAC vinculado a la sesión del usuario
         document.addEventListener('DOMContentLoaded', function() {
             fetch(_BASE + 'api/stream.php?id=' + _FID + '&ts=' + _TS + '&t=' + encodeURIComponent(_TOK), {
                 credentials: 'same-origin'
@@ -206,10 +214,26 @@ $jsTs   = (int)$streamTs;
             })
             .then(function (sd) {
                 if (!sd.url) { showError('Stream no disponible'); return; }
-                PLAYER_CONFIG.url   = sd.url;
-                PLAYER_CONFIG.keyId = sd.keyId || '';
-                PLAYER_CONFIG.key   = sd.key   || '';
-                initClappr(PLAYER_CONFIG);
+
+                var player = new bitmovin.player.Player(document.getElementById('player'), {
+                    key:       '11d3698c-efdf-42f1-8769-54663995de2b',
+                    analytics: false,
+                    cast:      { enable: true },
+                    playback:  { autoplay: true, muted: true },
+                    style:     { width: '100%', height: '100%' }
+                });
+                window.player = player;
+
+                var source     = { dash: sd.url };
+                var clearKeys  = parseClearKeys(sd.keyId || '', sd.key || '');
+                if (clearKeys.length > 0) {
+                    source.drm = { clearkey: clearKeys };
+                }
+
+                player.load(source).then(showPlayer).catch(function (err) {
+                    showError('Error al cargar el stream.');
+                    console.error('Bitmovin error:', err);
+                });
             })
             .catch(function (err) {
                 showError('No se pudo conectar con el servidor.');
