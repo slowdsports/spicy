@@ -60,12 +60,13 @@ try {
             exit;
         }
 
-        // p256dh debe ser una clave pública EC sin comprimir (65 bytes, arranca
-        // con 0x04) en base64url — si no, cron/push_notify.php truena al cifrar
-        // el payload para ESTA fila y frena el aviso de TODOS los demás usuarios
-        // en la misma corrida. Se rechaza acá antes de que entre a la tabla.
-        $rawKey = base64_decode(strtr($p256dh, '-_', '+/'), true);
-        if ($rawKey === false || strlen($rawKey) !== 65 || $rawKey[0] !== "\x04") {
+        // Chequeo de forma nada más (base64url, largo razonable) — NO se intenta
+        // decodificar y validar el punto EC exacto acá: distintos navegadores
+        // codifican con variaciones menores (padding, etc.) y una validación
+        // estricta de bytes puede rechazar suscripciones legítimas. La
+        // protección real contra una clave corrupta ya está en el try/catch de
+        // cron/push_notify.php alrededor del cifrado.
+        if (!preg_match('/^[A-Za-z0-9_-]{75,100}$/', $p256dh) || !preg_match('/^[A-Za-z0-9_-]{15,30}$/', $auth)) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'msg' => 'Clave de suscripción inválida']);
             exit;
