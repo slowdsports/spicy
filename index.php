@@ -328,6 +328,13 @@ if (!$_noChrome) {
 <?php if (!$isTvPlayerView): ?>
 <script src="assets/js/page-transition.js"></script>
 <?php endif; ?>
+<?php if (!$isTvPlayerView && isLoggedIn()): ?>
+<script>
+const PUSH_VAPID_PUBLIC_KEY = <?= json_encode(VAPID_PUBLIC_KEY) ?>;
+const PUSH_BASE_URL = <?= json_encode(BASE_URL) ?>;
+</script>
+<script src="assets/js/push.js"></script>
+<?php endif; ?>
 
 <!-- ── Trampa debugger + configuración DisableDevtool ──────────────────── -->
 <script>

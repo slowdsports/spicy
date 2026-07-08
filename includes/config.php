@@ -16,12 +16,18 @@ define('DB_USER', $_env['DB_USER'] ?? 'root');
 define('DB_PASS', $_env['DB_PASS'] ?? '');
 define('DB_NAME', $_env['DB_NAME'] ?? 'streamhub');
 define('BASE_URL', $_env['BASE_URL'] ?? '/spicy/');
+define('SITE_URL', $_env['SITE_URL'] ?? 'http://localhost');
 
 // Bridge Playwright para admin/sofa.php (ver tools/sofascore-bridge) — vacío
 // en local usa proc_open directo; en producción apunta al bridge desplegado
 // en Render, porque el hosting compartido no puede correr Chromium.
 define('SOFA_BRIDGE_URL',    $_env['SOFA_BRIDGE_URL'] ?? '');
 define('SOFA_BRIDGE_SECRET', $_env['SOFA_BRIDGE_SECRET'] ?? '');
+
+// Notificaciones push (Web Push / VAPID) — ver includes/.env.example.php
+define('VAPID_PUBLIC_KEY',  $_env['VAPID_PUBLIC_KEY']  ?? '');
+define('VAPID_PRIVATE_KEY', $_env['VAPID_PRIVATE_KEY'] ?? '');
+define('VAPID_SUBJECT',     $_env['VAPID_SUBJECT']     ?? 'mailto:contacto@example.com');
 
 unset($_env);
 

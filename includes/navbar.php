@@ -87,6 +87,12 @@ $uName    = userName();
       </ul>
 
       <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
+        <?php if ($loggedIn): ?>
+        <button class="btn-theme-toggle" id="btn-push-toggle" title="Activar notificaciones de tus equipos favoritos" style="display:none;">
+          <i class="fas fa-bell" id="push-bell-icon"></i>
+        </button>
+        <?php endif; ?>
+
         <button class="btn-theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
           <i class="fas fa-sun" id="theme-icon"></i>
         </button>

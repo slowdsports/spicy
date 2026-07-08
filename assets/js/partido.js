@@ -49,7 +49,15 @@ document.querySelectorAll('.pp-fav-star').forEach(btn => {
       const data = await res.json();
       if (data.ok) {
         btn.classList.toggle('active', data.active);
-        ppToast(data.active ? 'Equipo agregado a favoritos' : 'Equipo quitado de favoritos');
+        if (data.active && typeof pushRegistration !== 'undefined') {
+          // Aviso contextual: si todavía no activó notificaciones, este es el
+          // mejor momento (acaba de mostrar interés en un equipo específico).
+          pushRegistration?.pushManager.getSubscription().then((sub) => {
+            if (!sub) ppToast('Equipo agregado — activa la campana 🔔 arriba para que te avisemos cuando juegue');
+          });
+        } else {
+          ppToast(data.active ? 'Equipo agregado a favoritos' : 'Equipo quitado de favoritos');
+        }
       } else {
         ppToast(data.msg || 'Error al guardar');
       }
