@@ -585,18 +585,45 @@ color:var(--text-muted);
 .match-grid{
 grid-template-columns:1fr;
 text-align:center;
+gap:.75rem;
 }
 
 .match-right{
 justify-content:center;
 }
 
+/* Antes se apilaban en columna (logo, "vs" chico, logo) dejando el "vs"
+   descentrado y viendo un equipo debajo del otro. Se mantiene la fila
+   horizontal (como en desktop) pero con equipos flexibles y logos/tipografía
+   más chicos, para que los tres bloques quepan sin desbordar. */
 .match-center{
-flex-direction:column;
+flex-direction:row;
+gap:.5rem;
 }
 
 .team-box{
-width:100%;
+width:auto;
+flex:1;
+min-width:0;
+gap:.35rem;
+font-size:.72rem;
+}
+
+.team-box span{
+display:-webkit-box;
+-webkit-line-clamp:2;
+-webkit-box-orient:vertical;
+overflow:hidden;
+}
+
+.team-logo{
+width:34px;
+height:34px;
+}
+
+.vs-box{
+flex-shrink:0;
+min-width:42px;
 }
 
 }

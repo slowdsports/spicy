@@ -1048,10 +1048,23 @@ function mCanalLogo($id) {
   .match-grid {
     grid-template-columns: 1fr;
     text-align: center;
+    gap: .75rem;
   }
   .match-right  { justify-content: center; }
-  .match-center { flex-direction: column; }
-  .team-box     { width: 100%; }
+
+  /* Igual que liga.php: fila horizontal siempre, solo se achican equipos/logos
+     para que quepan — evita que un equipo quede apilado debajo del otro con
+     el "vs" descentrado. */
+  .match-center { flex-direction: row; gap: .5rem; }
+  .team-box     { width: auto; flex: 1; min-width: 0; gap: .35rem; font-size: .72rem; }
+  .team-box span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .team-logo    { width: 34px; height: 34px; }
+  .vs-box       { flex-shrink: 0; min-width: 42px; }
 }
 
 @media (max-width: 576px) {

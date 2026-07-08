@@ -1532,6 +1532,13 @@ img[data-logo-base] {
    RESPONSIVE
    ============================================================ */
 @media (max-width: 768px) {
+  /* El botón flotante de Ko-fi/"volver arriba" (index.php) es fixed
+     bottom-right sobre todas las páginas. En páginas cortas (ej. una liga
+     con 1-2 partidos) no hay suficiente contenido para que el usuario haga
+     scroll y el botón queda tapando la última tarjeta (canal, etc.) — se le
+     deja un colchón fijo abajo para que nunca quede debajo. */
+  body { padding-bottom: 96px; }
+
   .channel-page-layout {
     grid-template-columns: 1fr;
   }

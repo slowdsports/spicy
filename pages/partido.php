@@ -256,6 +256,19 @@ if (isLoggedIn() && ($localId || $visitId)) {
 
 .pp-empty { color: var(--text-muted); font-size: .82rem; text-align: center; padding: 1rem; }
 
+/* En móvil, dos .pp-team de 160px fijos + .pp-score-col (min-width:100px)
+   no entran en una fila y el flex-wrap parte al equipo visitante a una
+   segunda línea, dejando el "vs" descentrado. Se fuerza una sola fila
+   siempre, encogiendo equipos/logos para que quepan los tres bloques. */
+@media (max-width: 480px) {
+  .pp-body-row { flex-wrap: nowrap; gap: .5rem; }
+  .pp-team { width: auto; flex: 1; min-width: 0; gap: .4rem; }
+  .pp-team img { width: 40px; height: 40px; }
+  .pp-team span.pp-team-name { font-size: .74rem; }
+  .pp-score-col { min-width: 0; flex: 0 0 auto; }
+  .pp-score { font-size: 1.4rem; }
+}
+
 /* Skeletons — mismo shimmer que .skeleton-block (assets/css/style.css),
    reemplazados por assets/js/partido.js en cuanto llega api/partido_extra.php */
 .pp-skel-row { height: 28px; border-radius: 6px; margin-bottom: 6px; }
